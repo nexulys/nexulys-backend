@@ -524,6 +524,86 @@
       flex-shrink: 0;
     }
 
+    /* ── MODALS ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #13131a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: rgba(255,255,255,0.07);
+      border: none;
+      color: var(--text-muted);
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.12); }
+    .modal-field { margin-bottom: 16px; }
+    .modal-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .modal-input, .modal-select {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus, .modal-select:focus { border-color: rgba(99,102,241,0.5); }
+    .modal-select option { background: #1a1a2e; color: #f1f5f9; }
+    .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 13px;
+      background: var(--gradient);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .modal-error { color: #fca5a5; font-size: 13px; margin-top: 10px; display: none; }
+    .modal-error.visible { display: block; }
+
     /* ── SECTION LABELS ── */
     .section-label {
       font-size: 12px;
@@ -857,26 +937,170 @@
       <div>
         <div class="section-label" style="margin-bottom:14px;">Actions rapides</div>
         <div class="quick-actions">
-          <a href="#" class="qa-btn">
+          <button class="qa-btn" onclick="openModal('facture')">
             <div class="qa-icon">📄</div>
             <span>Nouvelle facture</span>
-          </a>
-          <a href="#" class="qa-btn">
+          </button>
+          <button class="qa-btn" onclick="openModal('employe')">
             <div class="qa-icon">👤</div>
             <span>Ajouter employé</span>
-          </a>
-          <a href="#" class="qa-btn">
+          </button>
+          <button class="qa-btn" onclick="openModal('stock')">
             <div class="qa-icon">📦</div>
             <span>Mouvement stock</span>
-          </a>
-          <a href="#" class="qa-btn">
+          </button>
+          <button class="qa-btn" onclick="openModal('tache')">
             <div class="qa-icon">✅</div>
             <span>Créer tâche</span>
-          </a>
+          </button>
         </div>
       </div>
 
     </main>
+  </div>
+
+  <!-- Modal Nouvelle Facture -->
+  <div class="modal-overlay" id="modal-facture" onclick="closeModalOnOverlay(event,'modal-facture')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-facture')">✕</button>
+      <div class="modal-title">📄 Nouvelle facture</div>
+      <div class="modal-field">
+        <label class="modal-label">Nom du client</label>
+        <input class="modal-input" id="f-client" placeholder="Acme Corp" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Email client (optionnel)</label>
+        <input class="modal-input" id="f-email" type="email" placeholder="contact@acme.fr" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Description de la prestation</label>
+        <input class="modal-input" id="f-desc" placeholder="Développement web, consulting..." />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Quantité</label>
+          <input class="modal-input" id="f-qty" type="number" min="1" value="1" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Prix unitaire HT (€)</label>
+          <input class="modal-input" id="f-prix" type="number" min="0" placeholder="1000" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">TVA (%)</label>
+        <select class="modal-select" id="f-tva">
+          <option value="20">20% (standard)</option>
+          <option value="10">10% (réduit)</option>
+          <option value="5.5">5,5% (réduit)</option>
+          <option value="0">0% (exonéré)</option>
+        </select>
+      </div>
+      <div class="modal-error" id="f-error"></div>
+      <button class="modal-btn" id="f-btn" onclick="submitFacture()">Créer la facture</button>
+    </div>
+  </div>
+
+  <!-- Modal Ajouter Employé -->
+  <div class="modal-overlay" id="modal-employe" onclick="closeModalOnOverlay(event,'modal-employe')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-employe')">✕</button>
+      <div class="modal-title">👤 Ajouter un employé</div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Prénom</label>
+          <input class="modal-input" id="e-prenom" placeholder="Jean" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Nom</label>
+          <input class="modal-input" id="e-nom" placeholder="Dupont" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Email professionnel</label>
+        <input class="modal-input" id="e-email" type="email" placeholder="jean@entreprise.fr" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Poste</label>
+        <input class="modal-input" id="e-poste" placeholder="Développeur Senior" />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Département</label>
+          <input class="modal-input" id="e-dept" placeholder="Tech" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Salaire brut (€)</label>
+          <input class="modal-input" id="e-salaire" type="number" min="0" placeholder="3500" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Date d'embauche</label>
+        <input class="modal-input" id="e-date" type="date" />
+      </div>
+      <div class="modal-error" id="e-error"></div>
+      <button class="modal-btn" id="e-btn" onclick="submitEmploye()">Ajouter l'employé</button>
+    </div>
+  </div>
+
+  <!-- Modal Mouvement Stock -->
+  <div class="modal-overlay" id="modal-stock" onclick="closeModalOnOverlay(event,'modal-stock')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-stock')">✕</button>
+      <div class="modal-title">📦 Mouvement de stock</div>
+      <div class="modal-field">
+        <label class="modal-label">Produit</label>
+        <select class="modal-select" id="s-product"><option value="">Chargement...</option></select>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Type</label>
+          <select class="modal-select" id="s-type">
+            <option value="entree">Entrée</option>
+            <option value="sortie">Sortie</option>
+            <option value="ajustement">Ajustement</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Quantité</label>
+          <input class="modal-input" id="s-qty" type="number" min="1" value="1" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Motif</label>
+        <input class="modal-input" id="s-motif" placeholder="Réapprovisionnement, vente..." />
+      </div>
+      <div class="modal-error" id="s-error"></div>
+      <button class="modal-btn" id="s-btn" onclick="submitStock()">Enregistrer le mouvement</button>
+    </div>
+  </div>
+
+  <!-- Modal Créer Tâche -->
+  <div class="modal-overlay" id="modal-tache" onclick="closeModalOnOverlay(event,'modal-tache')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-tache')">✕</button>
+      <div class="modal-title">✅ Créer une tâche</div>
+      <div class="modal-field">
+        <label class="modal-label">Titre</label>
+        <input class="modal-input" id="t-titre" placeholder="Préparer le rapport mensuel..." />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Priorité</label>
+          <select class="modal-select" id="t-priorite">
+            <option value="normale">Normale</option>
+            <option value="haute">Haute</option>
+            <option value="urgente">Urgente</option>
+            <option value="basse">Basse</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Deadline (optionnel)</label>
+          <input class="modal-input" id="t-deadline" type="date" />
+        </div>
+      </div>
+      <div class="modal-error" id="t-error"></div>
+      <button class="modal-btn" id="t-btn" onclick="submitTache()">Créer la tâche</button>
+    </div>
   </div>
 
   <script>
@@ -1136,6 +1360,174 @@
           + (timeStr ? '<div class="activity-time">' + timeStr + '</div>' : '')
           + '</div></div>';
       }).join('');
+    }
+
+    // ── Modal helpers ──
+    function openModal(type) {
+      document.getElementById('modal-' + type).classList.add('open');
+      if (type === 'stock') loadProductsForModal();
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+    function closeModalOnOverlay(e, id) {
+      if (e.target === e.currentTarget) closeModal(id);
+    }
+    function modalError(prefix, msg) {
+      var el = document.getElementById(prefix + '-error');
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+    function clearModalError(prefix) {
+      var el = document.getElementById(prefix + '-error');
+      el.textContent = '';
+      el.classList.remove('visible');
+    }
+    function setModalLoading(btnId, loading, label) {
+      var btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.textContent = loading ? 'Chargement...' : label;
+    }
+
+    // ── Soumettre Facture ──
+    async function submitFacture() {
+      clearModalError('f');
+      var client = document.getElementById('f-client').value.trim();
+      var desc = document.getElementById('f-desc').value.trim();
+      var qty = parseFloat(document.getElementById('f-qty').value) || 0;
+      var prix = parseFloat(document.getElementById('f-prix').value) || 0;
+      var tva = parseFloat(document.getElementById('f-tva').value) || 20;
+      if (!client) return modalError('f', 'Le nom du client est requis.');
+      if (!desc) return modalError('f', 'La description est requise.');
+      if (prix <= 0) return modalError('f', 'Le prix doit être supérieur à 0.');
+      var montantHT = qty * prix;
+      var montantTVA = montantHT * tva / 100;
+      setModalLoading('f-btn', true, 'Créer la facture');
+      try {
+        var res = await fetch(API + '/comptabilite/factures', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify({
+            client: { nom: client, email: document.getElementById('f-email').value.trim() || undefined },
+            lignes: [{ description: desc, quantite: qty, prixUnitaire: prix, montantHT }],
+            montantHT, tauxTVA: tva, montantTVA, montantTTC: montantHT + montantTVA
+          })
+        });
+        var data = await res.json();
+        if (data.success) {
+          closeModal('modal-facture');
+          showToast('Facture créée avec succès');
+          loadKPIs(); loadInvoices(); loadActivity();
+        } else {
+          modalError('f', data.message || 'Erreur lors de la création.');
+        }
+      } catch(e) { modalError('f', 'Erreur réseau.'); }
+      setModalLoading('f-btn', false, 'Créer la facture');
+    }
+
+    // ── Soumettre Employé ──
+    async function submitEmploye() {
+      clearModalError('e');
+      var prenom = document.getElementById('e-prenom').value.trim();
+      var nom = document.getElementById('e-nom').value.trim();
+      var email = document.getElementById('e-email').value.trim();
+      var poste = document.getElementById('e-poste').value.trim();
+      var dept = document.getElementById('e-dept').value.trim();
+      var salaire = parseFloat(document.getElementById('e-salaire').value) || 0;
+      var date = document.getElementById('e-date').value;
+      if (!prenom || !nom) return modalError('e', 'Le prénom et le nom sont requis.');
+      if (!email) return modalError('e', 'L\'email est requis.');
+      if (!poste) return modalError('e', 'Le poste est requis.');
+      if (salaire <= 0) return modalError('e', 'Le salaire doit être supérieur à 0.');
+      if (!date) return modalError('e', 'La date d\'embauche est requise.');
+      setModalLoading('e-btn', true, 'Ajouter l\'employé');
+      try {
+        var res = await fetch(API + '/rh/employes', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify({ prenom, nom, email, poste, departement: dept, salaireBase: salaire, dateEmbauche: date })
+        });
+        var data = await res.json();
+        if (data.success) {
+          closeModal('modal-employe');
+          showToast('Employé ajouté avec succès');
+          loadKPIs(); loadActivity();
+        } else {
+          modalError('e', data.message || (data.errors && data.errors[0] && data.errors[0].message) || 'Erreur.');
+        }
+      } catch(e) { modalError('e', 'Erreur réseau.'); }
+      setModalLoading('e-btn', false, 'Ajouter l\'employé');
+    }
+
+    // ── Charger produits pour modal stock ──
+    async function loadProductsForModal() {
+      var select = document.getElementById('s-product');
+      select.innerHTML = '<option value="">Chargement...</option>';
+      var res = await apiFetch('/stocks/produits');
+      var products = (res && res.data) ? res.data : [];
+      if (products.length === 0) {
+        select.innerHTML = '<option value="">Aucun produit disponible</option>';
+        return;
+      }
+      select.innerHTML = products.map(function(p) {
+        return '<option value="' + p._id + '">' + p.nom + ' (stock: ' + p.quantite + ' ' + (p.unite || 'unité') + ')</option>';
+      }).join('');
+    }
+
+    // ── Soumettre Mouvement Stock ──
+    async function submitStock() {
+      clearModalError('s');
+      var productId = document.getElementById('s-product').value;
+      var type = document.getElementById('s-type').value;
+      var qty = parseInt(document.getElementById('s-qty').value) || 0;
+      var motif = document.getElementById('s-motif').value.trim();
+      if (!productId) return modalError('s', 'Sélectionnez un produit.');
+      if (qty <= 0) return modalError('s', 'La quantité doit être supérieure à 0.');
+      setModalLoading('s-btn', true, 'Enregistrer le mouvement');
+      try {
+        var res = await fetch(API + '/stocks/mouvements', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify({ productId, type, quantite: qty, motif: motif || type })
+        });
+        var data = await res.json();
+        if (data.success) {
+          closeModal('modal-stock');
+          showToast('Mouvement enregistré' + (data.alerte && data.alerte.active ? ' ⚠️ ' + data.alerte.message : ''));
+          loadKPIs(); loadStockAlerts(); loadActivity();
+        } else {
+          modalError('s', data.message || 'Erreur.');
+        }
+      } catch(e) { modalError('s', 'Erreur réseau.'); }
+      setModalLoading('s-btn', false, 'Enregistrer le mouvement');
+    }
+
+    // ── Soumettre Tâche ──
+    async function submitTache() {
+      clearModalError('t');
+      var titre = document.getElementById('t-titre').value.trim();
+      var priorite = document.getElementById('t-priorite').value;
+      var deadline = document.getElementById('t-deadline').value;
+      if (!titre) return modalError('t', 'Le titre est requis.');
+      setModalLoading('t-btn', true, 'Créer la tâche');
+      try {
+        var body = { titre, priorite };
+        if (deadline) body.deadline = deadline;
+        var res = await fetch(API + '/taches', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify(body)
+        });
+        var data = await res.json();
+        if (data.success) {
+          closeModal('modal-tache');
+          showToast('Tâche créée avec succès');
+          loadTasks(); loadActivity();
+        } else {
+          modalError('t', data.message || 'Erreur.');
+        }
+      } catch(e) { modalError('t', 'Erreur réseau.'); }
+      setModalLoading('t-btn', false, 'Créer la tâche');
     }
 
     // ── Init ──
