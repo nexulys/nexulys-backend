@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const c = require('../controllers/abonnementController');
-const { protect } = require('../middleware/auth');
+const protect = require('../middleware/auth');
 
 router.get('/plans', c.getPlans);
 router.use(protect);

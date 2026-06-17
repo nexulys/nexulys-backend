@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const c = require('../controllers/comptabiliteController');
-const { protect } = require('../middleware/auth');
+const protect = require('../middleware/auth');
 
 router.use(protect);
 

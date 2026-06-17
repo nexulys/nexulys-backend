@@ -1,4 +1,3 @@
-const OpenAI = require('openai');
 const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
 const Employee = require('../models/Employee');
@@ -6,31 +5,31 @@ const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 const Task = require('../models/Task');
 
-const getOpenAI = () => {
-  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY non configurée');
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-};
-
-const chat = async (systemPrompt, userMessage) => {
-  const openai = getOpenAI();
-  const res = await openai.chat.completions.create({
+const aiChat = async (systemPrompt, userMessage) => {
+  if (!process.env.OPENAI_API_KEY) {
+    return `[Mode démo - configurez OPENAI_API_KEY pour activer l'IA]\n\nAnalyse simulée basée sur: ${userMessage.substring(0, 100)}...`;
+  }
+  const { default: OpenAI } = await import('openai');
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const resp = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
     max_tokens: 800
   });
-  return res.choices[0].message.content;
+  return resp.choices[0].message.content;
 };
 
 exports.analyzeExpenses = async (req, res) => {
   try {
     const expenses = await Expense.find({ company: req.user.company }).sort({ date: -1 }).limit(50);
-    const summary = expenses.reduce((acc, e) => {
-      acc[e.category] = (acc[e.category] || 0) + e.amount;
+    const parCategorie = expenses.reduce((acc, e) => {
+      acc[e.categorie] = (acc[e.categorie] || 0) + e.montant;
       return acc;
     }, {});
-    const prompt = `Tu es un conseiller financier expert. Analyse ces dépenses d'entreprise et suggère des économies concrètes:\n${JSON.stringify(summary, null, 2)}\nTotal: ${expenses.reduce((s, e) => s + e.amount, 0)}€`;
-    const analysis = await chat('Tu es un expert comptable et conseiller financier pour PME.', prompt);
-    res.json({ success: true, data: { analysis, expensesByCategory: summary } });
+    const totalMontant = expenses.reduce((s, e) => s + e.montant, 0);
+    const prompt = `Analyse ces dépenses d'entreprise et suggère des économies concrètes:\nPar catégorie: ${JSON.stringify(parCategorie)}\nTotal: ${totalMontant}€`;
+    const analyse = await aiChat('Tu es un expert comptable et conseiller financier pour PME françaises.', prompt);
+    res.json({ success: true, data: { analyse, parCategorie, totalMontant } });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
@@ -38,76 +37,94 @@ exports.hrAssistant = async (req, res) => {
   try {
     const { question } = req.body;
     if (!question) return res.status(400).json({ success: false, message: 'Question requise' });
-    const employeeCount = await Employee.countDocuments({ company: req.user.company });
-    const systemPrompt = `Tu es un expert RH et droit du travail français. L'entreprise a ${employeeCount} employés. Réponds en français de façon concise et pratique.`;
-    const answer = await chat(systemPrompt, question);
-    res.json({ success: true, data: { question, answer } });
+    const nbEmployes = await Employee.countDocuments({ company: req.user.company });
+    const reponse = await aiChat(
+      `Tu es un expert RH et droit du travail français. L'entreprise a ${nbEmployes} employés. Réponds de façon concise et pratique en français.`,
+      question
+    );
+    res.json({ success: true, data: { question, reponse } });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 exports.predictReorder = async (req, res) => {
   try {
-    const products = await Product.find({ company: req.user.company });
-    const movements = await StockMovement.find({ company: req.user.company, type: 'sortie' })
+    const produits = await Product.find({ company: req.user.company, actif: true });
+    const mouvements = await StockMovement.find({ company: req.user.company, type: 'sortie' })
       .sort({ createdAt: -1 }).limit(200);
 
-    const consumption = {};
-    movements.forEach(m => {
-      const key = m.product.toString();
-      consumption[key] = (consumption[key] || 0) + m.quantity;
+    const consommation = {};
+    mouvements.forEach(m => {
+      const k = m.product.toString();
+      consommation[k] = (consommation[k] || 0) + m.quantite;
     });
 
-    const lowProducts = products.filter(p => p.quantity <= p.alertThreshold * 2);
-    const data = lowProducts.map(p => ({
-      name: p.name, sku: p.sku, currentStock: p.quantity,
-      threshold: p.alertThreshold, monthlyConsumption: consumption[p._id.toString()] || 0
-    }));
+    const aReapprovisionner = produits
+      .filter(p => p.quantite <= p.seuilAlerte * 2)
+      .map(p => ({
+        nom: p.nom, sku: p.sku, quantiteActuelle: p.quantite,
+        seuilAlerte: p.seuilAlerte, consommationMensuelle: consommation[p._id.toString()] || 0
+      }));
 
-    if (data.length === 0) return res.json({ success: true, data: { predictions: [], message: 'Tous les stocks sont suffisants' } });
+    if (!aReapprovisionner.length)
+      return res.json({ success: true, data: { predictions: [], message: 'Tous les stocks sont à niveau suffisant' } });
 
-    const prompt = `Analyse ces données de stock et prédit les besoins de réapprovisionnement pour les 30 prochains jours:\n${JSON.stringify(data, null, 2)}`;
-    const predictions = await chat('Tu es un expert en gestion des stocks et supply chain.', prompt);
-    res.json({ success: true, data: { predictions, productsAnalyzed: data } });
+    const predictions = await aiChat(
+      'Tu es un expert en gestion des stocks et supply chain pour PME.',
+      `Préds les besoins de réapprovisionnement pour 30 jours:\n${JSON.stringify(aReapprovisionner, null, 2)}`
+    );
+    res.json({ success: true, data: { predictions, produitsAnalyses: aReapprovisionner } });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
-exports.autoAssignTasks = async (req, res) => {
+exports.autoAssignTask = async (req, res) => {
   try {
     const { taskId } = req.body;
-    const [task, employees] = await Promise.all([
+    const [tache, employes] = await Promise.all([
       Task.findOne({ _id: taskId, company: req.user.company }),
-      Employee.find({ company: req.user.company })
+      Employee.find({ company: req.user.company, statut: 'actif' })
     ]);
-    if (!task) return res.status(404).json({ success: false, message: 'Tâche introuvable' });
+    if (!tache) return res.status(404).json({ success: false, message: 'Tâche introuvable' });
 
-    const taskCounts = await Task.aggregate([
-      { $match: { company: req.user.company, status: { $in: ['à faire', 'en cours'] } } },
-      { $group: { _id: '$assignee', count: { $sum: 1 } } }
+    const chargesTravail = await Task.aggregate([
+      { $match: { company: req.user.company, statut: { $in: ['todo', 'en_cours'] } } },
+      { $group: { _id: '$assignee', nombre: { $sum: 1 } } }
     ]);
 
-    const workload = employees.map(e => ({
-      id: e._id, name: `${e.firstName} ${e.lastName}`, poste: e.poste,
-      activeTasks: (taskCounts.find(t => t._id?.toString() === e._id.toString()) || {}).count || 0
+    const equipe = employes.map(e => ({
+      nom: `${e.prenom} ${e.nom}`, poste: e.poste,
+      tachesActives: (chargesTravail.find(c => c._id?.toString() === e._id.toString()) || {}).nombre || 0
     }));
 
-    const prompt = `Tâche à assigner: "${task.title}" (priorité: ${task.priority})\nÉquipe disponible:\n${JSON.stringify(workload, null, 2)}\nQui est le meilleur candidat et pourquoi? Réponds avec le nom et une explication courte.`;
-    const suggestion = await chat('Tu es un manager expert en allocation de ressources humaines.', prompt);
-    res.json({ success: true, data: { task: task.title, suggestion, teamWorkload: workload } });
+    const suggestion = await aiChat(
+      'Tu es un manager expert en allocation de ressources.',
+      `Tâche: "${tache.titre}" (priorité: ${tache.priorite})\nÉquipe:\n${JSON.stringify(equipe, null, 2)}\nQui assigner et pourquoi?`
+    );
+    res.json({ success: true, data: { tache: tache.titre, suggestion, equipe } });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 exports.dashboardInsights = async (req, res) => {
   try {
-    const [invoiceCount, expenseTotal, employeeCount, lowStockCount, overdueTaskCount] = await Promise.all([
-      Invoice.countDocuments({ company: req.user.company, status: 'pending' }),
-      Expense.aggregate([{ $match: { company: req.user.company } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-      Employee.countDocuments({ company: req.user.company }),
-      Product.countDocuments({ company: req.user.company, $expr: { $lte: ['$quantity', '$alertThreshold'] } }),
-      Task.countDocuments({ company: req.user.company, status: { $ne: 'terminé' }, deadline: { $lt: new Date() } })
+    const [facturesEnAttente, totalDepenses, nbEmployes, alertesStock, tachesEnRetard] = await Promise.all([
+      Invoice.countDocuments({ company: req.user.company, statut: 'envoyee' }),
+      Expense.aggregate([{ $match: { company: req.user.company } }, { $group: { _id: null, total: { $sum: '$montant' } } }]),
+      Employee.countDocuments({ company: req.user.company, statut: 'actif' }),
+      Product.countDocuments({ company: req.user.company, actif: true, alerteActive: true }),
+      Task.countDocuments({ company: req.user.company, statut: { $nin: ['termine', 'annule'] }, deadline: { $lt: new Date() } })
     ]);
 
-    const context = `Factures en attente: ${invoiceCount}, Dépenses totales: ${(expenseTotal[0]?.total || 0)}€, Employés: ${employeeCount}, Alertes stock bas: ${lowStockCount}, Tâches en retard: ${overdueTaskCount}`;
-    const insights = await chat('Tu es un assistant de direction (COO) expert en gestion d\'entreprise. Fournis des insights actionnables.', `Génère 3 insights prioritaires pour cette entreprise basés sur: ${context}`);
-    res.json({ success: true, data: { insights, metrics: { invoiceCount, expenseTotal: expenseTotal[0]?.total || 0, employeeCount, lowStockCount, overdueTaskCount } } });
+    const metriques = {
+      facturesEnAttente,
+      totalDepenses: totalDepenses[0]?.total || 0,
+      nbEmployes,
+      alertesStock,
+      tachesEnRetard
+    };
+
+    const insights = await aiChat(
+      'Tu es un assistant de direction (COO) expert PME. Fournis 3 insights actionnables et prioritaires en français.',
+      `Métriques entreprise: Factures en attente: ${metriques.facturesEnAttente}, Dépenses totales: ${metriques.totalDepenses}€, Employés actifs: ${metriques.nbEmployes}, Alertes stock bas: ${metriques.alertesStock}, Tâches en retard: ${metriques.tachesEnRetard}`
+    );
+    res.json({ success: true, data: { insights, metriques } });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
