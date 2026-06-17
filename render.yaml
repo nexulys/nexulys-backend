@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: mkdir -p logs && node server.js
     healthCheckPath: /api/health/live
     envVars:
       - key: NODE_ENV

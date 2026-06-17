@@ -1,3 +1,8 @@
+const fs = require('fs');
+const path = require('path');
+const logsDir = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+
 const winston = require('winston');
 
 const logger = winston.createLogger({
