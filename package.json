@@ -1,0 +1,21 @@
+{
+  "name": "novexa-backend",
+  "version": "1.0.0",
+  "description": "Novexa - Plateforme SaaS IA de gestion d'entreprise par Nexulys",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.3.1",
+    "openai": "^4.11.0",
+    "cors": "^2.8.5",
+    "express-validator": "^7.0.1",
+    "morgan": "^1.10.0"
+  }
+}
