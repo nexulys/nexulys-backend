@@ -38,6 +38,10 @@ app.use('/api/abonnement', require('./routes/abonnement'));
 app.use('/api/stripe', require('./routes/stripe'));
 app.use('/api/docs', require('./routes/docs'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/recurrence', require('./routes/recurrence'));
+app.use('/api/expert', require('./routes/expert'));
+app.use('/api/portail', require('./routes/portail'));
+app.use('/api/rapport', require('./routes/rapport'));
 if (process.env.SEED_SECRET) app.use('/api/seed', require('./routes/seed'));
 
 app.use('/api/health', require('./routes/health'));

@@ -16,6 +16,7 @@ router.get('/prevision-tresorerie', c.previsionTresorerie);
 router.post('/analyser-facture', c.analyserFacture);
 
 // RH IA
+router.post('/ocr-justificatif', c.ocrJustificatif);
 router.post('/scorer-cv', c.scorerCV);
 router.post('/generer-offre', c.genererOffre);
 router.post('/resumer-entretien', c.resumerEntretien);

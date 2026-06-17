@@ -29,6 +29,10 @@ const invoiceSchema = new mongoose.Schema({
   dateEmission: { type: Date, default: Date.now },
   dateEcheance: { type: Date },
   notes: { type: String },
+  relancesSent: [{
+    type: { type: String, enum: ['J7', 'J15', 'J30'] },
+    sentAt: { type: Date, default: Date.now }
+  }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

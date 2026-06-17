@@ -262,6 +262,32 @@ exports.genererOffre = async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
+exports.ocrJustificatif = async (req, res) => {
+  try {
+    const { imageBase64, mimeType } = req.body;
+    if (!imageBase64) return res.status(400).json({ success: false, message: 'Image base64 requise' });
+    if (!process.env.OPENAI_API_KEY) {
+      return res.json({ success: true, data: { titre: 'Achat simulé', montant: 42.50, categorie: 'autre', date: new Date().toISOString().slice(0, 10), fiabilite: 0, note: 'Mode démo — configurez OPENAI_API_KEY' } });
+    }
+    const { default: OpenAI } = await import('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const resp = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Extrais les informations de ce justificatif/ticket de caisse. Réponds UNIQUEMENT en JSON: {"fournisseur":"string","montant":number,"tva":number|null,"montantHT":number|null,"date":"YYYY-MM-DD","description":"string","categorie":"fournitures"|"transport"|"restauration"|"logiciel"|"marketing"|"loyer"|"salaires"|"autre","compteComptable":"string","fiabilite":number}' },
+          { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } }
+        ]
+      }],
+      max_tokens: 500
+    });
+    const raw = resp.choices[0].message.content;
+    const parsed = tryParseJSON(raw, { description: raw, categorie: 'autre', fiabilite: 0 });
+    res.json({ success: true, data: parsed });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
 exports.resumerEntretien = async (req, res) => {
   try {
     const { notes, candidat, poste } = req.body;

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Portail Client — Novexa</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#0d0f1a;color:#e2e8f0;min-height:100vh;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+.header{background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 32px;display:flex;align-items:center;gap:12px;}
+.brand{font-size:18px;font-weight:800;background:linear-gradient(135deg,#6366f1,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.company-name{font-size:14px;color:#94a3b8;}
+.main{max-width:900px;margin:40px auto;padding:0 20px;}
+.welcome{text-align:center;margin-bottom:40px;}
+.welcome h1{font-size:26px;font-weight:800;margin-bottom:8px;}
+.welcome p{color:#94a3b8;font-size:14px;}
+.card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;margin-bottom:20px;}
+.card-header{padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:14px;font-weight:700;color:#e2e8f0;}
+table{width:100%;border-collapse:collapse;}
+th{padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid rgba(255,255,255,0.06);}
+td{padding:14px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(52,211,153,.12);color:#34d399;}
+.badge-orange{background:rgba(251,191,36,.12);color:#fbbf24;}
+.badge-red{background:rgba(248,113,113,.12);color:#f87171;}
+.badge-gray{background:rgba(255,255,255,.06);color:#94a3b8;}
+.btn-pay{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;}
+.btn-pay:hover{opacity:.85;}
+.btn-pay:disabled{opacity:.4;cursor:not-allowed;}
+.empty{text-align:center;padding:48px;color:#475569;}
+.spinner{width:36px;height:36px;border:3px solid rgba(99,102,241,.2);border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;margin:40px auto;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;top:20px;right:20px;background:#1e293b;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 20px;font-size:13px;z-index:999;display:none;animation:fadeIn .3s;}
+.toast.show{display:block;}
+.toast.success{border-color:rgba(52,211,153,.3);color:#34d399;}
+.toast.error{border-color:rgba(248,113,113,.3);color:#f87171;}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;padding:20px;}
+.kpi{text-align:center;padding:16px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.06);}
+.kpi-val{font-size:22px;font-weight:800;color:#a5b4fc;}
+.kpi-label{font-size:11px;color:#64748b;margin-top:4px;}
+.exp-notice{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:10px;padding:12px 16px;font-size:13px;color:#f87171;margin-bottom:20px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <div class="brand">Novexa</div>
+  <div class="company-name" id="company-name">Chargement...</div>
+</div>
+
+<div class="main">
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="content" style="display:none;">
+    <div class="welcome">
+      <h1>Bonjour <span id="client-nom">—</span> 👋</h1>
+      <p>Retrouvez ici toutes vos factures et effectuez vos paiements en ligne.</p>
+    </div>
+    <div id="exp-notice" class="exp-notice" style="display:none;"></div>
+
+    <div class="summary-grid" id="summary-grid"></div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Mes factures</div></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>N° Facture</th><th>Montant TTC</th><th>Statut</th><th>Échéance</th><th>Action</th>
+          </tr></thead>
+          <tbody id="invoices-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="error-view" style="display:none;text-align:center;padding:80px 20px;">
+    <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+    <h2 style="margin-bottom:8px;">Lien invalide ou expiré</h2>
+    <p style="color:#94a3b8;">Ce lien n'est plus valide. Demandez un nouveau lien à votre prestataire.</p>
+  </div>
+</div>
+
+<script>
+const token = new URLSearchParams(location.search).get('token');
+const paid = new URLSearchParams(location.search).get('paid');
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+function fmt(n) { return (n||0).toLocaleString('fr-FR', {minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+function statusBadge(s) {
+  const m = { payee:['badge-green','Payée'], envoyee:['badge-orange','Envoyée'], en_retard:['badge-red','En retard'], brouillon:['badge-gray','Brouillon'], annulee:['badge-gray','Annulée'] };
+  const [cls, label] = m[s] || ['badge-gray', s];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+async function load() {
+  if (!token) { show('error-view'); return; }
+  try {
+    const res = await fetch('/api/portail/' + token);
+    const data = await res.json();
+    if (!data.success) { show('error-view'); return; }
+    const d = data.data;
+
+    document.getElementById('company-name').textContent = d.company?.nom || '';
+    document.getElementById('client-nom').textContent = d.clientNom;
+    document.title = `Portail — ${d.clientNom}`;
+
+    const exp = new Date(d.expiresAt);
+    const jours = Math.floor((exp - new Date()) / 86400000);
+    if (jours <= 7) {
+      const n = document.getElementById('exp-notice');
+      n.style.display = '';
+      n.textContent = jours <= 0 ? 'Ce lien a expiré.' : `Ce lien expire dans ${jours} jour${jours > 1 ? 's' : ''}. Demandez un renouvellement.`;
+    }
+
+    const invoices = d.invoices || [];
+    const total = invoices.reduce((s,i) => s + i.montantTTC, 0);
+    const payees = invoices.filter(i => i.statut === 'payee');
+    const impayees = invoices.filter(i => i.statut !== 'payee' && i.statut !== 'annulee');
+    const montantDu = impayees.reduce((s,i) => s + i.montantTTC, 0);
+
+    document.getElementById('summary-grid').innerHTML = [
+      ['Total facturé', fmt(total)],
+      ['Déjà réglé', fmt(payees.reduce((s,i)=>s+i.montantTTC,0))],
+      ['En attente de paiement', fmt(montantDu)],
+      ['Nombre de factures', invoices.length]
+    ].map(([l,v]) => `<div class="kpi"><div class="kpi-val">${v}</div><div class="kpi-label">${l}</div></div>`).join('');
+
+    const tbody = document.getElementById('invoices-body');
+    if (!invoices.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:48px;color:#475569;">Aucune facture</td></tr>';
+    } else {
+      tbody.innerHTML = invoices.map(inv => {
+        const canPay = inv.statut !== 'payee' && inv.statut !== 'annulee';
+        return `<tr>
+          <td style="font-weight:600;">${inv.numero}</td>
+          <td style="font-weight:700;color:#a5b4fc;">${fmt(inv.montantTTC)}</td>
+          <td>${statusBadge(inv.statut)}</td>
+          <td style="color:#94a3b8;">${inv.dateEcheance ? new Date(inv.dateEcheance).toLocaleDateString('fr-FR') : '—'}</td>
+          <td>${canPay ? `<button class="btn-pay" onclick="payer('${inv._id}',this)">💳 Payer en ligne</button>` : '<span style="color:#34d399;font-size:13px;">✓ Réglée</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    show('content');
+    if (paid) showToast('Paiement reçu — merci !', 'success');
+  } catch(e) { show('error-view'); }
+}
+
+async function payer(invoiceId, btn) {
+  btn.disabled = true; btn.textContent = 'Redirection...';
+  try {
+    const res = await fetch(`/api/portail/${token}/payer/${invoiceId}`, { method:'POST', headers:{'Content-Type':'application/json'} });
+    const data = await res.json();
+    if (data.success && data.data?.url) { window.location.href = data.data.url; }
+    else { showToast(data.message || 'Erreur de paiement', 'error'); btn.disabled = false; btn.textContent = '💳 Payer en ligne'; }
+  } catch(e) { showToast('Erreur réseau', 'error'); btn.disabled = false; btn.textContent = '💳 Payer en ligne'; }
+}
+
+function show(id) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = id === 'content' ? '' : 'none';
+  document.getElementById('error-view').style.display = id === 'error-view' ? '' : 'none';
+}
+
+load();
+</script>
+</body>
+</html>

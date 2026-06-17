@@ -13,7 +13,9 @@ const companySchema = new mongoose.Schema({
   secteur: { type: String, trim: true },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   subscription: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription' },
-  actif: { type: Boolean, default: true }
+  actif: { type: Boolean, default: true },
+  slackWebhookUrl: { type: String },
+  approvalThreshold: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Company', companySchema);

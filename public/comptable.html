@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Accès comptable — Novexa</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#0d0f1a;color:#e2e8f0;min-height:100vh;}
+.header{background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-size:18px;font-weight:800;background:linear-gradient(135deg,#6366f1,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.badge-ro{background:rgba(251,191,36,.12);color:#fbbf24;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid rgba(251,191,36,.2);}
+.main{max-width:1100px;margin:32px auto;padding:0 20px;}
+.section-title{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px;}
+.kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.kpi-val{font-size:24px;font-weight:800;color:#a5b4fc;margin-bottom:4px;}
+.kpi-label{font-size:12px;color:#64748b;}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;margin-bottom:20px;overflow:hidden;}
+.card-header{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;font-weight:700;}
+.card-body{padding:20px;}
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);}
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(52,211,153,.12);color:#34d399;}
+.badge-orange{background:rgba(251,191,36,.12);color:#fbbf24;}
+.badge-red{background:rgba(248,113,113,.12);color:#f87171;}
+.badge-gray{background:rgba(255,255,255,.06);color:#94a3b8;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.row-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;}
+.row-item .lbl{color:#94a3b8;}
+.row-total{display:flex;justify-content:space-between;padding:14px 0 0;font-size:15px;font-weight:800;}
+.row-total .val{color:#a5b4fc;}
+.spinner{width:36px;height:36px;border:3px solid rgba(99,102,241,.2);border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;margin:60px auto;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-view{text-align:center;padding:80px 20px;}
+@media print{.no-print{display:none!important}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="brand">Novexa — Accès Comptable</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="badge-ro">👁 Lecture seule</span>
+    <span style="font-size:12px;color:#64748b;" id="company-label"></span>
+    <button onclick="window.print()" class="no-print" style="background:rgba(99,102,241,.15);border:none;color:#a5b4fc;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">🖨 Imprimer</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="content" style="display:none;"></div>
+  <div id="error-view" class="error-view" style="display:none;">
+    <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+    <h2 style="margin-bottom:8px;">Accès invalide ou expiré</h2>
+    <p style="color:#64748b;">Ce lien n'est plus valide. Demandez un nouveau lien à votre client.</p>
+  </div>
+</div>
+
+<script>
+const token = new URLSearchParams(location.search).get('token');
+const fmt = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+const statusBadge = s => {
+  const m = {payee:['badge-green','Payée'],envoyee:['badge-orange','Envoyée'],en_retard:['badge-red','En retard'],brouillon:['badge-gray','Brouillon'],annulee:['badge-gray','Annulée']};
+  const [cls,lbl] = m[s]||['badge-gray',s];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+};
+const catLabels = {fournitures:'Fournitures',transport:'Transport',restauration:'Restauration',logiciel:'Logiciels',marketing:'Marketing',loyer:'Loyer',salaires:'Salaires',autre:'Autres'};
+
+async function load() {
+  if (!token) { show('error-view'); return; }
+  try {
+    const res = await fetch('/api/expert/view/' + token);
+    const data = await res.json();
+    if (!data.success) { show('error-view'); return; }
+    const d = data.data;
+
+    document.title = `Accès comptable — ${d.company.nom}`;
+    document.getElementById('company-label').textContent = d.company.nom + ' | Exercice ' + d.annee;
+
+    const kpis = d.kpis;
+    const resultatColor = kpis.resultatNet >= 0 ? '#34d399' : '#f87171';
+
+    const chargesParCat = d.recentExpenses.reduce((acc, e) => {
+      acc[e.categorie] = (acc[e.categorie] || 0) + e.montant;
+      return acc;
+    }, {});
+    const totalChargesAff = Object.values(chargesParCat).reduce((a,b)=>a+b,0);
+
+    document.getElementById('content').innerHTML = `
+<div class="kpi-grid" style="margin-bottom:28px;">
+  ${[
+    ['CA HT', fmt(kpis.caHT), '#a5b4fc'],
+    ['Total charges', fmt(kpis.totalCharges), '#f87171'],
+    ['Résultat net', (kpis.resultatNet>=0?'+':'')+fmt(kpis.resultatNet), resultatColor],
+    ['Employés actifs', kpis.nbEmployes, '#34d399'],
+    ['Factures encaissées', kpis.nbFactures, '#a5b4fc']
+  ].map(([l,v,c])=>`<div class="kpi"><div class="kpi-val" style="color:${c};">${v}</div><div class="kpi-label">${l} — ${d.annee}</div></div>`).join('')}
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header">Compte de résultat ${d.annee}</div>
+    <div class="card-body">
+      <div class="section-title" style="color:#34d399;">PRODUITS</div>
+      <div class="row-item"><span class="lbl">Chiffre d'affaires HT</span><span>${fmt(kpis.caHT)}</span></div>
+      <div class="row-total"><span>Total produits</span><span class="val">${fmt(kpis.caHT)}</span></div>
+      <div class="section-title" style="color:#f87171;margin-top:20px;">CHARGES</div>
+      ${Object.entries(chargesParCat).map(([cat,m])=>`<div class="row-item"><span class="lbl">${catLabels[cat]||cat}</span><span>${fmt(m)}</span></div>`).join('')}
+      <div class="row-total"><span>Total charges</span><span class="val">${fmt(kpis.totalCharges)}</span></div>
+      <div style="margin-top:16px;padding:14px;background:rgba(99,102,241,.06);border-radius:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;">Résultat net</span>
+        <span style="font-size:20px;font-weight:800;color:${resultatColor};">${kpis.resultatNet>=0?'+':''}${fmt(kpis.resultatNet)}</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Répartition des charges</div>
+    <div class="card-body">
+      ${Object.entries(chargesParCat).map(([cat,m])=>{
+        const pct = totalChargesAff ? Math.round(m/totalChargesAff*100) : 0;
+        return `<div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span style="color:#94a3b8;">${catLabels[cat]||cat}</span>
+            <span>${pct}% — ${fmt(m)}</span>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border-radius:4px;height:6px;">
+            <div style="background:#6366f1;width:${pct}%;height:6px;border-radius:4px;"></div>
+          </div>
+        </div>`;
+      }).join('') || '<div style="color:#64748b;font-size:13px;">Aucune charge enregistrée</div>'}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Dernières factures</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>N°</th><th>Client</th><th>Montant TTC</th><th>Statut</th><th>Date</th></tr></thead>
+      <tbody>
+        ${(d.recentInvoices||[]).map(i=>`<tr>
+          <td style="font-weight:600;">${i.numero}</td>
+          <td>${i.client?.nom||'—'}</td>
+          <td style="color:#a5b4fc;font-weight:700;">${fmt(i.montantTTC)}</td>
+          <td>${statusBadge(i.statut)}</td>
+          <td style="color:#64748b;">${new Date(i.createdAt).toLocaleDateString('fr-FR')}</td>
+        </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:24px;color:#475569;">Aucune facture</td></tr>'}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Dernières dépenses</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Titre</th><th>Catégorie</th><th>Montant</th><th>Statut</th><th>Date</th></tr></thead>
+      <tbody>
+        ${(d.recentExpenses||[]).map(e=>{
+          const [cls,lbl] = e.statut==='approuvee'?['badge-green','Approuvée']:e.statut==='rejetee'?['badge-red','Rejetée']:['badge-orange','En attente'];
+          return `<tr>
+            <td>${e.titre}</td>
+            <td style="color:#94a3b8;">${catLabels[e.categorie]||e.categorie}</td>
+            <td style="color:#a5b4fc;font-weight:700;">${fmt(e.montant)}</td>
+            <td><span class="badge ${cls}">${lbl}</span></td>
+            <td style="color:#64748b;">${new Date(e.date).toLocaleDateString('fr-FR')}</td>
+          </tr>`;
+        }).join('')||'<tr><td colspan="5" style="text-align:center;padding:24px;color:#475569;">Aucune dépense</td></tr>'}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div style="text-align:center;font-size:12px;color:#475569;margin-top:24px;padding-bottom:40px;">
+  Document généré par Novexa by Nexulys — accès en lecture seule — valide jusqu'au ${new Date(d.expiresAt).toLocaleDateString('fr-FR')}
+</div>`;
+
+    show('content');
+  } catch(e) { show('error-view'); }
+}
+
+function show(id) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = id==='content'?'':'none';
+  document.getElementById('error-view').style.display = id==='error-view'?'':'none';
+}
+
+load();
+</script>
+</body>
+</html>

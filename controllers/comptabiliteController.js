@@ -1,7 +1,10 @@
 const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
 const Product = require('../models/Product');
+const Company = require('../models/Company');
 const { calculerTVA } = require('../utils/tvaCalculator');
+const { sendMail } = require('../utils/mailer');
+const { sendSlack } = require('../utils/slack');
 
 exports.createInvoice = async (req, res) => {
   try {
@@ -44,10 +47,17 @@ exports.getInvoice = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
+    const prev = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
     const invoice = await Invoice.findOneAndUpdate(
       { _id: req.params.id, company: req.user.company }, req.body, { new: true }
     );
     if (!invoice) return res.status(404).json({ success: false, message: 'Facture introuvable' });
+    if (prev && prev.statut !== 'payee' && invoice.statut === 'payee') {
+      const company = await Company.findById(req.user.company);
+      if (company?.slackWebhookUrl) {
+        await sendSlack(company.slackWebhookUrl, `✅ Facture payée : ${invoice.numero} — ${invoice.client?.nom} — ${invoice.montantTTC.toFixed(2)} €`);
+      }
+    }
     res.json({ success: true, data: invoice });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -205,5 +215,129 @@ exports.getBilan = async (req, res) => {
     invoices.forEach(i => { const k = moisLabels[new Date(i.createdAt).getMonth()]; mensuel[k].revenu += i.montantTTC; });
     expenses.forEach(e => { const k = moisLabels[new Date(e.date).getMonth()]; mensuel[k].depenses += e.montant; });
     res.json({ success: true, data: { annee: y, totalRevenu, totalDepenses, benefice, mensuel } });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.relancerFacture = async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
+    if (!invoice) return res.status(404).json({ success: false, message: 'Facture introuvable' });
+    if (invoice.statut === 'payee') return res.status(400).json({ success: false, message: 'Facture déjà payée' });
+
+    const now = new Date();
+    const echeance = invoice.dateEcheance ? new Date(invoice.dateEcheance) : null;
+    const joursRetard = echeance ? Math.floor((now - echeance) / 86400000) : 0;
+    let type = 'J7';
+    if (joursRetard > 20) type = 'J30';
+    else if (joursRetard > 10) type = 'J15';
+
+    const clientEmail = invoice.client?.email;
+    const company = await Company.findById(req.user.company);
+    const appName = process.env.APP_NAME || 'Novexa';
+
+    if (clientEmail) {
+      const html = `
+<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;">
+  <div style="background:#6366f1;padding:24px;border-radius:10px 10px 0 0;text-align:center;">
+    <h2 style="color:#fff;margin:0;">${appName}</h2>
+  </div>
+  <div style="background:#fff;padding:32px;border-radius:0 0 10px 10px;border:1px solid #e5e7eb;">
+    <p style="color:#374151;font-size:15px;">Bonjour,</p>
+    <p style="color:#374151;font-size:15px;">Nous vous contactons concernant la facture <strong>${invoice.numero}</strong> d'un montant de <strong>${invoice.montantTTC.toFixed(2)} €</strong>.</p>
+    ${echeance ? `<p style="color:#374151;">Date d'échéance : <strong>${echeance.toLocaleDateString('fr-FR')}</strong>${joursRetard > 0 ? ` (${joursRetard} jours de retard)` : ''}</p>` : ''}
+    <p style="color:#374151;">Merci de procéder au règlement dans les meilleurs délais.</p>
+    <p style="color:#6b7280;font-size:13px;margin-top:24px;">Cordialement,<br/>${company?.nom || appName}</p>
+  </div>
+</div>`;
+      await sendMail({ to: clientEmail, subject: `Relance — Facture ${invoice.numero} — ${invoice.montantTTC.toFixed(2)} €`, html });
+    }
+
+    await Invoice.findByIdAndUpdate(invoice._id, { $push: { relancesSent: { type, sentAt: now } } });
+
+    if (company?.slackWebhookUrl) {
+      await sendSlack(company.slackWebhookUrl, `📧 Relance envoyée : ${invoice.numero} — ${invoice.client?.nom} — ${joursRetard} jours de retard`);
+    }
+
+    res.json({ success: true, message: clientEmail ? `Relance envoyée à ${clientEmail}` : 'Relance enregistrée (pas d\'email client)', data: { type, joursRetard } });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.getScoresClients = async (req, res) => {
+  try {
+    const invoices = await Invoice.find({ company: req.user.company });
+    const clients = {};
+    invoices.forEach(inv => {
+      const nom = inv.client?.nom || 'Inconnu';
+      if (!clients[nom]) clients[nom] = { nom, total: 0, payees: 0, enRetard: 0, montantTotal: 0, montantPaye: 0, retards: [] };
+      clients[nom].total++;
+      clients[nom].montantTotal += inv.montantTTC;
+      if (inv.statut === 'payee') { clients[nom].payees++; clients[nom].montantPaye += inv.montantTTC; }
+      if (inv.statut === 'en_retard') clients[nom].enRetard++;
+      if (inv.statut === 'en_retard' && inv.dateEcheance) {
+        clients[nom].retards.push(Math.floor((new Date() - new Date(inv.dateEcheance)) / 86400000));
+      }
+    });
+
+    const scores = Object.values(clients).map(c => {
+      const tauxPaiement = c.total ? (c.payees / c.total) * 100 : 100;
+      const retardMoyen = c.retards.length ? c.retards.reduce((a, b) => a + b, 0) / c.retards.length : 0;
+      const score = Math.max(0, Math.round(tauxPaiement - (retardMoyen * 0.5) - (c.enRetard * 5)));
+      const risque = score >= 70 ? 'faible' : score >= 40 ? 'moyen' : 'eleve';
+      return { nom: c.nom, score, risque, tauxPaiement: Math.round(tauxPaiement), retardMoyen: Math.round(retardMoyen), total: c.total, enRetard: c.enRetard, montantTotal: c.montantTotal, montantPaye: c.montantPaye };
+    }).sort((a, b) => a.score - b.score);
+
+    res.json({ success: true, data: scores });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.approuverDepense = async (req, res) => {
+  try {
+    const Expense = require('../models/Expense');
+    const exp = await Expense.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.company },
+      { statut: 'approuvee', approvedBy: req.user.id },
+      { new: true }
+    );
+    if (!exp) return res.status(404).json({ success: false, message: 'Dépense introuvable' });
+    const company = await Company.findById(req.user.company);
+    if (company?.slackWebhookUrl) {
+      await sendSlack(company.slackWebhookUrl, `✅ Dépense approuvée : ${exp.titre} — ${exp.montant.toFixed(2)} €`);
+    }
+    res.json({ success: true, data: exp });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.rejeterDepense = async (req, res) => {
+  try {
+    const Expense = require('../models/Expense');
+    const exp = await Expense.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.company },
+      { statut: 'rejetee' },
+      { new: true }
+    );
+    if (!exp) return res.status(404).json({ success: false, message: 'Dépense introuvable' });
+    const company = await Company.findById(req.user.company);
+    if (company?.slackWebhookUrl) {
+      await sendSlack(company.slackWebhookUrl, `❌ Dépense rejetée : ${exp.titre} — ${exp.montant.toFixed(2)} €`);
+    }
+    res.json({ success: true, data: exp });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.updateSettings = async (req, res) => {
+  try {
+    const { slackWebhookUrl, approvalThreshold } = req.body;
+    const update = {};
+    if (slackWebhookUrl !== undefined) update.slackWebhookUrl = slackWebhookUrl;
+    if (approvalThreshold !== undefined) update.approvalThreshold = +approvalThreshold;
+    const company = await Company.findByIdAndUpdate(req.user.company, update, { new: true });
+    res.json({ success: true, data: company });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.getSettings = async (req, res) => {
+  try {
+    const company = await Company.findById(req.user.company).select('slackWebhookUrl approvalThreshold nom siret adresse email telephone');
+    res.json({ success: true, data: company });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
