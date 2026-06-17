@@ -1,10 +1,11 @@
 const router = require('express').Router();
 const c = require('../controllers/rhController');
 const protect = require('../middleware/auth');
+const { validateEmployee } = require('../middleware/validate');
 
 router.use(protect);
 
-router.route('/employes').get(c.getEmployees).post(c.createEmployee);
+router.route('/employes').get(c.getEmployees).post(validateEmployee, c.createEmployee);
 router.route('/employes/:id').get(c.getEmployee).put(c.updateEmployee).delete(c.deleteEmployee);
 router.route('/contrats').get(c.getContracts).post(c.createContract);
 router.route('/conges').get(c.getLeaves).post(c.requestLeave);

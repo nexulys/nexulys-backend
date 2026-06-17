@@ -29,10 +29,10 @@ exports.getProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
-    const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, company: req.user.company }, req.body, { new: true, runValidators: true }
-    );
+    const product = await Product.findOne({ _id: req.params.id, company: req.user.company });
     if (!product) return res.status(404).json({ success: false, message: 'Produit introuvable' });
+    Object.assign(product, req.body);
+    await product.save(); // déclenche le hook pre('save') → recalcule alerteActive
     res.json({ success: true, data: product });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
