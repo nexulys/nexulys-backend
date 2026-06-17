@@ -290,6 +290,84 @@
     }
     .forgot-link:hover { color: var(--purple); }
 
+    /* ── ADMIN PADLOCK ── */
+    #admin-lock {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;
+      opacity: 0.12;
+      cursor: pointer;
+      transition: opacity 0.3s, transform 0.2s;
+      user-select: none;
+      z-index: 10;
+      line-height: 1;
+    }
+    #admin-lock:hover { opacity: 0.45; transform: translateX(-50%) scale(1.15); }
+
+    /* ── ADMIN MINI MODAL ── */
+    #admin-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 60px;
+    }
+    #admin-modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #admin-modal {
+      background: rgba(18, 18, 36, 0.95);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 16px;
+      padding: 28px 28px 24px;
+      width: 320px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.1);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    #admin-modal .modal-head {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;
+    }
+    #admin-modal .modal-head .title {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    #admin-modal .modal-head .close-btn {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      font-size: 16px; line-height: 1; padding: 2px; transition: color 0.2s;
+    }
+    #admin-modal .modal-head .close-btn:hover { color: var(--text); }
+    #admin-modal .modal-input {
+      width: 100%; padding: 11px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 9px; color: var(--text); font-size: 14px;
+      font-family: 'Inter', sans-serif; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 12px;
+    }
+    #admin-modal .modal-input:focus {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+    #admin-modal .modal-btn {
+      width: 100%; padding: 11px;
+      background: var(--gradient); border: none; border-radius: 9px;
+      color: #fff; font-size: 13px; font-weight: 700;
+      font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s;
+    }
+    #admin-modal .modal-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    #admin-modal .modal-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    #admin-modal .modal-error {
+      font-size: 12px; color: #fca5a5; margin-top: 10px; text-align: center;
+      min-height: 16px;
+    }
+
     @media (max-width: 480px) {
       .login-card { padding: 28px 20px 24px; }
       .form-row { grid-template-columns: 1fr; }
@@ -412,6 +490,22 @@
       <!-- Back link -->
       <a href="/index.html" class="back-link">← Retour à l'accueil</a>
 
+    </div>
+  </div>
+
+  <!-- Admin padlock -->
+  <button id="admin-lock" onclick="openAdminModal()" title="" aria-label="Administration">🔒</button>
+
+  <!-- Admin mini modal -->
+  <div id="admin-modal-overlay" onclick="handleOverlayClick(event)">
+    <div id="admin-modal">
+      <div class="modal-head">
+        <span class="title">🔐 Accès administration</span>
+        <button class="close-btn" onclick="closeAdminModal()">✕</button>
+      </div>
+      <input class="modal-input" type="password" id="admin-pwd" placeholder="Mot de passe admin" autocomplete="off" />
+      <button class="modal-btn" id="admin-modal-btn" onclick="doAdminLogin()">Accéder</button>
+      <div class="modal-error" id="admin-modal-error"></div>
     </div>
   </div>
 
@@ -572,6 +666,58 @@
         }
       } catch (err) { showError('Erreur réseau.'); }
       finally { setLoading('btn-reset', 'btn-reset-label', false, 'Réinitialiser'); }
+    }
+
+    // ── Admin modal ──
+    function openAdminModal() {
+      document.getElementById('admin-modal-overlay').classList.add('open');
+      document.getElementById('admin-modal-error').textContent = '';
+      document.getElementById('admin-modal-btn').disabled = false;
+      document.getElementById('admin-modal-btn').textContent = 'Accéder';
+      setTimeout(function() { document.getElementById('admin-pwd').focus(); }, 80);
+    }
+    function closeAdminModal() {
+      document.getElementById('admin-modal-overlay').classList.remove('open');
+      document.getElementById('admin-pwd').value = '';
+      document.getElementById('admin-modal-error').textContent = '';
+    }
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('admin-modal-overlay')) closeAdminModal();
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeAdminModal();
+    });
+    document.getElementById('admin-pwd').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doAdminLogin();
+    });
+    async function doAdminLogin() {
+      var pwd = document.getElementById('admin-pwd').value.trim();
+      var errEl = document.getElementById('admin-modal-error');
+      var btn = document.getElementById('admin-modal-btn');
+      if (!pwd) { errEl.textContent = 'Entrez le mot de passe.'; return; }
+      btn.disabled = true;
+      btn.textContent = '...';
+      errEl.textContent = '';
+      try {
+        var res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pwd })
+        });
+        var data = await res.json();
+        if (data.success) {
+          sessionStorage.setItem('novexa_admin_token', data.token);
+          window.location.href = '/admin.html';
+        } else {
+          errEl.textContent = data.message || 'Mot de passe incorrect.';
+          btn.disabled = false;
+          btn.textContent = 'Accéder';
+        }
+      } catch (err) {
+        errEl.textContent = 'Erreur réseau.';
+        btn.disabled = false;
+        btn.textContent = 'Accéder';
+      }
     }
 
     // ── Redirect if already logged in ──
