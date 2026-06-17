@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: novexa-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false        # à renseigner manuellement dans Render
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APP_NAME
+        value: Novexa
+      - key: APP_VERSION
+        value: 1.0.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: APP_URL
+        sync: false
