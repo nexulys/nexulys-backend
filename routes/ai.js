@@ -10,4 +10,14 @@ router.get('/prevoir-reapprovisionnement', c.predictReorder);
 router.post('/assigner-tache', c.autoAssignTask);
 router.get('/dashboard-insights', c.dashboardInsights);
 
+// Comptabilité IA
+router.get('/anomalies-comptables', c.detectAnomalies);
+router.get('/prevision-tresorerie', c.previsionTresorerie);
+router.post('/analyser-facture', c.analyserFacture);
+
+// RH IA
+router.post('/scorer-cv', c.scorerCV);
+router.post('/generer-offre', c.genererOffre);
+router.post('/resumer-entretien', c.resumerEntretien);
+
 module.exports = router;
