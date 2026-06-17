@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const logger = require('./utils/logger');
+const { initSentry, requestHandler: sentryRequest, errorHandler: sentryError } = require('./middleware/sentry');
+initSentry();
 
 const app = express();
 
@@ -17,6 +19,7 @@ app.use(express.json());
 app.use(morgan('dev', { stream: { write: msg => logger.http(msg.trim()) } }));
 app.use(express.static('public'));
 app.use('/api', apiLimiter);
+app.use(sentryRequest);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -26,17 +29,10 @@ app.use('/api/stocks', require('./routes/stocks'));
 app.use('/api/taches', require('./routes/taches'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/abonnement', require('./routes/abonnement'));
+app.use('/api/stripe', require('./routes/stripe'));
 app.use('/api/docs', require('./routes/docs'));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Novexa API is running',
-    version: process.env.APP_VERSION || '1.0.0',
-    platform: 'Novexa by Nexulys'
-  });
-});
+app.use('/api/health', require('./routes/health'));
 
 // 404 handler
 app.use((req, res) => {
@@ -44,6 +40,7 @@ app.use((req, res) => {
 });
 
 // Error handler
+app.use(sentryError);
 app.use((err, req, res, next) => {
   logger.error(err.message, { stack: err.stack });
   res.status(err.status || 500).json({
