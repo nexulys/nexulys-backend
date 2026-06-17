@@ -31,6 +31,7 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/abonnement', require('./routes/abonnement'));
 app.use('/api/stripe', require('./routes/stripe'));
 app.use('/api/docs', require('./routes/docs'));
+if (process.env.SEED_SECRET) app.use('/api/seed', require('./routes/seed'));
 
 app.use('/api/health', require('./routes/health'));
 
