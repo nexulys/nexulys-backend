@@ -38,6 +38,8 @@ const subscriptionSchema = new mongoose.Schema({
   billingEmail: { type: String },
   cancelledAt: { type: Date },
   billingHistory: { type: Array, default: [] },
+  stripeCustomerId: { type: String },
+  stripeSubscriptionId: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

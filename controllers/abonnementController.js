@@ -1,4 +1,5 @@
 const Subscription = require('../models/Subscription');
+const { createCustomer, createSubscription: createStripeSubscription, cancelSubscription: cancelStripeSubscription } = require('../services/stripeService');
 
 exports.getPlans = async (req, res) => {
   res.json({
@@ -46,6 +47,15 @@ exports.getSubscription = async (req, res) => {
 exports.activateSubscription = async (req, res) => {
   try {
     const { methodePaiement, emailFacturation } = req.body;
+
+    // Create Stripe customer and subscription
+    const stripeCustomer = await createCustomer({
+      email: emailFacturation || req.user.email,
+      nom: req.user.nom || req.user.name || '',
+      companyName: req.user.companyName || ''
+    });
+    const stripeSub = await createStripeSubscription(stripeCustomer.id);
+
     const sub = await Subscription.findOneAndUpdate(
       { company: req.user.company },
       {
@@ -53,7 +63,9 @@ exports.activateSubscription = async (req, res) => {
         startDate: new Date(),
         nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         paymentMethod: methodePaiement,
-        billingEmail: emailFacturation
+        billingEmail: emailFacturation,
+        stripeCustomerId: stripeCustomer.id,
+        stripeSubscriptionId: stripeSub.id
       },
       { new: true }
     );
@@ -67,12 +79,16 @@ exports.activateSubscription = async (req, res) => {
 
 exports.cancelSubscription = async (req, res) => {
   try {
-    const sub = await Subscription.findOneAndUpdate(
+    const sub = await Subscription.findOne({ company: req.user.company });
+    if (sub && sub.stripeSubscriptionId) {
+      await cancelStripeSubscription(sub.stripeSubscriptionId);
+    }
+    const updatedSub = await Subscription.findOneAndUpdate(
       { company: req.user.company },
       { statut: 'annule', cancelledAt: new Date() },
       { new: true }
     );
-    res.json({ success: true, message: 'Abonnement annulé', data: sub });
+    res.json({ success: true, message: 'Abonnement annulé', data: updatedSub });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 

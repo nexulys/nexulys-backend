@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const logger = require('./utils/logger');
 
 const app = express();
 
@@ -13,7 +14,8 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan('dev', { stream: { write: msg => logger.http(msg.trim()) } }));
+app.use(express.static('public'));
 app.use('/api', apiLimiter);
 
 // Routes
@@ -24,6 +26,7 @@ app.use('/api/stocks', require('./routes/stocks'));
 app.use('/api/taches', require('./routes/taches'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/abonnement', require('./routes/abonnement'));
+app.use('/api/docs', require('./routes/docs'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -42,7 +45,7 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(err.message, { stack: err.stack });
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error'
@@ -51,7 +54,8 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Novexa backend running on port ${PORT}`);
+  logger.info(`Novexa by Nexulys démarré sur le port ${PORT}`);
+  logger.info(`Docs API: http://localhost:${PORT}/api/docs`);
 });
 
 module.exports = app;
