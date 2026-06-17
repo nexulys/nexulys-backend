@@ -1127,57 +1127,104 @@
         <div class="section-topbar">
           <div>
             <div class="section-label">Comptabilité</div>
-            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Factures & Dépenses</h2>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Gestion financière</h2>
           </div>
-          <div style="display:flex;gap:10px;">
+          <div id="compta-actions-factures" style="display:flex;gap:10px;">
             <button class="btn-outline" onclick="exportFacturesCSV()">📥 Export CSV</button>
             <button class="btn-outline" onclick="loadDepenses()">🔄 Actualiser</button>
             <button class="btn-primary" onclick="openModal('facture')">+ Nouvelle facture</button>
           </div>
+          <div id="compta-actions-documents" style="display:none;gap:10px;">
+            <select id="doc-annee" class="modal-select" style="width:110px;padding:8px 12px;font-size:13px;" onchange="loadDocumentsComptables()">
+            </select>
+            <button class="btn-outline" onclick="printBilan()">🖨 Imprimer bilan</button>
+            <button class="btn-outline" onclick="printCompteResultat()">🖨 Imprimer résultat</button>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Factures</div>
-            <div class="filter-tabs">
-              <button class="filter-tab active" onclick="filterFactures(null,this)">Toutes</button>
-              <button class="filter-tab" onclick="filterFactures('payee',this)">Payées</button>
-              <button class="filter-tab" onclick="filterFactures('envoyee',this)">Envoyées</button>
-              <button class="filter-tab" onclick="filterFactures('en_retard',this)">En retard</button>
-              <button class="filter-tab" onclick="filterFactures('brouillon',this)">Brouillons</button>
+
+        <!-- Comptabilité Tabs -->
+        <div class="rh-tabs">
+          <button class="rh-tab active" id="compta-tab-factures" onclick="switchComptaTab('factures')">📄 Factures & Dépenses</button>
+          <button class="rh-tab" id="compta-tab-documents" onclick="switchComptaTab('documents')">📊 Documents comptables</button>
+        </div>
+
+        <!-- Panel: Factures & Dépenses -->
+        <div id="compta-panel-factures">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Factures</div>
+              <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterFactures(null,this)">Toutes</button>
+                <button class="filter-tab" onclick="filterFactures('payee',this)">Payées</button>
+                <button class="filter-tab" onclick="filterFactures('envoyee',this)">Envoyées</button>
+                <button class="filter-tab" onclick="filterFactures('en_retard',this)">En retard</button>
+                <button class="filter-tab" onclick="filterFactures('brouillon',this)">Brouillons</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="overflow-x:auto;">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>N° Facture</th><th>Client</th><th>Montant TTC</th><th>TVA</th><th>Statut</th><th>Date</th><th>Actions</th>
+                  </tr></thead>
+                  <tbody id="all-invoices-body">
+                    <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                  </tbody>
+                </table>
+                <div class="pagination" id="factures-pagination" style="display:none;"></div>
+              </div>
             </div>
           </div>
-          <div class="card-body" style="padding:0;">
-            <div style="overflow-x:auto;">
-              <table class="data-table">
-                <thead><tr>
-                  <th>N° Facture</th><th>Client</th><th>Montant TTC</th><th>TVA</th><th>Statut</th><th>Date</th><th>Actions</th>
-                </tr></thead>
-                <tbody id="all-invoices-body">
-                  <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
-                </tbody>
-              </table>
-              <div class="pagination" id="factures-pagination" style="display:none;"></div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Dépenses</div>
+              <button class="btn-primary" onclick="openModal('depense')">+ Nouvelle dépense</button>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="overflow-x:auto;">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Titre</th><th>Catégorie</th><th>Montant</th><th>Statut</th><th>Date</th>
+                  </tr></thead>
+                  <tbody id="depenses-body">
+                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Dépenses</div>
-            <button class="btn-primary" onclick="openModal('depense')">+ Nouvelle dépense</button>
-          </div>
-          <div class="card-body" style="padding:0;">
-            <div style="overflow-x:auto;">
-              <table class="data-table">
-                <thead><tr>
-                  <th>Titre</th><th>Catégorie</th><th>Montant</th><th>Statut</th><th>Date</th>
-                </tr></thead>
-                <tbody id="depenses-body">
-                  <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
-                </tbody>
-              </table>
+        <!-- Panel: Documents comptables -->
+        <div id="compta-panel-documents" style="display:none;">
+
+          <!-- Bilan Comptable -->
+          <div class="card" id="card-bilan">
+            <div class="card-header">
+              <div class="card-title">Bilan Comptable</div>
+              <div style="font-size:12px;color:var(--text-muted);">au 31/12/<span id="bilan-annee-label">—</span></div>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;" id="bilan-content">
+                <div style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</div>
+              </div>
             </div>
           </div>
+
+          <!-- Compte de Résultat -->
+          <div class="card" id="card-resultat">
+            <div class="card-header">
+              <div class="card-title">Compte de Résultat</div>
+              <div style="font-size:12px;color:var(--text-muted);">exercice <span id="resultat-annee-label">—</span></div>
+            </div>
+            <div class="card-body">
+              <div id="resultat-content">
+                <div style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -2266,6 +2313,130 @@
       if (p < 1 || p > total) return;
       currentFacturePage = p;
       renderInvoicesPage();
+    }
+
+    // ── Comptabilité Tabs ──
+    function switchComptaTab(tab) {
+      document.querySelectorAll('[id^="compta-tab-"]').forEach(function(t) { t.classList.remove('active'); });
+      document.getElementById('compta-tab-' + tab).classList.add('active');
+      document.getElementById('compta-panel-factures').style.display = tab === 'factures' ? '' : 'none';
+      document.getElementById('compta-panel-documents').style.display = tab === 'documents' ? '' : 'none';
+      document.getElementById('compta-actions-factures').style.display = tab === 'factures' ? 'flex' : 'none';
+      document.getElementById('compta-actions-documents').style.display = tab === 'documents' ? 'flex' : 'none';
+      if (tab === 'documents') loadDocumentsComptables();
+    }
+
+    function initDocAnnee() {
+      var sel = document.getElementById('doc-annee');
+      if (!sel || sel.options.length > 0) return;
+      var y = new Date().getFullYear();
+      for (var i = y; i >= y - 5; i--) {
+        var o = document.createElement('option'); o.value = i; o.textContent = i;
+        sel.appendChild(o);
+      }
+    }
+
+    async function loadDocumentsComptables() {
+      initDocAnnee();
+      var annee = document.getElementById('doc-annee').value || new Date().getFullYear();
+      var [bilanRes, resultatRes] = await Promise.all([
+        apiFetch('/comptabilite/bilan-comptable?annee=' + annee),
+        apiFetch('/comptabilite/compte-resultat?annee=' + annee)
+      ]);
+      if (bilanRes && bilanRes.success) renderBilan(bilanRes.data);
+      if (resultatRes && resultatRes.success) renderCompteResultat(resultatRes.data);
+    }
+
+    function fmt(n) { return (n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+
+    function renderBilan(d) {
+      document.getElementById('bilan-annee-label').textContent = d.annee;
+      var html = '<div><div style="font-size:13px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);">ACTIF</div>'
+        + bilanRow('Stocks & immobilisations', d.actif.stocks)
+        + bilanRow('Créances clients', d.actif.creancesClients)
+        + bilanRow('Trésorerie (encaissements)', d.actif.tresorerie)
+        + bilanTotal('Total Actif', d.actif.total)
+        + '</div><div><div style="font-size:13px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);">PASSIF</div>'
+        + bilanRow('Résultat de l\'exercice', d.passif.resultatExercice)
+        + bilanRow('TVA collectée', d.passif.tvaCollectee)
+        + bilanRow('Dettes estimées', d.passif.dettesEstimees)
+        + bilanTotal('Total Passif', d.passif.total)
+        + '</div>';
+      document.getElementById('bilan-content').innerHTML = html;
+    }
+
+    function bilanRow(label, val) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+        + '<span style="font-size:13px;color:var(--text-muted);">' + label + '</span>'
+        + '<span style="font-size:13px;font-weight:600;color:var(--text);">' + fmt(val) + '</span></div>';
+    }
+    function bilanTotal(label, val) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;margin-top:4px;">'
+        + '<span style="font-size:14px;font-weight:700;color:var(--text);">' + label + '</span>'
+        + '<span style="font-size:14px;font-weight:800;color:var(--purple);">' + fmt(val) + '</span></div>';
+    }
+
+    function renderCompteResultat(d) {
+      document.getElementById('resultat-annee-label').textContent = d.annee;
+      var sign = d.resultat.net >= 0 ? '+' : '';
+      var margeColor = d.resultat.net >= 0 ? '#34d399' : '#f87171';
+      var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">'
+        + '<div><div style="font-size:13px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);">PRODUITS</div>'
+        + bilanRow('Chiffre d\'affaires HT', d.produits.caHT)
+        + bilanRow('TVA collectée', d.produits.tvaCollectee)
+        + bilanTotal('Total produits', d.produits.total)
+        + '</div><div><div style="font-size:13px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);">CHARGES</div>'
+        + (d.charges.detail.length ? d.charges.detail.map(function(c) { return bilanRow(c.label, c.montant); }).join('') : '<div style="padding:10px 0;color:var(--text-dim);font-size:13px;">Aucune charge enregistrée</div>')
+        + bilanTotal('Total charges', d.charges.total)
+        + '</div></div>'
+        + '<div style="margin-top:24px;padding:20px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.08);">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">RÉSULTAT</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">'
+        + resultatKPI('Résultat brut', d.resultat.brut, d.resultat.brut >= 0 ? '#34d399' : '#f87171')
+        + resultatKPI('IS estimé (25%)', '-' + fmt(d.resultat.is), '#f59e0b')
+        + resultatKPI('Résultat net', sign + fmt(d.resultat.net), margeColor)
+        + resultatKPI('Marge nette', sign + d.resultat.marge + ' %', margeColor)
+        + '</div></div>';
+      document.getElementById('resultat-content').innerHTML = html;
+    }
+
+    function resultatKPI(label, val, color) {
+      var valStr = typeof val === 'number' ? fmt(val) : val;
+      return '<div style="text-align:center;">'
+        + '<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">' + label + '</div>'
+        + '<div style="font-size:18px;font-weight:800;color:' + color + ';">' + valStr + '</div></div>';
+    }
+
+    function printBilan() {
+      var content = document.getElementById('card-bilan');
+      if (!content) return;
+      var annee = document.getElementById('bilan-annee-label').textContent;
+      var w = window.open('', '_blank', 'width=900,height=700');
+      w.document.write('<html><head><title>Bilan Comptable ' + annee + '</title>'
+        + '<style>body{font-family:Inter,sans-serif;margin:32px;color:#111;}h1{font-size:20px;margin-bottom:8px;}h2{font-size:15px;color:#6366f1;border-bottom:2px solid #6366f1;padding-bottom:4px;margin-bottom:12px;}'
+        + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px;}.total{display:flex;justify-content:space-between;padding:12px 0;font-weight:800;font-size:14px;}.label{color:#555;}.val{font-weight:600;}.footer{margin-top:24px;font-size:11px;color:#999;}</style></head>'
+        + '<body><h1>Bilan Comptable</h1><p style="color:#666;font-size:13px;">Au 31/12/' + annee + ' — généré le ' + new Date().toLocaleDateString('fr-FR') + '</p>'
+        + '<div class="grid">' + content.querySelector('#bilan-content').innerHTML + '</div>'
+        + '<div class="footer">Document généré par Novexa — à titre indicatif, non opposable fiscalement.</div>'
+        + '</body></html>');
+      w.document.close(); w.focus(); setTimeout(function() { w.print(); }, 400);
+    }
+
+    function printCompteResultat() {
+      var content = document.getElementById('card-resultat');
+      if (!content) return;
+      var annee = document.getElementById('resultat-annee-label').textContent;
+      var w = window.open('', '_blank', 'width=900,height=700');
+      w.document.write('<html><head><title>Compte de Résultat ' + annee + '</title>'
+        + '<style>body{font-family:Inter,sans-serif;margin:32px;color:#111;}h1{font-size:20px;margin-bottom:8px;}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}h2{font-size:15px;border-bottom:2px solid #ccc;padding-bottom:4px;margin-bottom:12px;}'
+        + '.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px;}.total{display:flex;justify-content:space-between;padding:12px 0;font-weight:800;font-size:14px;}'
+        + '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px;padding:20px;background:#f9f9f9;border-radius:8px;}.kpi{text-align:center;}.kpi-label{font-size:11px;color:#888;margin-bottom:6px;}.kpi-val{font-size:18px;font-weight:800;}'
+        + '.footer{margin-top:24px;font-size:11px;color:#999;}</style></head>'
+        + '<body><h1>Compte de Résultat</h1><p style="color:#666;font-size:13px;">Exercice ' + annee + ' — généré le ' + new Date().toLocaleDateString('fr-FR') + '</p>'
+        + content.querySelector('#resultat-content').innerHTML
+        + '<div class="footer">Document généré par Novexa — à titre indicatif, non opposable fiscalement.</div>'
+        + '</body></html>');
+      w.document.close(); w.focus(); setTimeout(function() { w.print(); }, 400);
     }
 
     function filterFactures(statut, btn) {
