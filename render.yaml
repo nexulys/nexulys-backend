@@ -17,6 +17,8 @@ services:
         generateValue: true
       - key: SEED_SECRET
         generateValue: true
+      - key: ADMIN_SECRET
+        generateValue: true
       - key: APP_NAME
         value: Novexa
       - key: APP_VERSION

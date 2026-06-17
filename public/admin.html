@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novexa — Super Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07070f;
+      --surface: #0f0f1e;
+      --card: #141428;
+      --border: rgba(255,255,255,0.07);
+      --purple: #6366f1;
+      --blue: #3b82f6;
+      --green: #4ade80;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --dim: #475569;
+      --gradient: linear-gradient(135deg,#6366f1,#3b82f6);
+      --gradient-text: linear-gradient(135deg,#a5b4fc,#60a5fa);
+      --r: 12px;
+    }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* ── LOGIN SCREEN ── */
+    #login-screen {
+      display:flex; align-items:center; justify-content:center; min-height:100vh;
+      background:radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.07) 0%, transparent 60%),
+                 radial-gradient(ellipse at 70% 50%, rgba(59,130,246,0.05) 0%, transparent 60%);
+    }
+    .login-card {
+      background:rgba(20,20,40,0.7); backdrop-filter:blur(24px);
+      border:1px solid rgba(255,255,255,0.1); border-radius:20px;
+      padding:40px 36px; width:380px;
+      box-shadow:0 24px 64px rgba(0,0,0,0.6);
+    }
+    .login-logo { text-align:center; margin-bottom:28px; }
+    .login-logo .name { font-size:28px; font-weight:800; background:var(--gradient-text); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .login-logo .badge { display:inline-block; margin-top:6px; padding:3px 10px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); border-radius:20px; font-size:11px; color:#a5b4fc; font-weight:600; letter-spacing:0.5px; }
+    .login-field { margin-bottom:18px; }
+    .login-label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:7px; letter-spacing:0.2px; }
+    .login-input { width:100%; padding:12px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+    .login-input:focus { border-color:rgba(99,102,241,0.5); box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
+    .login-btn { width:100%; padding:13px; background:var(--gradient); border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 20px rgba(99,102,241,0.3); margin-top:4px; }
+    .login-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 30px rgba(99,102,241,0.45); }
+    .login-btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .login-error { margin-top:14px; padding:10px 14px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; font-size:13px; color:#fca5a5; display:none; }
+
+    /* ── ADMIN DASHBOARD ── */
+    #admin-app { display:none; }
+
+    /* Header */
+    .admin-header {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:0 32px; height:60px; display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; z-index:100;
+    }
+    .header-brand { display:flex; align-items:center; gap:12px; }
+    .header-brand .logo { font-size:18px; font-weight:800; background:var(--gradient-text); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .header-brand .admin-badge { padding:3px 10px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); border-radius:20px; font-size:11px; color:#fca5a5; font-weight:700; letter-spacing:0.5px; }
+    .header-right { display:flex; align-items:center; gap:16px; }
+    .header-refresh { padding:7px 14px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:13px; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; }
+    .header-refresh:hover { color:var(--text); border-color:rgba(99,102,241,0.4); }
+    .header-logout { padding:7px 14px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:8px; color:#f87171; font-size:13px; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; }
+    .header-logout:hover { background:rgba(239,68,68,0.2); }
+    .last-refresh { font-size:12px; color:var(--dim); }
+
+    /* Main */
+    .admin-main { padding:28px 32px; max-width:1400px; margin:0 auto; }
+
+    /* Section headers */
+    .section-title { font-size:13px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:1.2px; margin-bottom:16px; }
+
+    /* KPI Grid */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+    .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:20px 22px; transition:border-color 0.2s; }
+    .kpi-card:hover { border-color:rgba(99,102,241,0.3); }
+    .kpi-label { font-size:12px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; }
+    .kpi-value { font-size:32px; font-weight:800; letter-spacing:-1px; }
+    .kpi-sub { font-size:12px; color:var(--dim); margin-top:4px; }
+    .kpi-green .kpi-value { color:var(--green); }
+    .kpi-purple .kpi-value { color:#a5b4fc; }
+    .kpi-blue .kpi-value { color:#60a5fa; }
+    .kpi-yellow .kpi-value { color:var(--yellow); }
+    .kpi-orange .kpi-value { color:var(--orange); }
+    .kpi-red .kpi-value { color:var(--red); }
+
+    /* Charts row */
+    .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:28px; }
+    .chart-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:22px; }
+    .chart-title { font-size:14px; font-weight:700; margin-bottom:18px; }
+    .chart-wrap { height:220px; position:relative; }
+
+    /* Donut legend */
+    .donut-legend { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+    .legend-item { display:flex; align-items:center; gap:10px; font-size:13px; }
+    .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .legend-label { color:var(--muted); flex:1; }
+    .legend-val { font-weight:700; }
+
+    /* Tables */
+    .table-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); margin-bottom:24px; overflow:hidden; }
+    .table-card-header { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .table-card-title { font-size:14px; font-weight:700; }
+    .table-search { padding:8px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:13px; font-family:'Inter',sans-serif; width:220px; outline:none; transition:border-color 0.2s; }
+    .table-search:focus { border-color:rgba(99,102,241,0.4); }
+    .table-search::placeholder { color:var(--dim); }
+    .admin-table { width:100%; border-collapse:collapse; }
+    .admin-table th { padding:11px 16px; font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:0.8px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .admin-table td { padding:13px 16px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:middle; }
+    .admin-table tr:last-child td { border-bottom:none; }
+    .admin-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .admin-table .scroll-wrap { overflow-x:auto; }
+
+    /* Badges */
+    .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.3px; }
+    .b-green { background:rgba(74,222,128,0.12); color:#4ade80; }
+    .b-yellow { background:rgba(251,191,36,0.12); color:#fbbf24; }
+    .b-red { background:rgba(248,113,113,0.12); color:#f87171; }
+    .b-gray { background:rgba(148,163,184,0.1); color:#94a3b8; }
+    .b-purple { background:rgba(99,102,241,0.15); color:#a5b4fc; }
+    .b-orange { background:rgba(251,146,60,0.12); color:#fb923c; }
+
+    /* Empty state */
+    .empty { text-align:center; padding:40px; color:var(--dim); font-size:13px; }
+
+    /* Toast */
+    #toast { position:fixed; bottom:24px; right:24px; padding:12px 18px; background:#1e1e3a; border:1px solid rgba(99,102,241,0.3); border-radius:10px; font-size:13px; font-weight:500; color:var(--text); z-index:9999; transform:translateY(20px); opacity:0; transition:all 0.3s; pointer-events:none; }
+    #toast.show { transform:translateY(0); opacity:1; }
+
+    /* Spinner */
+    .spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width:900px) { .charts-row { grid-template-columns:1fr; } .admin-main { padding:20px 16px; } }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="name">Novexa</div>
+      <span class="badge">🔒 SUPER ADMIN</span>
+    </div>
+    <div class="login-field">
+      <label class="login-label">Mot de passe admin</label>
+      <input class="login-input" type="password" id="admin-password" placeholder="••••••••••••" autocomplete="current-password" />
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au panel</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ── -->
+<div id="admin-app">
+
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="header-brand">
+      <span class="logo">Novexa</span>
+      <span class="admin-badge">SUPER ADMIN</span>
+    </div>
+    <div class="header-right">
+      <span class="last-refresh" id="last-refresh"></span>
+      <button class="header-refresh" onclick="loadAll()">🔄 Actualiser</button>
+      <button class="header-logout" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+
+    <!-- KPI Overview -->
+    <div class="section-title">Vue d'ensemble SaaS</div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card kpi-green">
+        <div class="kpi-label">MRR</div>
+        <div class="kpi-value" id="kpi-mrr">—</div>
+        <div class="kpi-sub" id="kpi-mrr-sub">Revenus mensuels récurrents</div>
+      </div>
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-label">ARR</div>
+        <div class="kpi-value" id="kpi-arr">—</div>
+        <div class="kpi-sub">Revenus annuels récurrents</div>
+      </div>
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-label">Clients actifs</div>
+        <div class="kpi-value" id="kpi-active">—</div>
+        <div class="kpi-sub" id="kpi-active-sub">Abonnements payants</div>
+      </div>
+      <div class="kpi-card kpi-yellow">
+        <div class="kpi-label">En essai</div>
+        <div class="kpi-value" id="kpi-trial">—</div>
+        <div class="kpi-sub">Période de 14 jours</div>
+      </div>
+      <div class="kpi-card kpi-orange">
+        <div class="kpi-label">Suspendus</div>
+        <div class="kpi-value" id="kpi-suspended">—</div>
+        <div class="kpi-sub" id="kpi-cancelled-sub">Annulés inclus</div>
+      </div>
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-label">Total facturé</div>
+        <div class="kpi-value" id="kpi-total-pay">—</div>
+        <div class="kpi-sub">Paiements reçus</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Utilisateurs</div>
+        <div class="kpi-value" id="kpi-users">—</div>
+        <div class="kpi-sub">Tous rôles confondus</div>
+      </div>
+      <div class="kpi-card kpi-red">
+        <div class="kpi-label">Paiements échoués</div>
+        <div class="kpi-value" id="kpi-failed">—</div>
+        <div class="kpi-sub">Depuis le début</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">📈 Nouveaux clients & MRR — 12 derniers mois</div>
+        <div class="chart-wrap">
+          <canvas id="mrr-chart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🥧 Répartition abonnements</div>
+        <div class="chart-wrap" style="height:180px;">
+          <canvas id="donut-chart"></canvas>
+        </div>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </div>
+
+    <!-- Clients Table -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">👥 Clients (<span id="clients-count">—</span>)</span>
+        <input class="table-search" type="search" placeholder="Rechercher..." oninput="filterTable('clients-tbody', this.value)" />
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead><tr>
+            <th>Entreprise</th><th>Admin</th><th>Email</th><th>Secteur</th>
+            <th>Statut</th><th>MRR</th><th>Employés</th><th>Factures</th>
+            <th>Trial fin</th><th>Inscrit le</th>
+          </tr></thead>
+          <tbody id="clients-tbody">
+            <tr><td colspan="10" class="empty">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">💳 Historique des paiements (<span id="payments-count">—</span>)</span>
+        <input class="table-search" type="search" placeholder="Rechercher..." oninput="filterTable('payments-tbody', this.value)" />
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead><tr>
+            <th>Date</th><th>Entreprise</th><th>Montant</th><th>Statut</th><th>Stripe Client</th>
+          </tr></thead>
+          <tbody id="payments-tbody">
+            <tr><td colspan="5" class="empty">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const API = '/api/admin';
+  let adminToken = sessionStorage.getItem('novexa_admin_token');
+  let mrrChart = null, donutChart = null;
+
+  // ── Auto-login if token exists ──
+  if (adminToken) showApp();
+
+  // ── Login ──
+  document.getElementById('admin-password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  async function doLogin() {
+    var pwd = document.getElementById('admin-password').value;
+    var btn = document.getElementById('login-btn');
+    var errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Vérification...';
+    try {
+      var res = await fetch(API + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      var data = await res.json();
+      if (data.success) {
+        adminToken = data.token;
+        sessionStorage.setItem('novexa_admin_token', adminToken);
+        showApp();
+      } else {
+        errEl.textContent = data.message || 'Mot de passe incorrect.';
+        errEl.style.display = 'block';
+      }
+    } catch (e) {
+      errEl.textContent = 'Erreur réseau.';
+      errEl.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Accéder au panel';
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem('novexa_admin_token');
+    adminToken = null;
+    document.getElementById('admin-app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-password').value = '';
+  }
+
+  function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'block';
+    loadAll();
+  }
+
+  // ── API helper ──
+  async function adminFetch(path) {
+    try {
+      var res = await fetch(API + path, { headers: { 'Authorization': 'Bearer ' + adminToken } });
+      if (res.status === 401) { doLogout(); return null; }
+      return res.json();
+    } catch { toast('Erreur réseau'); return null; }
+  }
+
+  // ── Load all data ──
+  async function loadAll() {
+    document.getElementById('last-refresh').textContent = 'Actualisation...';
+    await Promise.all([loadOverview(), loadClients(), loadPayments(), loadMRRChart()]);
+    var now = new Date();
+    document.getElementById('last-refresh').textContent = 'Mis à jour à ' + now.toLocaleTimeString('fr');
+  }
+
+  // ── Overview ──
+  async function loadOverview() {
+    var res = await adminFetch('/overview');
+    if (!res || !res.success) return;
+    var d = res.data;
+    var fmt = function(n) { return (n || 0).toLocaleString('fr') + ' €'; };
+
+    document.getElementById('kpi-mrr').textContent = fmt(d.mrr);
+    document.getElementById('kpi-mrr-sub').textContent = d.subscriptions.active + ' abonné(s) × 2 500 €';
+    document.getElementById('kpi-arr').textContent = fmt(d.arr);
+    document.getElementById('kpi-active').textContent = d.subscriptions.active;
+    document.getElementById('kpi-active-sub').textContent = 'sur ' + d.subscriptions.total + ' total';
+    document.getElementById('kpi-trial').textContent = d.subscriptions.trial;
+    document.getElementById('kpi-suspended').textContent = d.subscriptions.suspended + d.subscriptions.cancelled;
+    document.getElementById('kpi-cancelled-sub').textContent = d.subscriptions.cancelled + ' annulés, ' + d.subscriptions.suspended + ' suspendus';
+    document.getElementById('kpi-total-pay').textContent = fmt(d.totalPaye);
+    document.getElementById('kpi-users').textContent = d.totalUsers;
+    document.getElementById('kpi-failed').textContent = d.paymentsEchoues;
+  }
+
+  // ── Clients ──
+  async function loadClients() {
+    var res = await adminFetch('/clients');
+    if (!res || !res.success) return;
+    var clients = res.data || [];
+    document.getElementById('clients-count').textContent = clients.length;
+
+    var statusMap = {
+      actif:'b-green', active:'b-green', essai:'b-yellow', trial:'b-yellow',
+      suspendu:'b-orange', annule:'b-red', cancelled:'b-red', inactif:'b-gray'
+    };
+    var statusLabels = {
+      actif:'Actif', active:'Actif', essai:'Essai', trial:'Essai',
+      suspendu:'Suspendu', annule:'Annulé', cancelled:'Annulé', inactif:'Inactif'
+    };
+
+    var tbody = document.getElementById('clients-tbody');
+    if (!clients.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty">Aucun client</td></tr>'; return; }
+
+    tbody.innerHTML = clients.map(function(c) {
+      var sub = c.subscription || {};
+      var statut = sub.statut || 'inconnu';
+      var badgeCls = statusMap[statut] || 'b-gray';
+      var badgeLbl = statusLabels[statut] || statut;
+      var mrr = sub.mrr > 0 ? '<span style="color:#4ade80;font-weight:700;">' + sub.mrr.toLocaleString('fr') + ' €</span>' : '<span style="color:var(--dim);">—</span>';
+      var trialDate = sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString('fr') : '—';
+      var createdAt = c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr') : '—';
+      return '<tr>'
+        + '<td style="font-weight:700;">' + escH(c.nom) + '</td>'
+        + '<td>' + escH(c.adminNom) + '</td>'
+        + '<td style="color:var(--muted);font-size:12px;">' + escH(c.adminEmail) + '</td>'
+        + '<td style="color:var(--dim);">' + escH(c.secteur) + '</td>'
+        + '<td><span class="badge ' + badgeCls + '">' + badgeLbl + '</span></td>'
+        + '<td>' + mrr + '</td>'
+        + '<td style="text-align:center;">' + (c.employes || 0) + '</td>'
+        + '<td style="text-align:center;">' + (c.factures || 0) + '</td>'
+        + '<td style="color:var(--dim);font-size:12px;">' + trialDate + '</td>'
+        + '<td style="color:var(--dim);font-size:12px;">' + createdAt + '</td>'
+        + '</tr>';
+    }).join('');
+
+    // Update donut chart
+    renderDonut(clients);
+  }
+
+  // ── Payments ──
+  async function loadPayments() {
+    var res = await adminFetch('/payments');
+    if (!res || !res.success) return;
+    var payments = res.data || [];
+    document.getElementById('payments-count').textContent = payments.length;
+
+    var tbody = document.getElementById('payments-tbody');
+    if (!payments.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Aucun paiement enregistré</td></tr>'; return; }
+
+    tbody.innerHTML = payments.map(function(p) {
+      var isSuccess = ['payé','succeeded','success','paye'].includes(p.statut);
+      var isFailed = ['échoué','failed','echec'].includes(p.statut);
+      var badgeCls = isSuccess ? 'b-green' : isFailed ? 'b-red' : 'b-gray';
+      var badgeLbl = isSuccess ? '✓ Réussi' : isFailed ? '✗ Échoué' : p.statut;
+      var date = p.date ? new Date(p.date).toLocaleString('fr') : '—';
+      var stripe = p.stripeCustomerId ? '<span style="font-family:monospace;font-size:11px;color:var(--dim);">' + p.stripeCustomerId + '</span>' : '<span style="color:var(--dim);">—</span>';
+      return '<tr>'
+        + '<td style="color:var(--muted);font-size:12px;">' + date + '</td>'
+        + '<td style="font-weight:600;">' + escH(p.companyNom) + '</td>'
+        + '<td style="font-weight:700;color:' + (isSuccess ? '#4ade80' : isFailed ? '#f87171' : 'var(--text)') + ';">' + (p.montant || 0).toLocaleString('fr') + ' €</td>'
+        + '<td><span class="badge ' + badgeCls + '">' + badgeLbl + '</span></td>'
+        + '<td>' + stripe + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  // ── MRR Chart ──
+  async function loadMRRChart() {
+    var res = await adminFetch('/mrr-chart');
+    if (!res || !res.success) return;
+    var months = res.data || [];
+
+    var ctx = document.getElementById('mrr-chart');
+    if (!ctx) return;
+    if (mrrChart) mrrChart.destroy();
+    mrrChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: months.map(function(m) { return m.label; }),
+        datasets: [
+          {
+            label: 'Paiements (€)',
+            data: months.map(function(m) { return m.paiements; }),
+            backgroundColor: 'rgba(74,222,128,0.25)',
+            borderColor: '#4ade80',
+            borderWidth: 2, borderRadius: 6, borderSkipped: false,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Nouveaux clients',
+            data: months.map(function(m) { return m.nouveauxClients; }),
+            type: 'line',
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99,102,241,0.1)',
+            borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#6366f1',
+            tension: 0.3, fill: true,
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#64748b', font: { size: 11 }, usePointStyle: true } },
+          tooltip: { callbacks: {
+            label: function(c) {
+              return c.datasetIndex === 0 ? c.raw.toLocaleString('fr') + ' €' : c.raw + ' client(s)';
+            }
+          }}
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+          y: { position: 'left', grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toLocaleString('fr') + ' €'; } }, beginAtZero: true },
+          y2: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', font: { size: 11 }, stepSize: 1 }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // ── Donut Chart (subscription status) ──
+  function renderDonut(clients) {
+    var counts = { actif: 0, essai: 0, suspendu: 0, annule: 0 };
+    clients.forEach(function(c) {
+      var s = c.subscription ? c.subscription.statut : 'inconnu';
+      if (['actif','active'].includes(s)) counts.actif++;
+      else if (['essai','trial'].includes(s)) counts.essai++;
+      else if (s === 'suspendu') counts.suspendu++;
+      else counts.annule++;
+    });
+
+    var ctx = document.getElementById('donut-chart');
+    if (!ctx) return;
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Actifs','Essai','Suspendus','Annulés'],
+        datasets: [{ data: [counts.actif, counts.essai, counts.suspendu, counts.annule], backgroundColor: ['rgba(74,222,128,0.8)','rgba(251,191,36,0.8)','rgba(251,146,60,0.8)','rgba(248,113,113,0.8)'], borderColor: 'transparent', borderWidth: 0, hoverOffset: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '68%' }
+    });
+
+    document.getElementById('donut-legend').innerHTML = [
+      { label: 'Actifs', val: counts.actif, color: '#4ade80' },
+      { label: 'Essai', val: counts.essai, color: '#fbbf24' },
+      { label: 'Suspendus', val: counts.suspendu, color: '#fb923c' },
+      { label: 'Annulés', val: counts.annule, color: '#f87171' }
+    ].map(function(i) {
+      return '<div class="legend-item"><div class="legend-dot" style="background:' + i.color + '"></div><span class="legend-label">' + i.label + '</span><span class="legend-val" style="color:' + i.color + '">' + i.val + '</span></div>';
+    }).join('');
+  }
+
+  // ── Table search filter ──
+  function filterTable(tbodyId, query) {
+    var q = query.toLowerCase().trim();
+    var rows = document.getElementById(tbodyId).querySelectorAll('tr');
+    rows.forEach(function(r) {
+      r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  // ── Helpers ──
+  function escH(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function toast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 3500);
+  }
+
+  // ── Auto-refresh every 5 minutes ──
+  setInterval(loadAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>
