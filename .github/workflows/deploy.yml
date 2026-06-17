@@ -1,0 +1,43 @@
+name: Novexa Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: []
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/novexa
+            git pull origin main
+            docker-compose pull
+            docker-compose up -d --build
+            docker-compose exec -T novexa-api node scripts/seed.js || true
+            echo "✅ Novexa deployed successfully"
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -f ${{ secrets.APP_URL }}/api/health || exit 1
+
+      - name: Notify on success
+        if: success()
+        run: echo "🚀 Novexa deployed to ${{ secrets.APP_URL }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ Novexa deployment failed"
