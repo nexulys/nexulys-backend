@@ -38,8 +38,13 @@ exports.updateEmployee = async (req, res) => {
 
 exports.deleteEmployee = async (req, res) => {
   try {
-    await Employee.findOneAndDelete({ _id: req.params.id, company: req.user.company });
-    res.json({ success: true, message: 'Employé supprimé' });
+    const emp = await Employee.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.company },
+      { statut: 'inactif' },
+      { new: true }
+    );
+    if (!emp) return res.status(404).json({ success: false, message: 'Employé introuvable' });
+    res.json({ success: true, message: 'Employé désactivé' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
@@ -107,6 +112,16 @@ exports.getPayslips = async (req, res) => {
   try {
     const payslips = await Payslip.find({ company: req.user.company, employee: req.params.employeeId })
       .sort({ annee: -1, mois: -1 });
+    res.json({ success: true, data: payslips });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.getAllPayslips = async (req, res) => {
+  try {
+    const payslips = await Payslip.find({ company: req.user.company })
+      .populate('employee', 'prenom nom')
+      .sort({ annee: -1, mois: -1 })
+      .limit(50);
     res.json({ success: true, data: payslips });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };

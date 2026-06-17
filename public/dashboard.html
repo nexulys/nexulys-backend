@@ -763,6 +763,8 @@
     .btn-danger-sm:hover { background:rgba(248,113,113,0.22); }
     .btn-success-sm { background:rgba(74,222,128,0.12); color:#4ade80; transition:background 0.2s; }
     .btn-success-sm:hover { background:rgba(74,222,128,0.22); }
+    .btn-del-sm { background:rgba(248,113,113,0.12); color:#f87171; transition:background 0.2s; }
+    .btn-del-sm:hover { background:rgba(248,113,113,0.22); }
 
     /* Filter tabs */
     .filter-tabs { display:flex; gap:8px; flex-wrap:wrap; }
@@ -854,6 +856,20 @@
     .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; gap:12px; }
     .empty-state-icon { font-size:40px; opacity:0.4; }
     .empty-state-text { font-size:14px; color:var(--text-dim); text-align:center; }
+
+    /* ── RH TABS ── */
+    .rh-tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .rh-tab { padding:10px 20px; border:none; background:transparent; color:var(--text-muted); font-size:13px; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.2s; }
+    .rh-tab:hover { color:var(--text); }
+    .rh-tab.active { color:var(--purple); border-bottom-color:var(--purple); }
+
+    /* ── PAGINATION ── */
+    .pagination { display:flex; align-items:center; justify-content:center; gap:8px; padding:16px 0; }
+    .page-btn { padding:6px 14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:var(--text-muted); border-radius:6px; font-size:13px; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; }
+    .page-btn:hover:not(:disabled) { background:rgba(99,102,241,0.2); color:var(--text); border-color:var(--purple); }
+    .page-btn.active { background:var(--gradient); color:#fff; border-color:transparent; }
+    .page-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .page-info { font-size:13px; color:var(--text-dim); }
   </style>
 </head>
 <body>
@@ -1114,6 +1130,7 @@
             <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Factures & Dépenses</h2>
           </div>
           <div style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="exportFacturesCSV()">📥 Export CSV</button>
             <button class="btn-outline" onclick="loadDepenses()">🔄 Actualiser</button>
             <button class="btn-primary" onclick="openModal('facture')">+ Nouvelle facture</button>
           </div>
@@ -1139,6 +1156,7 @@
                   <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
                 </tbody>
               </table>
+              <div class="pagination" id="factures-pagination" style="display:none;"></div>
             </div>
           </div>
         </div>
@@ -1168,12 +1186,82 @@
         <div class="section-topbar">
           <div>
             <div class="section-label">Ressources Humaines</div>
-            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Équipe</h2>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Équipe & RH</h2>
           </div>
-          <button class="btn-primary" onclick="openModal('employe')">+ Ajouter employé</button>
+          <div id="rh-actions">
+            <div id="rh-actions-employes" style="display:flex;gap:10px;">
+              <button class="btn-outline" onclick="exportEmployesCSV()">📥 Export CSV</button>
+              <button class="btn-primary" onclick="openModal('employe')">+ Ajouter employé</button>
+            </div>
+            <div id="rh-actions-conges" style="display:none;">
+              <button class="btn-primary" onclick="openModal('conge')">+ Demander un congé</button>
+            </div>
+            <div id="rh-actions-paie" style="display:none;">
+              <button class="btn-primary" onclick="openModal('paie')">+ Générer une fiche de paie</button>
+            </div>
+          </div>
         </div>
-        <div id="employes-grid" class="emp-grid">
-          <div style="color:var(--text-dim);padding:32px;grid-column:1/-1;text-align:center;">Chargement...</div>
+
+        <!-- RH Tabs -->
+        <div class="rh-tabs">
+          <button class="rh-tab active" id="rh-tab-employes" onclick="switchRHTab('employes')">👥 Équipe</button>
+          <button class="rh-tab" id="rh-tab-conges" onclick="switchRHTab('conges')">🏖 Congés</button>
+          <button class="rh-tab" id="rh-tab-paie" onclick="switchRHTab('paie')">💰 Fiches de paie</button>
+        </div>
+
+        <!-- Équipe tab -->
+        <div id="rh-panel-employes">
+          <div id="employes-grid" class="emp-grid">
+            <div style="color:var(--text-dim);padding:32px;grid-column:1/-1;text-align:center;">Chargement...</div>
+          </div>
+        </div>
+
+        <!-- Congés tab -->
+        <div id="rh-panel-conges" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Demandes de congés</div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="overflow-x:auto;">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Employé</th><th>Type</th><th>Du</th><th>Au</th><th>Jours</th><th>Statut</th><th>Actions</th>
+                  </tr></thead>
+                  <tbody id="conges-body">
+                    <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fiches de paie tab -->
+        <div id="rh-panel-paie" style="display:none;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <label style="font-size:13px;color:var(--text-muted);white-space:nowrap;">Employé :</label>
+            <select id="paie-filter-employe" class="modal-select" style="width:220px;padding:8px 12px;" onchange="loadPayslipsAll()">
+              <option value="">Tous les employés</option>
+            </select>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Fiches de paie</div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="overflow-x:auto;">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Employé</th><th>Période</th><th>Salaire brut</th><th>Salaire net</th><th>Statut</th>
+                  </tr></thead>
+                  <tbody id="payslips-body">
+                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1563,6 +1651,55 @@
     </div>
   </div>
 
+  <!-- Modal Congé -->
+  <div class="modal-overlay" id="modal-conge" onclick="closeModalOnOverlay(event,'modal-conge')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-conge')">✕</button>
+      <div class="modal-title">🏖 Demander un congé</div>
+      <div class="modal-field"><label class="modal-label">Employé</label><select class="modal-select" id="c-employe"></select></div>
+      <div class="modal-field"><label class="modal-label">Type de congé</label>
+        <select class="modal-select" id="c-type">
+          <option value="conge_paye">Congé payé</option><option value="rtt">RTT</option>
+          <option value="maladie">Maladie</option><option value="sans_solde">Sans solde</option>
+          <option value="maternite">Maternité</option><option value="paternite">Paternité</option><option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Date de début</label><input class="modal-input" type="date" id="c-debut" /></div>
+        <div class="modal-field"><label class="modal-label">Date de fin</label><input class="modal-input" type="date" id="c-fin" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Motif (optionnel)</label><input class="modal-input" id="c-motif" placeholder="Raison du congé" /></div>
+      <div class="modal-error" id="c-error"></div>
+      <button class="modal-btn" id="c-btn" onclick="submitConge()">Soumettre la demande</button>
+    </div>
+  </div>
+
+  <!-- Modal Fiche de Paie -->
+  <div class="modal-overlay" id="modal-paie" onclick="closeModalOnOverlay(event,'modal-paie')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-paie')">✕</button>
+      <div class="modal-title">💰 Générer une fiche de paie</div>
+      <div class="modal-field"><label class="modal-label">Employé</label><select class="modal-select" id="p-employe"></select></div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Mois</label>
+          <select class="modal-select" id="p-mois">
+            <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+            <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+            <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Année</label><input class="modal-input" type="number" id="p-annee" value="2025" min="2020" max="2099" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Heures sup.</label><input class="modal-input" type="number" id="p-heures" value="0" min="0" /></div>
+        <div class="modal-field"><label class="modal-label">Primes (€)</label><input class="modal-input" type="number" id="p-primes" value="0" min="0" /></div>
+      </div>
+      <div class="modal-error" id="p-error"></div>
+      <button class="modal-btn" id="p-btn" onclick="submitPaie()">Générer la fiche</button>
+    </div>
+  </div>
+
   <!-- Modal Éditer Tâche -->
   <div class="modal-overlay" id="modal-edit-tache" onclick="closeModalOnOverlay(event,'modal-edit-tache')">
     <div class="modal">
@@ -1678,7 +1815,7 @@
     };
     const SECTION_LOADERS = {
       comptabilite: function() { loadAllInvoices(); loadDepenses(); },
-      rh: loadEmployes,
+      rh: loadRHSection,
       stocks: function() { loadStocksSection(); loadFournisseurs(); },
       taches: loadKanban,
       ia: loadIASection,
@@ -1892,6 +2029,12 @@
     function openModal(type) {
       document.getElementById('modal-' + type).classList.add('open');
       if (type === 'stock') loadProductsForModal();
+      if (type === 'conge') { loadEmployesForSelect('c-employe'); }
+      if (type === 'paie') {
+        loadEmployesForSelect('p-employe');
+        document.getElementById('p-annee').value = new Date().getFullYear();
+        document.getElementById('p-mois').value = new Date().getMonth() + 1;
+      }
     }
     function closeModal(id) {
       document.getElementById(id).classList.remove('open');
@@ -2058,19 +2201,33 @@
 
     // ── Comptabilité: All invoices ──
     var currentFactureFilter = null;
+    var currentFacturePage = 1;
+    var facturePageSize = 15;
+    var allInvoicesData = [];
+
     async function loadAllInvoices(statut) {
-      var url = '/comptabilite/factures' + (statut ? '?statut=' + statut : '');
+      if (statut !== undefined) { currentFactureFilter = statut; currentFacturePage = 1; }
+      var url = '/comptabilite/factures?limit=200' + (currentFactureFilter ? '&statut=' + currentFactureFilter : '');
       var res = await apiFetch(url);
-      var invoices = (res && res.data) ? res.data : [];
+      allInvoicesData = (res && res.data) ? res.data : [];
+      renderInvoicesPage();
+    }
+
+    function renderInvoicesPage() {
       var tbody = document.getElementById('all-invoices-body');
+      var pagDiv = document.getElementById('factures-pagination');
       if (!tbody) return;
-      if (invoices.length === 0) {
+      if (allInvoicesData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-text">Aucune facture trouvée</div></div></td></tr>';
+        if (pagDiv) pagDiv.style.display = 'none';
         return;
       }
+      var totalPages = Math.ceil(allInvoicesData.length / facturePageSize);
+      var start = (currentFacturePage - 1) * facturePageSize;
+      var page = allInvoicesData.slice(start, start + facturePageSize);
       var statusMap = { payee:'badge-green', envoyee:'badge-yellow', brouillon:'badge-gray', en_retard:'badge-red', annulee:'badge-gray' };
       var labelMap = { payee:'Payée', envoyee:'Envoyée', brouillon:'Brouillon', en_retard:'En retard', annulee:'Annulée' };
-      tbody.innerHTML = invoices.map(function(inv) {
+      tbody.innerHTML = page.map(function(inv) {
         var clientName = (inv.client && inv.client.nom) ? inv.client.nom : '—';
         var statut = inv.statut || 'brouillon';
         var cls = statusMap[statut] || 'badge-gray';
@@ -2078,13 +2235,40 @@
         var date = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('fr') : '—';
         var montant = (inv.montantTTC || 0).toLocaleString('fr') + ' €';
         var tva = (inv.montantTVA || 0).toLocaleString('fr') + ' €';
-        var actions = statut !== 'payee' ? '<button class="btn-sm btn-success-sm" onclick="markFacturePaid(\'' + inv._id + '\')">✓ Payée</button>' : '<span style="color:var(--text-dim);font-size:12px;">—</span>';
-        return '<tr><td style="font-weight:600;color:#a5b4fc;">' + (inv.numero || '—') + '</td><td>' + clientName + '</td><td style="font-weight:700;">' + montant + '</td><td style="color:var(--text-dim);">' + tva + '</td><td><span class="badge ' + cls + '">' + label + '</span></td><td style="color:var(--text-dim);">' + date + '</td><td>' + actions + '</td></tr>';
+        var paidBtn = statut !== 'payee' ? '<button class="btn-sm btn-success-sm" onclick="markFacturePaid(\'' + inv._id + '\')">✓ Payée</button> ' : '';
+        var invData = JSON.stringify(inv).replace(/'/g,"&#39;").replace(/"/g,"&quot;");
+        return '<tr>'
+          + '<td style="font-weight:600;color:#a5b4fc;">' + (inv.numero || '—') + '</td>'
+          + '<td>' + clientName + '</td>'
+          + '<td style="font-weight:700;">' + montant + '</td>'
+          + '<td style="color:var(--text-dim);">' + tva + '</td>'
+          + '<td><span class="badge ' + cls + '">' + label + '</span></td>'
+          + '<td style="color:var(--text-dim);">' + date + '</td>'
+          + '<td>' + paidBtn + '<button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
+          + '</tr>';
       }).join('');
+      if (pagDiv) {
+        if (totalPages <= 1) { pagDiv.style.display = 'none'; return; }
+        pagDiv.style.display = 'flex';
+        var html = '<button class="page-btn" onclick="goFacturePage(' + (currentFacturePage - 1) + ')" ' + (currentFacturePage === 1 ? 'disabled' : '') + '>← Préc.</button>';
+        for (var i = 1; i <= totalPages; i++) {
+          if (totalPages > 7 && i > 2 && i < totalPages - 1 && Math.abs(i - currentFacturePage) > 1) { if (i === 3 || i === totalPages - 2) html += '<span class="page-info">…</span>'; continue; }
+          html += '<button class="page-btn' + (i === currentFacturePage ? ' active' : '') + '" onclick="goFacturePage(' + i + ')">' + i + '</button>';
+        }
+        html += '<button class="page-btn" onclick="goFacturePage(' + (currentFacturePage + 1) + ')" ' + (currentFacturePage === totalPages ? 'disabled' : '') + '>Suiv. →</button>';
+        html += '<span class="page-info">' + allInvoicesData.length + ' factures</span>';
+        pagDiv.innerHTML = html;
+      }
+    }
+
+    function goFacturePage(p) {
+      var total = Math.ceil(allInvoicesData.length / facturePageSize);
+      if (p < 1 || p > total) return;
+      currentFacturePage = p;
+      renderInvoicesPage();
     }
 
     function filterFactures(statut, btn) {
-      currentFactureFilter = statut;
       document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
       if (btn) btn.classList.add('active');
       loadAllInvoices(statut);
@@ -2133,26 +2317,7 @@
       setModalLoading('d-btn', false, 'Enregistrer la dépense');
     }
 
-    // ── RH: Employees ──
-    async function loadEmployes() {
-      var res = await apiFetch('/rh/employes');
-      var employes = (res && res.data) ? res.data : [];
-      var grid = document.getElementById('employes-grid');
-      if (!grid) return;
-      if (employes.length === 0) {
-        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">👥</div><div class="empty-state-text">Aucun employé enregistré</div></div>';
-        return;
-      }
-      var statutBadge = { actif:'badge-green', conge:'badge-yellow', inactif:'badge-red' };
-      var statutLabel = { actif:'Actif', conge:'En congé', inactif:'Inactif' };
-      grid.innerHTML = employes.map(function(e) {
-        var initials = ((e.prenom ? e.prenom[0] : '') + (e.nom ? e.nom[0] : '')).toUpperCase() || '?';
-        var statut = e.statut || 'actif';
-        var dateEmb = e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString('fr') : '—';
-        var eData = JSON.stringify({id:e._id,prenom:e.prenom,nom:e.nom,poste:e.poste||'',dept:e.departement||'',salaire:e.salaireBase||0,statut}).replace(/'/g,'&#39;');
-        return '<div class="emp-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div class="emp-avatar">' + initials + '</div><span class="badge ' + (statutBadge[statut] || 'badge-gray') + '">' + (statutLabel[statut] || statut) + '</span></div><div class="emp-name">' + e.prenom + ' ' + e.nom + '</div><div class="emp-role">' + (e.poste || '—') + '</div><div class="emp-meta"><div class="emp-meta-row"><span class="emp-meta-label">Département</span><span class="emp-meta-val">' + (e.departement || '—') + '</span></div><div class="emp-meta-row"><span class="emp-meta-label">Salaire</span><span class="emp-meta-val">' + (e.salaireBase || 0).toLocaleString('fr') + ' €</span></div><div class="emp-meta-row"><span class="emp-meta-label">Depuis</span><span class="emp-meta-val">' + dateEmb + '</span></div></div><div class="card-actions"><button class="action-btn action-btn-edit" onclick=\'openEditEmploye(' + eData + ')\'>✏️ Modifier</button><button class="action-btn action-btn-del" onclick="deleteEmploye(\'' + e._id + '\')">🗑 Désactiver</button></div></div>';
-      }).join('');
-    }
+    // ── RH: Employees (delegated to loadRHSection/switchRHTab) ──
 
     // ── Stocks section ──
     async function loadStocksSection() {
@@ -2486,6 +2651,241 @@
       else showToast(data.message || 'Erreur');
     }
 
+    // ── Delete & Print Invoice ──
+    async function deleteFacture(id) {
+      if (!confirm('Supprimer cette facture définitivement ?')) return;
+      var res = await fetch(API + '/comptabilite/factures/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Facture supprimée', 'success'); loadAllInvoices(); loadKPIs(); }
+      else showToast(data.message || 'Erreur');
+    }
+
+    async function printFacture(id) {
+      var inv = allInvoicesData.find(function(i) { return i._id === id; });
+      if (!inv) return;
+      var clientName = (inv.client && inv.client.nom) ? inv.client.nom : '—';
+      var clientEmail = (inv.client && inv.client.email) ? inv.client.email : '';
+      var date = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('fr') : '—';
+      var lignes = (inv.lignes || []).map(function(l) {
+        return '<tr><td>' + (l.description||'—') + '</td><td style="text-align:right">' + (l.quantite||1) + '</td><td style="text-align:right">' + (l.prixUnitaire||0).toLocaleString('fr') + ' €</td><td style="text-align:right">' + (l.montantHT||0).toLocaleString('fr') + ' €</td></tr>';
+      }).join('');
+      var w = window.open('', '_blank', 'width=800,height=900');
+      w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Facture ' + (inv.numero||'') + '</title><style>body{font-family:Arial,sans-serif;color:#111;padding:40px;max-width:700px;margin:auto}h1{color:#6366f1}table{width:100%;border-collapse:collapse;margin:20px 0}th{background:#f5f5f5;padding:10px;text-align:left}td{padding:10px;border-bottom:1px solid #eee}.total-row{font-weight:bold;font-size:16px}.footer{margin-top:40px;font-size:12px;color:#888}@media print{button{display:none}}</style></head><body>'
+        + '<h1>Novexa by Nexulys</h1><hr>'
+        + '<h2>FACTURE N° ' + (inv.numero||'—') + '</h2>'
+        + '<p><strong>Client :</strong> ' + clientName + (clientEmail ? ' &lt;' + clientEmail + '&gt;' : '') + '</p>'
+        + '<p><strong>Date :</strong> ' + date + '</p>'
+        + '<table><thead><tr><th>Description</th><th style="text-align:right">Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Montant HT</th></tr></thead><tbody>' + lignes + '</tbody></table>'
+        + '<table><tr><td><strong>Montant HT</strong></td><td style="text-align:right">' + (inv.montantHT||0).toLocaleString('fr') + ' €</td></tr>'
+        + '<tr><td>TVA (' + (inv.tauxTVA||20) + '%)</td><td style="text-align:right">' + (inv.montantTVA||0).toLocaleString('fr') + ' €</td></tr>'
+        + '<tr class="total-row"><td><strong>TOTAL TTC</strong></td><td style="text-align:right"><strong>' + (inv.montantTTC||0).toLocaleString('fr') + ' €</strong></td></tr></table>'
+        + '<div class="footer"><p>Novexa by Nexulys — Plateforme de gestion d\'entreprise</p></div>'
+        + '<br><button onclick="window.print()" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">Imprimer</button>'
+        + '</body></html>');
+      w.document.close();
+    }
+
+    // ── CSV Export ──
+    function downloadCSV(content, filename) {
+      var blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    function exportFacturesCSV() {
+      if (!allInvoicesData.length) return showToast('Aucune facture à exporter');
+      var labels = { payee:'Payée', envoyee:'Envoyée', brouillon:'Brouillon', en_retard:'En retard', annulee:'Annulée' };
+      var rows = [['N° Facture','Client','Montant HT','TVA','Montant TTC','Statut','Date']];
+      allInvoicesData.forEach(function(inv) {
+        rows.push([
+          inv.numero || '',
+          (inv.client && inv.client.nom) ? inv.client.nom : '',
+          inv.montantHT || 0, inv.montantTVA || 0, inv.montantTTC || 0,
+          labels[inv.statut] || inv.statut || '',
+          inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('fr') : ''
+        ].map(function(c) { return '"' + String(c).replace(/"/g,'""') + '"'; }));
+      });
+      downloadCSV(rows.map(function(r) { return r.join(';'); }).join('\n'), 'factures.csv');
+      showToast('Export CSV téléchargé', 'success');
+    }
+
+    var employesData = [];
+    function exportEmployesCSV() {
+      if (!employesData.length) return showToast('Aucun employé à exporter');
+      var labels = { actif:'Actif', inactif:'Inactif', conge:'En congé', suspendu:'Suspendu' };
+      var rows = [['Prénom','Nom','Email','Poste','Département','Salaire','Date embauche','Statut']];
+      employesData.forEach(function(e) {
+        rows.push([
+          e.prenom||'', e.nom||'', e.email||'', e.poste||'', e.departement||'',
+          e.salaireBase||0,
+          e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString('fr') : '',
+          labels[e.statut] || e.statut || ''
+        ].map(function(c) { return '"' + String(c).replace(/"/g,'""') + '"'; }));
+      });
+      downloadCSV(rows.map(function(r) { return r.join(';'); }).join('\n'), 'employes.csv');
+      showToast('Export CSV téléchargé', 'success');
+    }
+
+    // ── RH Section ──
+    var currentRHTab = 'employes';
+
+    function loadRHSection() {
+      switchRHTab(currentRHTab);
+    }
+
+    function switchRHTab(tab) {
+      currentRHTab = tab;
+      ['employes','conges','paie'].forEach(function(t) {
+        var panel = document.getElementById('rh-panel-' + t);
+        var tabBtn = document.getElementById('rh-tab-' + t);
+        var actions = document.getElementById('rh-actions-' + t);
+        if (panel) panel.style.display = t === tab ? '' : 'none';
+        if (tabBtn) tabBtn.classList.toggle('active', t === tab);
+        if (actions) actions.style.display = t === tab ? 'flex' : 'none';
+      });
+      if (tab === 'employes') loadEmployes();
+      else if (tab === 'conges') { loadConges(); loadEmployesForSelect('c-employe'); }
+      else if (tab === 'paie') { loadPayslipsAll(); loadEmployesForSelect('p-employe', true); loadEmployesForSelect('paie-filter-employe', true, true); }
+    }
+
+    // Store employees in module-level var (overrides local)
+    var _origLoadEmployes = loadEmployes;
+    async function loadEmployes() {
+      var res = await apiFetch('/rh/employes');
+      employesData = (res && res.data) ? res.data : [];
+      var grid = document.getElementById('employes-grid');
+      if (!grid) return;
+      if (employesData.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">👥</div><div class="empty-state-text">Aucun employé enregistré</div></div>';
+        return;
+      }
+      var statutBadge = { actif:'badge-green', conge:'badge-yellow', inactif:'badge-red' };
+      var statutLabel = { actif:'Actif', conge:'En congé', inactif:'Inactif' };
+      grid.innerHTML = employesData.map(function(e) {
+        var initials = ((e.prenom ? e.prenom[0] : '') + (e.nom ? e.nom[0] : '')).toUpperCase() || '?';
+        var statut = e.statut || 'actif';
+        var dateEmb = e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString('fr') : '—';
+        var eData = JSON.stringify({id:e._id,prenom:e.prenom,nom:e.nom,poste:e.poste||'',dept:e.departement||'',salaire:e.salaireBase||0,statut}).replace(/'/g,'&#39;');
+        return '<div class="emp-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div class="emp-avatar">' + initials + '</div><span class="badge ' + (statutBadge[statut] || 'badge-gray') + '">' + (statutLabel[statut] || statut) + '</span></div><div class="emp-name">' + e.prenom + ' ' + e.nom + '</div><div class="emp-role">' + (e.poste || '—') + '</div><div class="emp-meta"><div class="emp-meta-row"><span class="emp-meta-label">Département</span><span class="emp-meta-val">' + (e.departement || '—') + '</span></div><div class="emp-meta-row"><span class="emp-meta-label">Salaire</span><span class="emp-meta-val">' + (e.salaireBase || 0).toLocaleString('fr') + ' €</span></div><div class="emp-meta-row"><span class="emp-meta-label">Depuis</span><span class="emp-meta-val">' + dateEmb + '</span></div></div><div class="card-actions"><button class="action-btn action-btn-edit" onclick=\'openEditEmploye(' + eData + ')\'>✏️ Modifier</button><button class="action-btn action-btn-del" onclick="deleteEmploye(\'' + e._id + '\')">🗑 Désactiver</button></div></div>';
+      }).join('');
+    }
+
+    async function loadEmployesForSelect(selectId, withEmpty, withAll) {
+      var select = document.getElementById(selectId);
+      if (!select) return;
+      var res = employesData.length ? { data: employesData } : await apiFetch('/rh/employes');
+      var employes = (res && res.data) ? res.data : [];
+      if (withAll) select.innerHTML = '<option value="">Tous les employés</option>';
+      else if (withEmpty) select.innerHTML = '<option value="">Sélectionner un employé</option>';
+      else select.innerHTML = '';
+      employes.forEach(function(e) {
+        select.innerHTML += '<option value="' + e._id + '">' + e.prenom + ' ' + e.nom + '</option>';
+      });
+    }
+
+    // ── Congés ──
+    async function loadConges() {
+      var res = await apiFetch('/rh/conges');
+      var leaves = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('conges-body');
+      if (!tbody) return;
+      if (!leaves.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">🏖</div><div class="empty-state-text">Aucune demande de congé</div></div></td></tr>';
+        return;
+      }
+      var typeLabels = { conge_paye:'Congé payé', rtt:'RTT', maladie:'Maladie', sans_solde:'Sans solde', maternite:'Maternité', paternite:'Paternité', autre:'Autre' };
+      var statusMap = { en_attente:'badge-yellow', approuve:'badge-green', rejete:'badge-red', annule:'badge-gray' };
+      var statusLabels = { en_attente:'En attente', approuve:'Approuvé', rejete:'Rejeté', annule:'Annulé' };
+      tbody.innerHTML = leaves.map(function(l) {
+        var empName = l.employee ? (l.employee.prenom + ' ' + l.employee.nom) : '—';
+        var debut = l.dateDebut ? new Date(l.dateDebut).toLocaleDateString('fr') : '—';
+        var fin = l.dateFin ? new Date(l.dateFin).toLocaleDateString('fr') : '—';
+        var statut = l.statut || 'en_attente';
+        var actions = statut === 'en_attente'
+          ? '<button class="btn-sm btn-success-sm" onclick="updateLeave(\'' + l._id + '\',\'approuve\')">✓</button> <button class="btn-sm btn-del-sm" onclick="updateLeave(\'' + l._id + '\',\'rejete\')">✗</button>'
+          : '<span style="color:var(--text-dim);font-size:12px;">—</span>';
+        return '<tr><td style="font-weight:600;">' + empName + '</td><td>' + (typeLabels[l.type] || l.type || '—') + '</td><td>' + debut + '</td><td>' + fin + '</td><td style="text-align:center;font-weight:600;">' + (l.nombreJours || '—') + '</td><td><span class="badge ' + (statusMap[statut] || 'badge-gray') + '">' + (statusLabels[statut] || statut) + '</span></td><td>' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    async function submitConge() {
+      clearModalError('c');
+      var employeeId = document.getElementById('c-employe').value;
+      var type = document.getElementById('c-type').value;
+      var debut = document.getElementById('c-debut').value;
+      var fin = document.getElementById('c-fin').value;
+      if (!employeeId) return modalError('c', 'Sélectionnez un employé.');
+      if (!debut || !fin) return modalError('c', 'Les dates sont requises.');
+      if (new Date(fin) < new Date(debut)) return modalError('c', 'La date de fin doit être après le début.');
+      var nombreJours = Math.round((new Date(fin) - new Date(debut)) / (1000 * 60 * 60 * 24)) + 1;
+      setModalLoading('c-btn', true, 'Soumettre la demande');
+      try {
+        var res = await fetch(API + '/rh/conges', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          employee: employeeId, type, dateDebut: debut, dateFin: fin, nombreJours,
+          motif: document.getElementById('c-motif').value.trim() || undefined
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-conge'); showToast('Demande de congé soumise', 'success'); loadConges(); }
+        else modalError('c', data.message || 'Erreur.');
+      } catch(e) { modalError('c', 'Erreur réseau.'); }
+      setModalLoading('c-btn', false, 'Soumettre la demande');
+    }
+
+    async function updateLeave(id, statut) {
+      var res = await fetch(API + '/rh/conges/' + id + '/statut', { method:'PUT', headers:apiHeaders(), body:JSON.stringify({ statut }) });
+      var data = await res.json();
+      if (data.success) { showToast(statut === 'approuve' ? 'Congé approuvé' : 'Congé rejeté', 'success'); loadConges(); }
+      else showToast(data.message || 'Erreur');
+    }
+
+    // ── Fiches de paie ──
+    async function loadPayslipsAll() {
+      var employeeId = document.getElementById('paie-filter-employe') ? document.getElementById('paie-filter-employe').value : '';
+      var url = employeeId ? '/rh/paie/' + employeeId : '/rh/paie/all';
+      var res = await apiFetch(url);
+      var tbody = document.getElementById('payslips-body');
+      if (!tbody) return;
+      if (!res || !res.data || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">💰</div><div class="empty-state-text">Aucune fiche de paie générée</div></div></td></tr>';
+        return;
+      }
+      var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      var statMap = { brouillon:'badge-gray', valide:'badge-blue', paye:'badge-green' };
+      var statLabels = { brouillon:'Brouillon', valide:'Validée', paye:'Payée' };
+      tbody.innerHTML = res.data.map(function(p) {
+        var empName = p.employee ? (typeof p.employee === 'object' ? p.employee.prenom + ' ' + p.employee.nom : '—') : '—';
+        var statut = p.statut || 'brouillon';
+        return '<tr><td style="font-weight:600;">' + empName + '</td><td>' + (moisLabels[p.mois] || p.mois) + ' ' + (p.annee || '') + '</td><td style="font-weight:700;">' + (p.salaireBrut || 0).toLocaleString('fr') + ' €</td><td style="font-weight:700;color:var(--green);">' + (p.salaireNet || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statMap[statut] || 'badge-gray') + '">' + (statLabels[statut] || statut) + '</span></td></tr>';
+      }).join('');
+    }
+
+    async function submitPaie() {
+      clearModalError('p');
+      var employeeId = document.getElementById('p-employe').value;
+      var mois = parseInt(document.getElementById('p-mois').value);
+      var annee = parseInt(document.getElementById('p-annee').value);
+      if (!employeeId) return modalError('p', 'Sélectionnez un employé.');
+      if (!annee || annee < 2020) return modalError('p', 'Année invalide.');
+      setModalLoading('p-btn', true, 'Générer la fiche');
+      try {
+        var res = await fetch(API + '/rh/paie/generer', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          employeeId, mois, annee,
+          heuresSup: parseFloat(document.getElementById('p-heures').value) || 0,
+          primes: parseFloat(document.getElementById('p-primes').value) || 0
+        }) });
+        var data = await res.json();
+        if (data.success) {
+          closeModal('modal-paie');
+          showToast('Fiche de paie générée — Net: ' + (data.data.salaireNet || 0).toLocaleString('fr') + ' €', 'success');
+          loadPayslipsAll();
+        } else modalError('p', data.message || 'Erreur.');
+      } catch(e) { modalError('p', 'Erreur réseau.'); }
+      setModalLoading('p-btn', false, 'Générer la fiche');
+    }
+
     // ── Init ──
     document.addEventListener('DOMContentLoaded', function() {
       // Show user info
@@ -2505,6 +2905,11 @@
       loadActivity();
       loadChart();
       loadNotifications();
+
+      // Keepalive ping every 14 min to prevent Render free tier sleep
+      setInterval(function() {
+        fetch('/api/health/live').catch(function() {});
+      }, 14 * 60 * 1000);
     });
   </script>
 </body>

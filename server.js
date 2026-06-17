@@ -14,7 +14,13 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(cors());
+const corsOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5000', 'http://localhost:3000'];
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? corsOrigins : true,
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev', { stream: { write: msg => logger.http(msg.trim()) } }));
 app.use(express.static('public'));

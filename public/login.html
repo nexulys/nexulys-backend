@@ -277,6 +277,19 @@
     }
     .back-link:hover { color: var(--text-muted); }
 
+    /* ── FORGOT LINK ── */
+    .forgot-link {
+      display: block;
+      text-align: right;
+      font-size: 12px;
+      color: var(--text-dim);
+      cursor: pointer;
+      margin-top: -10px;
+      margin-bottom: 14px;
+      transition: color 0.2s;
+    }
+    .forgot-link:hover { color: var(--purple); }
+
     @media (max-width: 480px) {
       .login-card { padding: 28px 20px 24px; }
       .form-row { grid-template-columns: 1fr; }
@@ -324,8 +337,43 @@
             <label class="form-label" for="login-password">Mot de passe</label>
             <input class="form-input" type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
           </div>
+          <span class="forgot-link" onclick="switchTab('forgot')">Mot de passe oublié ?</span>
           <button class="btn-submit" type="submit" id="btn-login">
             <span id="btn-login-label">Se connecter</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Forgot Password Form -->
+      <div class="form-panel" id="panel-forgot">
+        <form id="form-forgot" onsubmit="handleForgot(event)">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.6">Entrez votre email pour recevoir un lien de réinitialisation.</p>
+          <div class="form-group">
+            <label class="form-label" for="forgot-email">Adresse e-mail</label>
+            <input class="form-input" type="email" id="forgot-email" placeholder="vous@exemple.com" required autocomplete="email" />
+          </div>
+          <button class="btn-submit" type="submit" id="btn-forgot">
+            <span id="btn-forgot-label">Envoyer le lien</span>
+          </button>
+        </form>
+        <span class="forgot-link" style="text-align:left;margin-top:14px;" onclick="switchTab('login')">← Retour à la connexion</span>
+      </div>
+
+      <!-- Reset Password Form -->
+      <div class="form-panel" id="panel-reset">
+        <form id="form-reset" onsubmit="handleReset(event)">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.6">Choisissez un nouveau mot de passe.</p>
+          <input type="hidden" id="reset-token" />
+          <div class="form-group">
+            <label class="form-label" for="reset-password">Nouveau mot de passe</label>
+            <input class="form-input" type="password" id="reset-password" placeholder="Minimum 6 caractères" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reset-password2">Confirmer le mot de passe</label>
+            <input class="form-input" type="password" id="reset-password2" placeholder="Répétez le mot de passe" required minlength="6" autocomplete="new-password" />
+          </div>
+          <button class="btn-submit" type="submit" id="btn-reset">
+            <span id="btn-reset-label">Réinitialiser</span>
           </button>
         </form>
       </div>
@@ -372,11 +420,11 @@
 
     // ── Tab switcher ──
     function switchTab(tab) {
-      const isLogin = tab === 'login';
-      document.getElementById('tab-login').classList.toggle('active', isLogin);
-      document.getElementById('tab-register').classList.toggle('active', !isLogin);
-      document.getElementById('panel-login').classList.toggle('active', isLogin);
-      document.getElementById('panel-register').classList.toggle('active', !isLogin);
+      ['login','register','forgot','reset'].forEach(function(p) {
+        document.getElementById('panel-' + p).classList.toggle('active', p === tab);
+      });
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
       hideBanner();
     }
 
@@ -481,10 +529,62 @@
       }
     }
 
+    // ── Forgot password ──
+    async function handleForgot(e) {
+      e.preventDefault();
+      hideBanner();
+      const email = document.getElementById('forgot-email').value.trim();
+      setLoading('btn-forgot', 'btn-forgot-label', true, 'Envoyer le lien');
+      try {
+        const res = await fetch(`${API}/auth/forgot-password`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showSuccess(data.message);
+          document.getElementById('form-forgot').reset();
+        } else {
+          showError(data.message || 'Erreur');
+        }
+      } catch (err) { showError('Erreur réseau. Veuillez réessayer.'); }
+      finally { setLoading('btn-forgot', 'btn-forgot-label', false, 'Envoyer le lien'); }
+    }
+
+    // ── Reset password ──
+    async function handleReset(e) {
+      e.preventDefault();
+      hideBanner();
+      const password = document.getElementById('reset-password').value;
+      const password2 = document.getElementById('reset-password2').value;
+      if (password !== password2) return showError('Les mots de passe ne correspondent pas.');
+      const token = document.getElementById('reset-token').value;
+      setLoading('btn-reset', 'btn-reset-label', true, 'Réinitialiser');
+      try {
+        const res = await fetch(`${API}/auth/reset-password`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showSuccess(data.message + ' Redirection...');
+          setTimeout(function() { switchTab('login'); }, 2000);
+        } else {
+          showError(data.message || 'Lien invalide ou expiré.');
+        }
+      } catch (err) { showError('Erreur réseau.'); }
+      finally { setLoading('btn-reset', 'btn-reset-label', false, 'Réinitialiser'); }
+    }
+
     // ── Redirect if already logged in ──
     (function() {
       const token = localStorage.getItem('novexa_token');
       if (token) window.location.href = '/dashboard.html';
+      // Check for reset token in URL
+      const params = new URLSearchParams(window.location.search);
+      const resetToken = params.get('reset');
+      if (resetToken) {
+        document.getElementById('reset-token').value = resetToken;
+        switchTab('reset');
+      }
     })();
   </script>
 </body>

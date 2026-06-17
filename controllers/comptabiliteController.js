@@ -7,9 +7,12 @@ exports.createInvoice = async (req, res) => {
     const { client, lignes, dateEcheance, notes } = req.body;
     const montantHT = lignes.reduce((sum, l) => sum + l.montantHT, 0);
     const { montantTVA, montantTTC, tauxTVA } = calculerTVA(montantHT);
+    const count = await Invoice.countDocuments({ company: req.user.company });
+    const year = new Date().getFullYear();
+    const numero = `FAC-${year}-${String(count + 1).padStart(4, '0')}`;
     const invoice = await Invoice.create({
       company: req.user.company,
-      numero: `FAC-${Date.now()}`,
+      numero,
       client, lignes, montantHT, tauxTVA, montantTVA, montantTTC,
       dateEcheance, notes, createdBy: req.user.id
     });

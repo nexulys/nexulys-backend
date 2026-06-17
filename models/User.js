@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema({
     default: 'employee'
   },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
-  actif: { type: Boolean, default: true }
+  actif: { type: Boolean, default: true },
+  resetPasswordToken: { type: String, select: false },
+  resetPasswordExpires: { type: Date, select: false }
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
