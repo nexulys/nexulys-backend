@@ -5,14 +5,32 @@ const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 const Task = require('../models/Task');
 
-const aiChat = async (systemPrompt, userMessage, maxTokens = 900) => {
-  if (!process.env.OPENAI_API_KEY) {
-    return `[Mode démo — configurez OPENAI_API_KEY pour activer l'IA]\n\nSimulation basée sur: ${userMessage.substring(0, 100)}...`;
-  }
+const getAIClient = async () => {
   const { default: OpenAI } = await import('openai');
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const resp = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+  if (process.env.GROQ_API_KEY) {
+    return {
+      client: new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' }),
+      model: 'llama-3.1-8b-instant',
+      visionModel: 'meta-llama/llama-4-scout-17b-16e-instruct'
+    };
+  }
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o-mini',
+      visionModel: 'gpt-4o'
+    };
+  }
+  return null;
+};
+
+const aiChat = async (systemPrompt, userMessage, maxTokens = 900) => {
+  const ai = await getAIClient();
+  if (!ai) {
+    return `[Mode démo — configurez GROQ_API_KEY (gratuit) ou OPENAI_API_KEY pour activer l'IA]\n\nSimulation basée sur: ${userMessage.substring(0, 100)}...`;
+  }
+  const resp = await ai.client.chat.completions.create({
+    model: ai.model,
     messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
     max_tokens: maxTokens
   });
@@ -266,13 +284,12 @@ exports.ocrJustificatif = async (req, res) => {
   try {
     const { imageBase64, mimeType } = req.body;
     if (!imageBase64) return res.status(400).json({ success: false, message: 'Image base64 requise' });
-    if (!process.env.OPENAI_API_KEY) {
-      return res.json({ success: true, data: { titre: 'Achat simulé', montant: 42.50, categorie: 'autre', date: new Date().toISOString().slice(0, 10), fiabilite: 0, note: 'Mode démo — configurez OPENAI_API_KEY' } });
+    const ai = await getAIClient();
+    if (!ai) {
+      return res.json({ success: true, data: { titre: 'Achat simulé', montant: 42.50, categorie: 'autre', date: new Date().toISOString().slice(0, 10), fiabilite: 0, note: 'Mode démo — configurez GROQ_API_KEY (gratuit) ou OPENAI_API_KEY' } });
     }
-    const { default: OpenAI } = await import('openai');
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const resp = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    const resp = await ai.client.chat.completions.create({
+      model: ai.visionModel,
       messages: [{
         role: 'user',
         content: [
