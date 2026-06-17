@@ -715,6 +715,121 @@
       .kpi-grid { grid-template-columns: 1fr; }
       .quick-actions { grid-template-columns: 1fr; }
     }
+
+    /* Sections */
+    .section { display: none; flex-direction: column; gap: 24px; }
+    .section.active { display: flex; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Modal animation */
+    .modal-overlay.open .modal { animation: modalIn 0.25s ease; }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+    /* Toast success */
+    .toast.success { border-left-color: #4ade80; }
+
+    /* Section topbar */
+    .section-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .btn-primary { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--gradient); border:none; border-radius:10px; color:#fff; font-size:13px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; transition:opacity 0.2s; }
+    .btn-primary:hover { opacity:0.9; }
+    .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; background:transparent; border:1px solid var(--card-border); border-radius:10px; color:var(--text-muted); font-size:13px; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; }
+    .btn-outline:hover { border-color:rgba(99,102,241,0.4); color:var(--text); }
+    .btn-sm { padding:6px 12px; font-size:12px; border-radius:8px; border:none; cursor:pointer; font-weight:600; font-family:'Inter',sans-serif; }
+    .btn-danger-sm { background:rgba(248,113,113,0.12); color:#f87171; transition:background 0.2s; }
+    .btn-danger-sm:hover { background:rgba(248,113,113,0.22); }
+    .btn-success-sm { background:rgba(74,222,128,0.12); color:#4ade80; transition:background 0.2s; }
+    .btn-success-sm:hover { background:rgba(74,222,128,0.22); }
+
+    /* Filter tabs */
+    .filter-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+    .filter-tab { padding:7px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--card-border); border-radius:8px; color:var(--text-muted); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:'Inter',sans-serif; }
+    .filter-tab.active { background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.4); color:#a5b4fc; }
+
+    /* Data table */
+    .data-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .data-table th { padding:10px 16px; text-align:left; color:var(--text-dim); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap; }
+    .data-table td { padding:13px 16px; color:var(--text); border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:middle; }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .data-table td:last-child { text-align:right; }
+
+    /* Status badges */
+    .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:100px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-green  { background:rgba(74,222,128,0.12);  color:#4ade80; }
+    .badge-yellow { background:rgba(251,191,36,0.12);  color:#fbbf24; }
+    .badge-red    { background:rgba(248,113,113,0.12); color:#f87171; }
+    .badge-blue   { background:rgba(99,102,241,0.15);  color:#a5b4fc; }
+    .badge-gray   { background:rgba(100,116,139,0.15); color:#94a3b8; }
+    .badge-orange { background:rgba(251,146,60,0.15);  color:#fb923c; }
+
+    /* Employee cards */
+    .emp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .emp-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); padding:20px; transition:all 0.2s; }
+    .emp-card:hover { border-color:var(--card-border-hover); transform:translateY(-2px); }
+    .emp-avatar { width:48px; height:48px; background:var(--gradient); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:700; color:#fff; margin-bottom:14px; }
+    .emp-name { font-size:15px; font-weight:700; color:var(--text); }
+    .emp-role { font-size:12px; color:var(--text-muted); margin-top:3px; }
+    .emp-meta { display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.05); }
+    .emp-meta-row { display:flex; justify-content:space-between; font-size:12px; }
+    .emp-meta-label { color:var(--text-dim); }
+    .emp-meta-val { color:var(--text); font-weight:600; }
+
+    /* Stock progress bar */
+    .stock-bar-wrap { display:flex; align-items:center; gap:10px; min-width:120px; }
+    .stock-bar-bg { flex:1; height:6px; background:rgba(255,255,255,0.07); border-radius:3px; overflow:hidden; }
+    .stock-bar-fill { height:100%; border-radius:3px; transition:width 0.4s; }
+    .stock-bar-fill.ok { background:#4ade80; }
+    .stock-bar-fill.warn { background:#fbbf24; }
+    .stock-bar-fill.crit { background:#f87171; }
+
+    /* Kanban board */
+    .kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    @media(max-width:900px){ .kanban { grid-template-columns:1fr; } }
+    .kanban-col { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:12px; min-height:300px; }
+    .kanban-col-header { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; }
+    .kanban-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:14px; transition:all 0.2s; cursor:default; }
+    .kanban-card:hover { border-color:rgba(99,102,241,0.3); }
+    .kanban-card-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:8px; }
+    .kanban-card-meta { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .prio-urgente { border-left:3px solid #f87171; }
+    .prio-haute   { border-left:3px solid #fbbf24; }
+    .prio-normale { border-left:3px solid #6366f1; }
+    .prio-basse   { border-left:3px solid #94a3b8; }
+
+    /* AI Chat */
+    .chat-wrap { display:flex; flex-direction:column; height:520px; }
+    .chat-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:14px; padding:20px 24px; }
+    .chat-msg { display:flex; gap:12px; max-width:80%; }
+    .chat-msg.user { flex-direction:row-reverse; align-self:flex-end; }
+    .chat-bubble { padding:12px 16px; border-radius:14px; font-size:13px; line-height:1.6; }
+    .chat-msg.bot .chat-bubble { background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.2); color:var(--text); border-radius:4px 14px 14px 14px; }
+    .chat-msg.user .chat-bubble { background:var(--gradient); color:#fff; border-radius:14px 4px 14px 14px; }
+    .chat-avatar-bot { width:32px; height:32px; background:rgba(99,102,241,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .chat-input-bar { display:flex; gap:12px; padding:16px 20px; border-top:1px solid rgba(255,255,255,0.06); }
+    .chat-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:11px 16px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
+    .chat-input:focus { border-color:rgba(99,102,241,0.5); }
+    .chat-send { padding:11px 20px; background:var(--gradient); border:none; border-radius:10px; color:#fff; font-size:13px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
+    .chat-send:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* AI cards */
+    .ia-cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .ia-card { background:var(--card-bg); border:1px solid rgba(99,102,241,0.2); border-radius:var(--radius); padding:20px; }
+    .ia-card-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#a5b4fc; margin-bottom:10px; }
+    .ia-card-body { font-size:13px; color:var(--text-muted); line-height:1.6; }
+
+    /* Settings */
+    .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:768px) { .settings-grid { grid-template-columns:1fr; } }
+    .settings-section-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .settings-field { margin-bottom:16px; }
+    .settings-label { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block; }
+    .settings-input { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:11px 14px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
+    .settings-input:focus { border-color:rgba(99,102,241,0.5); }
+
+    /* Empty state */
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; gap:12px; }
+    .empty-state-icon { font-size:40px; opacity:0.4; }
+    .empty-state-text { font-size:14px; color:var(--text-dim); text-align:center; }
   </style>
 </head>
 <body>
@@ -734,37 +849,29 @@
 
     <nav class="sidebar-nav">
       <span class="nav-section-label">Principal</span>
-      <a class="nav-item active" href="#">
-        <span class="icon">📊</span>
-        <span class="label">Dashboard</span>
-        <span class="badge-dot"></span>
-      </a>
-      <a class="nav-item" href="#">
-        <span class="icon">💰</span>
-        <span class="label">Comptabilité</span>
-      </a>
-      <a class="nav-item" href="#">
-        <span class="icon">👥</span>
-        <span class="label">Ressources Humaines</span>
-      </a>
-      <a class="nav-item" href="#">
-        <span class="icon">📦</span>
-        <span class="label">Stocks</span>
-      </a>
-      <a class="nav-item" href="#">
-        <span class="icon">✅</span>
-        <span class="label">Tâches</span>
-      </a>
+      <button class="nav-item active" onclick="switchSection('dashboard')">
+        <span class="icon">📊</span><span class="label">Dashboard</span><span class="badge-dot"></span>
+      </button>
+      <button class="nav-item" onclick="switchSection('comptabilite')">
+        <span class="icon">💰</span><span class="label">Comptabilité</span>
+      </button>
+      <button class="nav-item" onclick="switchSection('rh')">
+        <span class="icon">👥</span><span class="label">Ressources Humaines</span>
+      </button>
+      <button class="nav-item" onclick="switchSection('stocks')">
+        <span class="icon">📦</span><span class="label">Stocks</span>
+      </button>
+      <button class="nav-item" onclick="switchSection('taches')">
+        <span class="icon">✅</span><span class="label">Tâches</span>
+      </button>
 
       <span class="nav-section-label" style="margin-top:8px;">Outils</span>
-      <a class="nav-item" href="#">
-        <span class="icon">🤖</span>
-        <span class="label">IA Assistant</span>
-      </a>
-      <a class="nav-item" href="#">
-        <span class="icon">⚙️</span>
-        <span class="label">Paramètres</span>
-      </a>
+      <button class="nav-item" onclick="switchSection('ia')">
+        <span class="icon">🤖</span><span class="label">IA Assistant</span>
+      </button>
+      <button class="nav-item" onclick="switchSection('parametres')">
+        <span class="icon">⚙️</span><span class="label">Paramètres</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -803,156 +910,379 @@
     <!-- ── CONTENT ── -->
     <main class="content">
 
-      <!-- KPI Cards -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <div class="kpi-icon purple">💶</div>
-            <span class="kpi-trend up" id="kpi-ca-trend">CA</span>
-          </div>
-          <div class="kpi-value" id="kpi-ca">—</div>
-          <div class="kpi-label">Chiffre d'affaires</div>
-          <div class="kpi-sub" id="kpi-ca-sub">Chargement...</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <div class="kpi-icon blue">📄</div>
-            <span class="kpi-trend warn" id="kpi-factures-trend">Factures</span>
-          </div>
-          <div class="kpi-value" id="kpi-factures">—</div>
-          <div class="kpi-label">Factures en attente</div>
-          <div class="kpi-sub" id="kpi-factures-sub">Chargement...</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <div class="kpi-icon green">👥</div>
-            <span class="kpi-trend up" id="kpi-employes-trend">RH</span>
-          </div>
-          <div class="kpi-value" id="kpi-employes">—</div>
-          <div class="kpi-label">Employés actifs</div>
-          <div class="kpi-sub" id="kpi-employes-sub">Chargement...</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <div class="kpi-icon orange">📦</div>
-            <span class="kpi-trend down" id="kpi-stock-trend">Stock</span>
-          </div>
-          <div class="kpi-value" id="kpi-stock">—</div>
-          <div class="kpi-label">Alertes stock</div>
-          <div class="kpi-sub" id="kpi-stock-sub">Chargement...</div>
-        </div>
-      </div>
+      <div id="section-dashboard" class="section active">
 
-      <!-- Row 2: Recent Invoices + Tasks -->
-      <div class="row-2">
-
-        <!-- Recent Invoices -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="section-label">Financier</div>
-              <div class="card-title">Factures récentes</div>
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <div class="kpi-icon purple">💶</div>
+              <span class="kpi-trend up" id="kpi-ca-trend">CA</span>
             </div>
-            <a href="#" style="font-size:13px;color:#a5b4fc;text-decoration:none;font-weight:500;">Voir tout</a>
+            <div class="kpi-value" id="kpi-ca">—</div>
+            <div class="kpi-label">Chiffre d'affaires</div>
+            <div class="kpi-sub" id="kpi-ca-sub">Chargement...</div>
           </div>
-          <div class="card-body" style="padding-top:12px;" id="invoices-container">
-            <p style="color:var(--text-dim)">Chargement des factures...</p>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <div class="kpi-icon blue">📄</div>
+              <span class="kpi-trend warn" id="kpi-factures-trend">Factures</span>
+            </div>
+            <div class="kpi-value" id="kpi-factures">—</div>
+            <div class="kpi-label">Factures en attente</div>
+            <div class="kpi-sub" id="kpi-factures-sub">Chargement...</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <div class="kpi-icon green">👥</div>
+              <span class="kpi-trend up" id="kpi-employes-trend">RH</span>
+            </div>
+            <div class="kpi-value" id="kpi-employes">—</div>
+            <div class="kpi-label">Employés actifs</div>
+            <div class="kpi-sub" id="kpi-employes-sub">Chargement...</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <div class="kpi-icon orange">📦</div>
+              <span class="kpi-trend down" id="kpi-stock-trend">Stock</span>
+            </div>
+            <div class="kpi-value" id="kpi-stock">—</div>
+            <div class="kpi-label">Alertes stock</div>
+            <div class="kpi-sub" id="kpi-stock-sub">Chargement...</div>
           </div>
         </div>
 
-        <!-- Tasks -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="section-label">Gestion</div>
-              <div class="card-title">Tâches récentes</div>
-            </div>
-            <a href="#" style="font-size:13px;color:#a5b4fc;text-decoration:none;font-weight:500;">Voir tout</a>
-          </div>
-          <div class="card-body">
-            <div class="task-list" id="tasks-list">
-              <p style="color:var(--text-dim)">Chargement des tâches...</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <!-- Row 2: Recent Invoices + Tasks -->
+        <div class="row-2">
 
-      <!-- Row 3: Activity + AI Insights + Stock -->
-      <div class="row-3">
-
-        <!-- Activity -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="section-label">Activité</div>
-              <div class="card-title">Activité récente</div>
-            </div>
-          </div>
-          <div class="card-body" style="padding-top:12px;">
-            <div class="activity-list" id="activity-list">
-              <p style="color:var(--text-dim)">Chargement de l'activité...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right column: AI Insights + Stock Alerts -->
-        <div style="display:flex;flex-direction:column;gap:20px;">
-
-          <!-- AI Insights -->
+          <!-- Recent Invoices -->
           <div class="card">
             <div class="card-header">
               <div>
-                <div class="section-label">Intelligence</div>
-                <div class="card-title">Insights IA</div>
+                <div class="section-label">Financier</div>
+                <div class="card-title">Factures récentes</div>
               </div>
-              <span style="font-size:18px;">🤖</span>
+              <a href="#" onclick="switchSection('comptabilite');return false;" style="font-size:13px;color:#a5b4fc;text-decoration:none;font-weight:500;">Voir tout →</a>
             </div>
-            <div class="card-body">
-              <div class="insights-wrap" id="ai-insights">
-                <p style="color:#888">Chargement des insights IA...</p>
-              </div>
+            <div class="card-body" style="padding-top:12px;" id="invoices-container">
+              <p style="color:var(--text-dim)">Chargement des factures...</p>
             </div>
           </div>
 
-          <!-- Stock Alerts -->
+          <!-- Tasks -->
           <div class="card">
             <div class="card-header">
               <div>
-                <div class="section-label">Stocks</div>
-                <div class="card-title">Alertes stock</div>
+                <div class="section-label">Gestion</div>
+                <div class="card-title">Tâches récentes</div>
               </div>
-              <span style="font-size:18px;">⚠️</span>
+              <a href="#" onclick="switchSection('taches');return false;" style="font-size:13px;color:#a5b4fc;text-decoration:none;font-weight:500;">Voir tout →</a>
             </div>
             <div class="card-body">
-              <div id="stock-alerts">
-                <p style="color:var(--text-dim)">Chargement des alertes...</p>
+              <div class="task-list" id="tasks-list">
+                <p style="color:var(--text-dim)">Chargement des tâches...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Activity + AI Insights + Stock -->
+        <div class="row-3">
+
+          <!-- Activity -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="section-label">Activité</div>
+                <div class="card-title">Activité récente</div>
+              </div>
+            </div>
+            <div class="card-body" style="padding-top:12px;">
+              <div class="activity-list" id="activity-list">
+                <p style="color:var(--text-dim)">Chargement de l'activité...</p>
               </div>
             </div>
           </div>
 
+          <!-- Right column: AI Insights + Stock Alerts -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <!-- AI Insights -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="section-label">Intelligence</div>
+                  <div class="card-title">Insights IA</div>
+                </div>
+                <span style="font-size:18px;">🤖</span>
+              </div>
+              <div class="card-body">
+                <div class="insights-wrap" id="ai-insights">
+                  <p style="color:#888">Chargement des insights IA...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stock Alerts -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="section-label">Stocks</div>
+                  <div class="card-title">Alertes stock</div>
+                </div>
+                <span style="font-size:18px;">⚠️</span>
+              </div>
+              <div class="card-body">
+                <div id="stock-alerts">
+                  <p style="color:var(--text-dim)">Chargement des alertes...</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div>
+          <div class="section-label" style="margin-bottom:14px;">Actions rapides</div>
+          <div class="quick-actions">
+            <button class="qa-btn" onclick="openModal('facture')">
+              <div class="qa-icon">📄</div>
+              <span>Nouvelle facture</span>
+            </button>
+            <button class="qa-btn" onclick="openModal('employe')">
+              <div class="qa-icon">👤</div>
+              <span>Ajouter employé</span>
+            </button>
+            <button class="qa-btn" onclick="openModal('stock')">
+              <div class="qa-icon">📦</div>
+              <span>Mouvement stock</span>
+            </button>
+            <button class="qa-btn" onclick="openModal('tache')">
+              <div class="qa-icon">✅</div>
+              <span>Créer tâche</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── SECTION: COMPTABILITE ── -->
+      <div id="section-comptabilite" class="section">
+        <div class="section-topbar">
+          <div>
+            <div class="section-label">Comptabilité</div>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Factures & Dépenses</h2>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="loadDepenses()">🔄 Actualiser</button>
+            <button class="btn-primary" onclick="openModal('facture')">+ Nouvelle facture</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Factures</div>
+            <div class="filter-tabs">
+              <button class="filter-tab active" onclick="filterFactures(null,this)">Toutes</button>
+              <button class="filter-tab" onclick="filterFactures('payee',this)">Payées</button>
+              <button class="filter-tab" onclick="filterFactures('envoyee',this)">Envoyées</button>
+              <button class="filter-tab" onclick="filterFactures('en_retard',this)">En retard</button>
+              <button class="filter-tab" onclick="filterFactures('brouillon',this)">Brouillons</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr>
+                  <th>N° Facture</th><th>Client</th><th>Montant TTC</th><th>TVA</th><th>Statut</th><th>Date</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="all-invoices-body">
+                  <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Dépenses</div>
+            <button class="btn-primary" onclick="openModal('depense')">+ Nouvelle dépense</button>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr>
+                  <th>Titre</th><th>Catégorie</th><th>Montant</th><th>Statut</th><th>Date</th>
+                </tr></thead>
+                <tbody id="depenses-body">
+                  <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div>
-        <div class="section-label" style="margin-bottom:14px;">Actions rapides</div>
-        <div class="quick-actions">
-          <button class="qa-btn" onclick="openModal('facture')">
-            <div class="qa-icon">📄</div>
-            <span>Nouvelle facture</span>
-          </button>
-          <button class="qa-btn" onclick="openModal('employe')">
-            <div class="qa-icon">👤</div>
-            <span>Ajouter employé</span>
-          </button>
-          <button class="qa-btn" onclick="openModal('stock')">
-            <div class="qa-icon">📦</div>
-            <span>Mouvement stock</span>
-          </button>
-          <button class="qa-btn" onclick="openModal('tache')">
-            <div class="qa-icon">✅</div>
-            <span>Créer tâche</span>
-          </button>
+      <!-- ── SECTION: RH ── -->
+      <div id="section-rh" class="section">
+        <div class="section-topbar">
+          <div>
+            <div class="section-label">Ressources Humaines</div>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Équipe</h2>
+          </div>
+          <button class="btn-primary" onclick="openModal('employe')">+ Ajouter employé</button>
+        </div>
+        <div id="employes-grid" class="emp-grid">
+          <div style="color:var(--text-dim);padding:32px;grid-column:1/-1;text-align:center;">Chargement...</div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: STOCKS ── -->
+      <div id="section-stocks" class="section">
+        <div class="section-topbar">
+          <div>
+            <div class="section-label">Inventaire</div>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Stocks & Produits</h2>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="loadStocksSection()">🔄 Actualiser</button>
+            <button class="btn-primary" onclick="openModal('stock')">+ Mouvement stock</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Catalogue produits</div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr>
+                  <th>Produit</th><th>SKU</th><th>Catégorie</th><th>Stock</th><th>Niveau</th><th>Prix achat</th><th>Prix vente</th><th>Statut</th>
+                </tr></thead>
+                <tbody id="produits-body">
+                  <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: TACHES ── -->
+      <div id="section-taches" class="section">
+        <div class="section-topbar">
+          <div>
+            <div class="section-label">Gestion de projet</div>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Tâches</h2>
+          </div>
+          <button class="btn-primary" onclick="openModal('tache')">+ Créer une tâche</button>
+        </div>
+        <div class="kanban" id="kanban-board">
+          <div class="kanban-col">
+            <div class="kanban-col-header" style="color:#94a3b8;">
+              <span>À faire</span><span id="count-todo" class="badge badge-gray">0</span>
+            </div>
+            <div id="kanban-todo"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-header" style="color:#a5b4fc;">
+              <span>En cours</span><span id="count-en_cours" class="badge badge-blue">0</span>
+            </div>
+            <div id="kanban-en_cours"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-header" style="color:#4ade80;">
+              <span>Terminé</span><span id="count-termine" class="badge badge-green">0</span>
+            </div>
+            <div id="kanban-termine"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: IA ── -->
+      <div id="section-ia" class="section">
+        <div class="section-topbar">
+          <div>
+            <div class="section-label">Intelligence artificielle</div>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">IA Assistant Novexa</h2>
+          </div>
+        </div>
+        <div class="row-2" style="align-items:start;">
+          <div class="card chat-wrap">
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-msg bot">
+                <div class="chat-avatar-bot">🤖</div>
+                <div class="chat-bubble">Bonjour ! Je suis Novexa IA. Posez-moi vos questions sur votre comptabilité, vos stocks, vos équipes ou vos tâches. Je peux aussi analyser vos données et vous faire des recommandations.</div>
+              </div>
+            </div>
+            <div class="chat-input-bar">
+              <input class="chat-input" id="chat-input" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter')sendChat()" />
+              <button class="chat-send" id="chat-send-btn" onclick="sendChat()">Envoyer ↑</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Analyses IA</div></div>
+              <div class="card-body">
+                <div class="ia-cards-grid" id="ia-analysis-cards">
+                  <div class="ia-card">
+                    <div class="ia-card-title">💰 Dépenses</div>
+                    <div class="ia-card-body" id="ia-depenses">Chargement...</div>
+                  </div>
+                  <div class="ia-card">
+                    <div class="ia-card-title">📦 Réapprovisionnement</div>
+                    <div class="ia-card-body" id="ia-reappro">Chargement...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: PARAMÈTRES ── -->
+      <div id="section-parametres" class="section">
+        <div>
+          <div class="section-label">Configuration</div>
+          <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;margin-bottom:24px;">Paramètres</h2>
+        </div>
+        <div class="settings-grid">
+          <div class="card">
+            <div class="card-body">
+              <div class="settings-section-title">👤 Mon profil</div>
+              <div class="settings-field">
+                <label class="settings-label">Prénom</label>
+                <input class="settings-input" id="set-prenom" />
+              </div>
+              <div class="settings-field">
+                <label class="settings-label">Nom</label>
+                <input class="settings-input" id="set-nom" />
+              </div>
+              <div class="settings-field">
+                <label class="settings-label">Email</label>
+                <input class="settings-input" id="set-email" type="email" />
+              </div>
+              <button class="btn-primary" style="margin-top:8px;" onclick="saveProfile()">Sauvegarder le profil</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="settings-section-title">🔒 Sécurité</div>
+              <div style="padding:16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:10px;font-size:13px;color:var(--text-muted);line-height:1.6;">
+                Pour changer votre mot de passe, déconnectez-vous et utilisez la fonctionnalité de réinitialisation sur la page de connexion.<br/><br/>
+                <span style="color:#a5b4fc;font-weight:600;">Compte actif</span> — session JWT sécurisée (30 jours)
+              </div>
+              <div style="margin-top:20px;">
+                <div class="settings-section-title" style="margin-bottom:12px;">🌐 Informations</div>
+                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Version</span><span style="font-weight:600;">Novexa 1.0.0</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Plan</span><span class="badge badge-blue">Novexa Pro</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Créé par</span><span style="font-weight:600;">Nexulys</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1103,6 +1433,38 @@
     </div>
   </div>
 
+  <!-- Modal Nouvelle Dépense -->
+  <div class="modal-overlay" id="modal-depense" onclick="closeModalOnOverlay(event,'modal-depense')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-depense')">✕</button>
+      <div class="modal-title">💸 Nouvelle dépense</div>
+      <div class="modal-field">
+        <label class="modal-label">Titre</label>
+        <input class="modal-input" id="d-titre" placeholder="Loyer bureaux, abonnement logiciel..." />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Montant (€)</label>
+          <input class="modal-input" id="d-montant" type="number" min="0" placeholder="500" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Catégorie</label>
+          <select class="modal-select" id="d-categorie">
+            <option value="loyer">Loyer</option>
+            <option value="logiciel">Logiciel</option>
+            <option value="materiel">Matériel</option>
+            <option value="restauration">Restauration</option>
+            <option value="transport">Transport</option>
+            <option value="marketing">Marketing</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-error" id="d-error"></div>
+      <button class="modal-btn" id="d-btn" onclick="submitDepense()">Enregistrer la dépense</button>
+    </div>
+  </div>
+
   <script>
     // ── Auth guard ──
     const token = localStorage.getItem('novexa_token');
@@ -1133,16 +1495,15 @@
     }
 
     // ── Toast notifications ──
-    function showToast(msg) {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = 'toast';
+    function showToast(msg, type) {
+      var container = document.getElementById('toast-container');
+      var toast = document.createElement('div');
+      toast.className = 'toast' + (type === 'success' ? ' success' : '');
       toast.textContent = msg;
       container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => toast.remove(), 350);
+      setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { toast.remove(); }, 350);
       }, 4000);
     }
 
@@ -1160,17 +1521,32 @@
       overlay.classList.toggle('open');
     }
 
-    // ── Sidebar nav click ──
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        this.classList.add('active');
-        const label = this.querySelector('.label');
-        if (label) document.querySelector('.page-title').textContent = label.textContent;
-        if (window.innerWidth <= 768) toggleSidebar();
+    // ── Section switching ──
+    const SECTION_TITLES = {
+      dashboard: 'Dashboard', comptabilite: 'Comptabilité', rh: 'Ressources Humaines',
+      stocks: 'Stocks', taches: 'Tâches', ia: 'IA Assistant', parametres: 'Paramètres'
+    };
+    const SECTION_LOADERS = {
+      comptabilite: function() { loadAllInvoices(); loadDepenses(); },
+      rh: loadEmployes,
+      stocks: loadStocksSection,
+      taches: loadKanban,
+      ia: loadIASection,
+      parametres: loadParametres
+    };
+
+    function switchSection(name) {
+      document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+      document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+      var el = document.getElementById('section-' + name);
+      if (el) el.classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(function(btn) {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + name + "'")) btn.classList.add('active');
       });
-    });
+      document.querySelector('.page-title').textContent = SECTION_TITLES[name] || name;
+      if (window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+      if (SECTION_LOADERS[name]) SECTION_LOADERS[name]();
+    }
 
     // ── KPI Cards ──
     async function loadKPIs() {
@@ -1416,7 +1792,7 @@
         var data = await res.json();
         if (data.success) {
           closeModal('modal-facture');
-          showToast('Facture créée avec succès');
+          showToast('Facture créée avec succès', 'success');
           loadKPIs(); loadInvoices(); loadActivity();
         } else {
           modalError('f', data.message || 'Erreur lors de la création.');
@@ -1450,7 +1826,7 @@
         var data = await res.json();
         if (data.success) {
           closeModal('modal-employe');
-          showToast('Employé ajouté avec succès');
+          showToast('Employé ajouté avec succès', 'success');
           loadKPIs(); loadActivity();
         } else {
           modalError('e', data.message || (data.errors && data.errors[0] && data.errors[0].message) || 'Erreur.');
@@ -1493,7 +1869,7 @@
         var data = await res.json();
         if (data.success) {
           closeModal('modal-stock');
-          showToast('Mouvement enregistré' + (data.alerte && data.alerte.active ? ' ⚠️ ' + data.alerte.message : ''));
+          showToast('Mouvement enregistré' + (data.alerte && data.alerte.active ? ' ⚠️ ' + data.alerte.message : ''), 'success');
           loadKPIs(); loadStockAlerts(); loadActivity();
         } else {
           modalError('s', data.message || 'Erreur.');
@@ -1521,13 +1897,210 @@
         var data = await res.json();
         if (data.success) {
           closeModal('modal-tache');
-          showToast('Tâche créée avec succès');
+          showToast('Tâche créée avec succès', 'success');
           loadTasks(); loadActivity();
         } else {
           modalError('t', data.message || 'Erreur.');
         }
       } catch(e) { modalError('t', 'Erreur réseau.'); }
       setModalLoading('t-btn', false, 'Créer la tâche');
+    }
+
+    // ── Comptabilité: All invoices ──
+    var currentFactureFilter = null;
+    async function loadAllInvoices(statut) {
+      var url = '/comptabilite/factures' + (statut ? '?statut=' + statut : '');
+      var res = await apiFetch(url);
+      var invoices = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('all-invoices-body');
+      if (!tbody) return;
+      if (invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-text">Aucune facture trouvée</div></div></td></tr>';
+        return;
+      }
+      var statusMap = { payee:'badge-green', envoyee:'badge-yellow', brouillon:'badge-gray', en_retard:'badge-red', annulee:'badge-gray' };
+      var labelMap = { payee:'Payée', envoyee:'Envoyée', brouillon:'Brouillon', en_retard:'En retard', annulee:'Annulée' };
+      tbody.innerHTML = invoices.map(function(inv) {
+        var clientName = (inv.client && inv.client.nom) ? inv.client.nom : '—';
+        var statut = inv.statut || 'brouillon';
+        var cls = statusMap[statut] || 'badge-gray';
+        var label = labelMap[statut] || statut;
+        var date = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('fr') : '—';
+        var montant = (inv.montantTTC || 0).toLocaleString('fr') + ' €';
+        var tva = (inv.montantTVA || 0).toLocaleString('fr') + ' €';
+        var actions = statut !== 'payee' ? '<button class="btn-sm btn-success-sm" onclick="markFacturePaid(\'' + inv._id + '\')">✓ Payée</button>' : '<span style="color:var(--text-dim);font-size:12px;">—</span>';
+        return '<tr><td style="font-weight:600;color:#a5b4fc;">' + (inv.numero || '—') + '</td><td>' + clientName + '</td><td style="font-weight:700;">' + montant + '</td><td style="color:var(--text-dim);">' + tva + '</td><td><span class="badge ' + cls + '">' + label + '</span></td><td style="color:var(--text-dim);">' + date + '</td><td>' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    function filterFactures(statut, btn) {
+      currentFactureFilter = statut;
+      document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      loadAllInvoices(statut);
+    }
+
+    async function markFacturePaid(id) {
+      var res = await fetch(API + '/comptabilite/factures/' + id, { method:'PUT', headers:apiHeaders(), body:JSON.stringify({ statut:'payee' }) });
+      var data = await res.json();
+      if (data.success) { showToast('Facture marquée comme payée', 'success'); loadAllInvoices(currentFactureFilter); loadKPIs(); }
+      else showToast(data.message || 'Erreur');
+    }
+
+    async function loadDepenses() {
+      var res = await apiFetch('/comptabilite/depenses');
+      var depenses = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('depenses-body');
+      if (!tbody) return;
+      if (depenses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-text">Aucune dépense enregistrée</div></div></td></tr>';
+        return;
+      }
+      var catLabels = { loyer:'Loyer', logiciel:'Logiciel', materiel:'Matériel', restauration:'Restauration', transport:'Transport', marketing:'Marketing', autre:'Autre' };
+      var statusMap = { approuvee:'badge-green', en_attente:'badge-yellow', refusee:'badge-red' };
+      var labelMap2 = { approuvee:'Approuvée', en_attente:'En attente', refusee:'Refusée' };
+      tbody.innerHTML = depenses.map(function(d) {
+        var date = d.date ? new Date(d.date).toLocaleDateString('fr') : '—';
+        var statut = d.statut || 'en_attente';
+        return '<tr><td style="font-weight:600;">' + (d.titre || '—') + '</td><td><span class="badge badge-gray">' + (catLabels[d.categorie] || d.categorie || '—') + '</span></td><td style="font-weight:700;">' + (d.montant || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statusMap[statut] || 'badge-gray') + '">' + (labelMap2[statut] || statut) + '</span></td><td style="color:var(--text-dim);">' + date + '</td></tr>';
+      }).join('');
+    }
+
+    async function submitDepense() {
+      clearModalError('d');
+      var titre = document.getElementById('d-titre').value.trim();
+      var montant = parseFloat(document.getElementById('d-montant').value) || 0;
+      var categorie = document.getElementById('d-categorie').value;
+      if (!titre) return modalError('d', 'Le titre est requis.');
+      if (montant <= 0) return modalError('d', 'Le montant doit être supérieur à 0.');
+      setModalLoading('d-btn', true, 'Enregistrer la dépense');
+      try {
+        var res = await fetch(API + '/comptabilite/depenses', { method:'POST', headers:apiHeaders(), body:JSON.stringify({ titre, montant, categorie, date: new Date().toISOString() }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-depense'); showToast('Dépense enregistrée', 'success'); loadDepenses(); }
+        else modalError('d', data.message || 'Erreur.');
+      } catch(e) { modalError('d', 'Erreur réseau.'); }
+      setModalLoading('d-btn', false, 'Enregistrer la dépense');
+    }
+
+    // ── RH: Employees ──
+    async function loadEmployes() {
+      var res = await apiFetch('/rh/employes');
+      var employes = (res && res.data) ? res.data : [];
+      var grid = document.getElementById('employes-grid');
+      if (!grid) return;
+      if (employes.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">👥</div><div class="empty-state-text">Aucun employé enregistré</div></div>';
+        return;
+      }
+      var statutBadge = { actif:'badge-green', conge:'badge-yellow', inactif:'badge-red' };
+      var statutLabel = { actif:'Actif', conge:'En congé', inactif:'Inactif' };
+      grid.innerHTML = employes.map(function(e) {
+        var initials = ((e.prenom ? e.prenom[0] : '') + (e.nom ? e.nom[0] : '')).toUpperCase() || '?';
+        var statut = e.statut || 'actif';
+        var dateEmb = e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString('fr') : '—';
+        return '<div class="emp-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div class="emp-avatar">' + initials + '</div><span class="badge ' + (statutBadge[statut] || 'badge-gray') + '">' + (statutLabel[statut] || statut) + '</span></div><div class="emp-name">' + e.prenom + ' ' + e.nom + '</div><div class="emp-role">' + (e.poste || '—') + '</div><div class="emp-meta"><div class="emp-meta-row"><span class="emp-meta-label">Département</span><span class="emp-meta-val">' + (e.departement || '—') + '</span></div><div class="emp-meta-row"><span class="emp-meta-label">Salaire</span><span class="emp-meta-val">' + (e.salaireBase || 0).toLocaleString('fr') + ' €</span></div><div class="emp-meta-row"><span class="emp-meta-label">Depuis</span><span class="emp-meta-val">' + dateEmb + '</span></div></div></div>';
+      }).join('');
+    }
+
+    // ── Stocks section ──
+    async function loadStocksSection() {
+      var res = await apiFetch('/stocks/produits');
+      var produits = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('produits-body');
+      if (!tbody) return;
+      if (produits.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">Aucun produit en stock</div></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = produits.map(function(p) {
+        var pct = p.seuilAlerte > 0 ? Math.min(100, Math.round(p.quantite / (p.seuilAlerte * 3) * 100)) : (p.quantite > 0 ? 80 : 0);
+        var barClass = p.quantite === 0 ? 'crit' : (p.alerteActive ? 'warn' : 'ok');
+        var badge = p.quantite === 0 ? '<span class="badge badge-red">Rupture</span>' : (p.alerteActive ? '<span class="badge badge-yellow">Stock bas</span>' : '<span class="badge badge-green">OK</span>');
+        return '<tr><td style="font-weight:600;">' + (p.nom || '—') + '</td><td style="color:var(--text-dim);font-size:12px;font-family:monospace;">' + (p.sku || '—') + '</td><td>' + (p.categorie || '—') + '</td><td style="font-weight:700;">' + (p.quantite || 0) + ' ' + (p.unite || '') + '</td><td><div class="stock-bar-wrap"><div class="stock-bar-bg"><div class="stock-bar-fill ' + barClass + '" style="width:' + pct + '%"></div></div><span style="font-size:11px;color:var(--text-dim);min-width:30px;">' + pct + '%</span></div></td><td>' + (p.prixAchat || 0).toLocaleString('fr') + ' €</td><td>' + (p.prixVente || 0).toLocaleString('fr') + ' €</td><td>' + badge + '</td></tr>';
+      }).join('');
+    }
+
+    // ── Tâches Kanban ──
+    async function loadKanban() {
+      var res = await apiFetch('/taches');
+      var taches = (res && res.data) ? res.data : [];
+      var cols = { todo:[], en_cours:[], termine:[] };
+      taches.forEach(function(t) {
+        if (cols[t.statut]) cols[t.statut].push(t);
+        else if (t.statut === 'en_revue') cols['en_cours'].push(t);
+      });
+      var prioClass = { urgente:'prio-urgente', haute:'prio-haute', normale:'prio-normale', basse:'prio-basse' };
+      var prioBadge = { urgente:'badge-red', haute:'badge-yellow', normale:'badge-blue', basse:'badge-gray' };
+      function renderCards(arr) {
+        if (!arr.length) return '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px 0;">Aucune tâche</div>';
+        return arr.map(function(t) {
+          var deadline = t.deadline ? new Date(t.deadline).toLocaleDateString('fr') : null;
+          return '<div class="kanban-card ' + (prioClass[t.priorite] || '') + '"><div class="kanban-card-title">' + t.titre + '</div><div class="kanban-card-meta"><span class="badge ' + (prioBadge[t.priorite] || 'badge-gray') + '" style="font-size:10px;">' + (t.priorite || 'normale') + '</span>' + (deadline ? '<span style="font-size:11px;color:var(--text-dim);">📅 ' + deadline + '</span>' : '') + '</div></div>';
+        }).join('');
+      }
+      ['todo','en_cours','termine'].forEach(function(key) {
+        var el = document.getElementById('kanban-' + key);
+        if (el) el.innerHTML = renderCards(cols[key]);
+        var cnt = document.getElementById('count-' + key);
+        if (cnt) cnt.textContent = cols[key].length;
+      });
+    }
+
+    // ── IA Section ──
+    async function loadIASection() {
+      var depensesRes = await apiFetch('/ai/analyse-depenses');
+      var reapproRes = await apiFetch('/ai/prevoir-reapprovisionnement');
+      var depEl = document.getElementById('ia-depenses');
+      var reapEl = document.getElementById('ia-reappro');
+      if (depEl) depEl.textContent = (depensesRes && depensesRes.data && depensesRes.data.analyse) ? depensesRes.data.analyse : (depensesRes && depensesRes.message) || 'Configurer OpenAI API pour activer cette analyse.';
+      if (reapEl) reapEl.textContent = (reapproRes && reapproRes.data && reapproRes.data.recommandations) ? JSON.stringify(reapproRes.data.recommandations).slice(0,200) : (reapproRes && reapproRes.message) || 'Configurer OpenAI API pour activer cette prévision.';
+    }
+
+    // ── AI Chat ──
+    async function sendChat() {
+      var input = document.getElementById('chat-input');
+      var msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      var btn = document.getElementById('chat-send-btn');
+      btn.disabled = true;
+      addChatMsg('user', msg);
+      try {
+        var res = await fetch(API + '/ai/rh-assistant', { method:'POST', headers:apiHeaders(), body:JSON.stringify({ question: msg }) });
+        var data = await res.json();
+        var reply = (data.data && data.data.reponse) ? data.data.reponse : (data.message) || 'Je ne peux pas répondre pour le moment. Vérifiez la configuration OpenAI.';
+        addChatMsg('bot', reply);
+      } catch(e) { addChatMsg('bot', 'Erreur de connexion au service IA.'); }
+      btn.disabled = false;
+    }
+    function addChatMsg(role, text) {
+      var msgs = document.getElementById('chat-messages');
+      var div = document.createElement('div');
+      div.className = 'chat-msg ' + role;
+      div.innerHTML = (role === 'bot' ? '<div class="chat-avatar-bot">🤖</div>' : '') + '<div class="chat-bubble">' + text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    // ── Paramètres ──
+    function loadParametres() {
+      document.getElementById('set-prenom').value = user.prenom || '';
+      document.getElementById('set-nom').value = user.nom || '';
+      document.getElementById('set-email').value = user.email || '';
+    }
+    async function saveProfile() {
+      var prenom = document.getElementById('set-prenom').value.trim();
+      var nom = document.getElementById('set-nom').value.trim();
+      var email = document.getElementById('set-email').value.trim();
+      var res = await fetch(API + '/auth/me', { method:'PUT', headers:apiHeaders(), body:JSON.stringify({ prenom, nom, email }) });
+      var data = await res.json();
+      if (data.success) {
+        showToast('Profil mis à jour', 'success');
+        var u = JSON.parse(localStorage.getItem('novexa_user') || '{}');
+        Object.assign(u, { prenom, nom, email });
+        localStorage.setItem('novexa_user', JSON.stringify(u));
+      } else showToast(data.message || 'Erreur');
     }
 
     // ── Init ──
