@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novexa — Gérez votre entreprise avec l'IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: rgba(255,255,255,0.04);
+      --bg-card-hover: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(99,102,241,0.4);
+      --purple: #6366f1;
+      --blue: #3b82f6;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --gradient: linear-gradient(135deg, #6366f1, #3b82f6);
+      --gradient-text: linear-gradient(135deg, #a5b4fc, #60a5fa);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── PARTICLES ── */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.15);
+      animation: float linear infinite;
+    }
+    .particle:nth-child(1)  { width:3px;height:3px;left:10%;animation-duration:18s;animation-delay:-2s; }
+    .particle:nth-child(2)  { width:2px;height:2px;left:20%;animation-duration:22s;animation-delay:-5s; }
+    .particle:nth-child(3)  { width:4px;height:4px;left:30%;animation-duration:16s;animation-delay:-8s; }
+    .particle:nth-child(4)  { width:2px;height:2px;left:40%;animation-duration:20s;animation-delay:-1s; }
+    .particle:nth-child(5)  { width:3px;height:3px;left:50%;animation-duration:24s;animation-delay:-12s; }
+    .particle:nth-child(6)  { width:2px;height:2px;left:60%;animation-duration:17s;animation-delay:-3s; }
+    .particle:nth-child(7)  { width:4px;height:4px;left:70%;animation-duration:21s;animation-delay:-7s; }
+    .particle:nth-child(8)  { width:2px;height:2px;left:80%;animation-duration:19s;animation-delay:-14s; }
+    .particle:nth-child(9)  { width:3px;height:3px;left:90%;animation-duration:23s;animation-delay:-4s; }
+    .particle:nth-child(10) { width:2px;height:2px;left:15%;animation-duration:15s;animation-delay:-9s; }
+    .particle:nth-child(11) { width:3px;height:3px;left:55%;animation-duration:26s;animation-delay:-6s; }
+    .particle:nth-child(12) { width:2px;height:2px;left:75%;animation-duration:18s;animation-delay:-11s; }
+
+    @keyframes float {
+      0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+      5%   { opacity: 1; }
+      95%  { opacity: 1; }
+      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ── GLOW ORBS ── */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.12;
+    }
+    .glow-orb-1 { width:600px;height:600px;background:#6366f1;top:-200px;left:-200px; }
+    .glow-orb-2 { width:500px;height:500px;background:#3b82f6;bottom:-100px;right:-100px; }
+    .glow-orb-3 { width:400px;height:400px;background:#8b5cf6;top:40%;left:50%;transform:translateX(-50%); }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 16px 0;
+      background: rgba(10,10,15,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+    .logo {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      line-height: 1;
+    }
+    .logo-name {
+      font-size: 22px;
+      font-weight: 800;
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    .logo-sub {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+      flex: 1;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-cta a.link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-cta a.link:hover { color: var(--text); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-primary {
+      background: var(--gradient);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99,102,241,0.5);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover {
+      border-color: var(--purple);
+      background: rgba(99,102,241,0.1);
+      transform: translateY(-2px);
+    }
+    .btn-sm { padding: 9px 18px; font-size: 14px; }
+    .btn-lg { padding: 16px 32px; font-size: 17px; border-radius: 12px; }
+
+    /* ── SECTION WRAPPER ── */
+    section { position: relative; z-index: 1; }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 0 80px;
+      text-align: center;
+    }
+    .hero-content { width: 100%; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: rgba(99,102,241,0.12);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 32px;
+    }
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 80px);
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 21px);
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .hero-trust {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+    }
+    .hero-trust span {
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-trust span::before { content: '✓'; color: #4ade80; font-weight: 700; }
+
+    /* ── STATS CARDS ── */
+    .hero-stats {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 28px;
+      backdrop-filter: blur(20px);
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .stat-card:hover {
+      border-color: var(--border-hover);
+      background: rgba(99,102,241,0.08);
+      transform: translateY(-4px);
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .section-tag {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(99,102,241,0.12);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 50%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .section-sub {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ── FEATURES ── */
+    #features { padding: 100px 0; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gradient);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-card-hover);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon { font-size: 36px; margin-bottom: 16px; display: block; }
+    .feature-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .feature-list li {
+      font-size: 14px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-list li::before {
+      content: '→';
+      color: var(--purple);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── HOW IT WORKS ── */
+    #how { padding: 100px 0; background: rgba(255,255,255,0.015); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      position: relative;
+    }
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 48px;
+      left: calc(16.666% + 40px);
+      right: calc(16.666% + 40px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--purple), var(--blue));
+      opacity: 0.3;
+    }
+    .step {
+      text-align: center;
+      padding: 40px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      transition: all 0.3s;
+    }
+    .step:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .step-number {
+      width: 56px; height: 56px;
+      background: var(--gradient);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+    }
+    .step-emoji { font-size: 28px; margin-bottom: 8px; }
+    .step-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .step-desc { font-size: 14px; color: var(--text-muted); }
+
+    /* ── PRICING ── */
+    #pricing { padding: 100px 0; }
+    .pricing-wrapper {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .pricing-card {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(59,130,246,0.08));
+      border: 1px solid rgba(99,102,241,0.35);
+      border-radius: 24px;
+      padding: 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 0 60px rgba(99,102,241,0.15), var(--shadow);
+    }
+    .pricing-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .pricing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--gradient);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .pricing-name {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .pricing-price {
+      font-size: 56px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .pricing-price span { font-size: 22px; font-weight: 500; color: var(--text-muted); }
+    .pricing-trial {
+      font-size: 14px;
+      color: #4ade80;
+      font-weight: 600;
+      margin-bottom: 36px;
+    }
+    .pricing-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 40px;
+      text-align: left;
+    }
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .pricing-features li::before {
+      content: '✓';
+      width: 22px; height: 22px;
+      background: rgba(74,222,128,0.15);
+      border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4ade80;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .pricing-note {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 16px;
+    }
+
+    /* ── TESTIMONIALS ── */
+    #testimonials { padding: 100px 0; background: rgba(255,255,255,0.015); }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .testimonial-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      transition: all 0.3s;
+    }
+    .testimonial-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .stars { color: #fbbf24; font-size: 16px; margin-bottom: 16px; letter-spacing: 2px; }
+    .quote {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.75;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+    .author { display: flex; align-items: center; gap: 14px; }
+    .author-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .author-name { font-size: 14px; font-weight: 700; color: #fff; }
+    .author-role { font-size: 12px; color: var(--text-dim); }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 60px 0 32px;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+    .footer-brand .logo-name { font-size: 26px; display: block; margin-bottom: 6px; }
+    .footer-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-top: 12px;
+      margin-bottom: 24px;
+    }
+    .social-links { display: flex; gap: 12px; }
+    .social-link {
+      width: 36px; height: 36px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .social-link:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+      background: rgba(99,102,241,0.1);
+    }
+    .footer-col h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul a {
+      font-size: 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-col ul a:hover { color: var(--text); }
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      text-align: center;
+    }
+    .footer-bottom p { font-size: 13px; color: var(--text-dim); }
+
+    /* ── FADE IN ANIMATION ── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fade-in-delay-1 { transition-delay: 0.1s; }
+    .fade-in-delay-2 { transition-delay: 0.2s; }
+    .fade-in-delay-3 { transition-delay: 0.3s; }
+    .fade-in-delay-4 { transition-delay: 0.4s; }
+    .fade-in-delay-5 { transition-delay: 0.5s; }
+
+    /* ── CTA SECTION ── */
+    #cta {
+      padding: 100px 0;
+      text-align: center;
+    }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(59,130,246,0.1));
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 24px;
+      padding: 80px 48px;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-box h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 50%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cta-box p {
+      font-size: 17px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+      .steps { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; gap: 24px; }
+      .steps::before { display: none; }
+      .footer-inner { grid-template-columns: 1fr; gap: 32px; }
+      .hero-stats { flex-direction: column; align-items: center; }
+      .pricing-card { padding: 32px 24px; }
+    }
+    @media (max-width: 480px) {
+      .hero-buttons { flex-direction: column; align-items: center; }
+      .hero-trust { flex-direction: column; align-items: center; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background particles -->
+  <div class="particles" aria-hidden="true">
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+  </div>
+  <div class="glow-orb glow-orb-1" aria-hidden="true"></div>
+  <div class="glow-orb glow-orb-2" aria-hidden="true"></div>
+  <div class="glow-orb glow-orb-3" aria-hidden="true"></div>
+
+  <!-- ── NAVBAR ── -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <span class="logo-name">Novexa</span>
+        <span class="logo-sub">by Nexulys</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Fonctionnalités</a></li>
+        <li><a href="#pricing">Tarifs</a></li>
+        <li><a href="dashboard.html">Connexion</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="dashboard.html" class="link">Connexion</a>
+        <a href="#pricing" class="btn btn-primary btn-sm">Démarrer l'essai gratuit</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section id="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="badge fade-in">🤖 Propulsé par l'IA</div>
+        <h1 class="fade-in fade-in-delay-1">Gérez toute votre<br>entreprise avec l'IA</h1>
+        <p class="hero-sub fade-in fade-in-delay-2">
+          Novexa automatise votre comptabilité, RH, stocks et tâches.
+          Conçu pour les entreprises modernes.
+        </p>
+        <div class="hero-buttons fade-in fade-in-delay-3">
+          <a href="#pricing" class="btn btn-primary btn-lg">Démarrer gratuitement →</a>
+          <a href="dashboard.html" class="btn btn-outline btn-lg">Voir la démo</a>
+        </div>
+        <div class="hero-trust fade-in fade-in-delay-4">
+          <span>Essai 14 jours gratuit</span>
+          <span>Sans carte bancaire</span>
+          <span>Annulation facile</span>
+        </div>
+        <div class="hero-stats fade-in fade-in-delay-5">
+          <div class="stat-card">
+            <span class="stat-value">12 min</span>
+            <div class="stat-label">économisées / jour</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">+40%</span>
+            <div class="stat-label">productivité</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">0</span>
+            <div class="stat-label">erreur comptable</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ── -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header fade-in">
+        <span class="section-tag">Fonctionnalités</span>
+        <h2 class="section-title">Tout ce dont votre entreprise<br>a besoin, en un seul endroit</h2>
+        <p class="section-sub">Des outils puissants propulsés par l'IA pour automatiser et optimiser chaque aspect de votre activité.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card fade-in fade-in-delay-1">
+          <span class="feature-icon">📊</span>
+          <div class="feature-title">Comptabilité IA</div>
+          <ul class="feature-list">
+            <li>Factures automatiques</li>
+            <li>TVA calculée automatiquement</li>
+            <li>Bilan en un clic</li>
+          </ul>
+        </div>
+        <div class="feature-card fade-in fade-in-delay-2">
+          <span class="feature-icon">👥</span>
+          <div class="feature-title">Ressources Humaines</div>
+          <ul class="feature-list">
+            <li>Fiches de paie automatisées</li>
+            <li>Gestion des congés</li>
+            <li>Contrats CDI / CDD</li>
+          </ul>
+        </div>
+        <div class="feature-card fade-in fade-in-delay-3">
+          <span class="feature-icon">📦</span>
+          <div class="feature-title">Gestion des Stocks</div>
+          <ul class="feature-list">
+            <li>Alertes stock bas</li>
+            <li>Mouvements en temps réel</li>
+            <li>Gestion des fournisseurs</li>
+          </ul>
+        </div>
+        <div class="feature-card fade-in fade-in-delay-1">
+          <span class="feature-icon">✅</span>
+          <div class="feature-title">Tâches &amp; Projets</div>
+          <ul class="feature-list">
+            <li>Assignation IA intelligente</li>
+            <li>Priorisation automatique</li>
+            <li>Suivi des deadlines</li>
+          </ul>
+        </div>
+        <div class="feature-card fade-in fade-in-delay-2">
+          <span class="feature-icon">🤖</span>
+          <div class="feature-title">Assistant IA</div>
+          <ul class="feature-list">
+            <li>Analyse financière avancée</li>
+            <li>Prédictions de trésorerie</li>
+            <li>Conseils RH personnalisés</li>
+          </ul>
+        </div>
+        <div class="feature-card fade-in fade-in-delay-3">
+          <span class="feature-icon">⚡</span>
+          <div class="feature-title">Automatisations</div>
+          <ul class="feature-list">
+            <li>Déclencheurs métier</li>
+            <li>Actions automatiques</li>
+            <li>Workflows sur mesure</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section id="how">
+    <div class="container">
+      <div class="section-header fade-in">
+        <span class="section-tag">Comment ça marche</span>
+        <h2 class="section-title">Opérationnel en 3 étapes</h2>
+        <p class="section-sub">Une mise en place rapide pour des résultats immédiats.</p>
+      </div>
+      <div class="steps">
+        <div class="step fade-in fade-in-delay-1">
+          <div class="step-number">1</div>
+          <div class="step-emoji">🎯</div>
+          <div class="step-title">Créez votre compte</div>
+          <div class="step-desc">Inscription en 2 minutes. Aucune carte bancaire requise pour l'essai gratuit.</div>
+        </div>
+        <div class="step fade-in fade-in-delay-2">
+          <div class="step-number">2</div>
+          <div class="step-emoji">📡</div>
+          <div class="step-title">Importez vos données</div>
+          <div class="step-desc">Connecteurs automatiques vers vos outils existants. Migration guidée pas à pas.</div>
+        </div>
+        <div class="step fade-in fade-in-delay-3">
+          <div class="step-number">3</div>
+          <div class="step-emoji">🚀</div>
+          <div class="step-title">L'IA prend le relais</div>
+          <div class="step-desc">Automatisation continue. Insights en temps réel. Votre entreprise tourne toute seule.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRICING ── -->
+  <section id="pricing">
+    <div class="container">
+      <div class="section-header fade-in">
+        <span class="section-tag">Tarifs</span>
+        <h2 class="section-title">Simple, transparent, tout inclus</h2>
+        <p class="section-sub">Un seul plan, toutes les fonctionnalités. Aucune surprise.</p>
+      </div>
+      <div class="pricing-wrapper fade-in">
+        <div class="pricing-card">
+          <div class="pricing-badge">★ NOVEXA PRO</div>
+          <div class="pricing-name">Novexa Pro</div>
+          <div class="pricing-price">2 500 €<span> / mois</span></div>
+          <div class="pricing-trial">✓ Essai gratuit 14 jours — sans engagement</div>
+          <ul class="pricing-features">
+            <li>Comptabilité IA complète</li>
+            <li>RH &amp; Fiches de paie</li>
+            <li>Gestion des stocks</li>
+            <li>Tâches &amp; Projets</li>
+            <li>Assistant IA intégré</li>
+            <li>Automatisations illimitées</li>
+            <li>Utilisateurs illimités</li>
+            <li>Support prioritaire 24/7</li>
+            <li>API REST complète</li>
+            <li>Mises à jour incluses</li>
+          </ul>
+          <a href="dashboard.html" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">
+            Démarrer l'essai gratuit
+          </a>
+          <p class="pricing-note">Aucun engagement — annulez à tout moment</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ── -->
+  <section id="testimonials">
+    <div class="container">
+      <div class="section-header fade-in">
+        <span class="section-tag">Témoignages</span>
+        <h2 class="section-title">Ils font confiance à Novexa</h2>
+        <p class="section-sub">Des entreprises comme la vôtre transforment leur gestion au quotidien.</p>
+      </div>
+      <div class="testimonials-grid">
+        <div class="testimonial-card fade-in fade-in-delay-1">
+          <div class="stars">★★★★★</div>
+          <p class="quote">
+            "Novexa a complètement transformé notre gestion RH. Les fiches de paie sont générées automatiquement,
+            les congés gérés en un clic. On a économisé plus de 3h par semaine sur des tâches administratives."
+          </p>
+          <div class="author">
+            <div class="author-avatar">SM</div>
+            <div>
+              <div class="author-name">Sophie M.</div>
+              <div class="author-role">DRH chez TechCorp Paris</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card fade-in fade-in-delay-2">
+          <div class="stars">★★★★★</div>
+          <p class="quote">
+            "En tant que CEO d'une PME, j'avais besoin d'une vue d'ensemble en temps réel.
+            L'assistant IA de Novexa me donne des prédictions de trésorerie précises et des alertes proactives.
+            Indispensable !"
+          </p>
+          <div class="author">
+            <div class="author-avatar">MD</div>
+            <div>
+              <div class="author-name">Marc D.</div>
+              <div class="author-role">CEO PME Lyon</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card fade-in fade-in-delay-3">
+          <div class="stars">★★★★★</div>
+          <p class="quote">
+            "La comptabilité IA est bluffante. Plus aucune erreur de TVA, les bilans se génèrent seuls.
+            Je peux enfin me concentrer sur le conseil à mes clients plutôt que sur la saisie manuelle."
+          </p>
+          <div class="author">
+            <div class="author-avatar">CR</div>
+            <div>
+              <div class="author-name">Claire R.</div>
+              <div class="author-role">Comptable à Bordeaux</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ── -->
+  <section id="cta">
+    <div class="container">
+      <div class="cta-box fade-in">
+        <h2>Prêt à transformer votre entreprise ?</h2>
+        <p>Rejoignez des centaines d'entreprises qui font confiance à Novexa pour leur gestion quotidienne.</p>
+        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+          <a href="#pricing" class="btn btn-primary btn-lg">Démarrer l'essai gratuit</a>
+          <a href="dashboard.html" class="btn btn-outline btn-lg">Voir la démo</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="logo-name" style="font-size:26px;font-weight:800;background:linear-gradient(135deg,#a5b4fc,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Novexa</span>
+          <span style="font-size:11px;color:#475569;font-weight:500;display:block;margin-top:2px;">by Nexulys</span>
+          <p class="footer-desc">La plateforme de gestion IA pour entreprises modernes.</p>
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Twitter/X">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="#" class="social-link" aria-label="LinkedIn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+            <a href="#" class="social-link" aria-label="GitHub">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Produit</h4>
+          <ul>
+            <li><a href="#features">Comptabilité</a></li>
+            <li><a href="#features">RH</a></li>
+            <li><a href="#features">Stocks</a></li>
+            <li><a href="#features">Tâches</a></li>
+            <li><a href="#features">IA</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Entreprise</h4>
+          <ul>
+            <li><a href="#">À propos</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Carrières</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Mentions légales</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Nexulys. Tous droits réservés. Novexa est une marque de Nexulys.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Fade-in on scroll using IntersectionObserver
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Navbar scroll effect
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 60) {
+        nav.style.background = 'rgba(10,10,15,0.95)';
+        nav.style.boxShadow = '0 4px 30px rgba(0,0,0,0.4)';
+      } else {
+        nav.style.background = 'rgba(10,10,15,0.8)';
+        nav.style.boxShadow = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

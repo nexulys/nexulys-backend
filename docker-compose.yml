@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  novexa-api:
+    build: .
+    container_name: novexa-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongo:27017/novexa
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - APP_URL=${APP_URL:-http://localhost:5000}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - novexa-network
+
+  mongo:
+    image: mongo:7
+    container_name: novexa-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - novexa-network
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: novexa-mongo-ui
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=novexa2025
+    depends_on:
+      - mongo
+    networks:
+      - novexa-network
+
+volumes:
+  mongo-data:
+
+networks:
+  novexa-network:
+    driver: bridge
