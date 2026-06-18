@@ -1962,6 +1962,65 @@
           </div>
         </div>
 
+        <!-- Abonnement -->
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="card-title">💳 Abonnement Novexa Pro</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">2 500 € / mois — prélevé le 5 de chaque mois</div>
+            </div>
+            <div id="sub-badge"></div>
+          </div>
+          <div class="card-body">
+            <div id="sub-loading" style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px;">Chargement...</div>
+            <div id="sub-actif" style="display:none;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px;">
+                <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;text-align:center;">
+                  <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Prochain prélèvement</div>
+                  <div id="sub-next-date" style="font-size:18px;font-weight:800;color:#a5b4fc;">—</div>
+                </div>
+                <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;text-align:center;">
+                  <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Montant</div>
+                  <div style="font-size:18px;font-weight:800;color:#34d399;">2 500 €</div>
+                </div>
+                <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;text-align:center;">
+                  <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Actif depuis</div>
+                  <div id="sub-start-date" style="font-size:18px;font-weight:800;color:#e2e8f0;">—</div>
+                </div>
+              </div>
+              <div id="sub-history-block" style="margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Historique des paiements</div>
+                <table class="data-table">
+                  <thead><tr><th>Date</th><th>Montant</th><th>Statut</th></tr></thead>
+                  <tbody id="sub-history-body"></tbody>
+                </table>
+              </div>
+              <button onclick="annulerAbonnement()" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.3);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Annuler l'abonnement</button>
+            </div>
+            <div id="sub-inactif" style="display:none;">
+              <div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:12px;padding:24px;margin-bottom:20px;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Novexa Pro — 2 500 € / mois</div>
+                <ul style="font-size:13px;color:var(--text-muted);line-height:2;padding-left:20px;">
+                  <li>Comptabilité IA complète (factures, TVA, bilan)</li>
+                  <li>RH & paie avec virements de salaire</li>
+                  <li>CRM, Devis, Projets, Stocks</li>
+                  <li>Assistant IA intégré (Groq / GPT-4)</li>
+                  <li>Utilisateurs illimités — Support 24/7</li>
+                </ul>
+                <div style="margin-top:12px;font-size:12px;color:#a5b4fc;">Premier prélèvement le 5 du mois suivant l'activation.</div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                <div class="modal-field" style="flex:2;margin:0;">
+                  <label class="modal-label">Email de facturation</label>
+                  <input class="modal-input" id="sub-email" type="email" placeholder="facturation@monentreprise.fr" />
+                </div>
+                <button class="btn-primary" id="sub-activate-btn" onclick="activerAbonnement()" style="padding:12px 28px;font-size:15px;">✅ Activer l'abonnement</button>
+              </div>
+              <div id="sub-error" style="color:#f87171;font-size:13px;margin-top:8px;"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </main>
@@ -3846,6 +3905,86 @@
       loadCompanySettings();
       loadExpertAccess();
       loadPortails();
+      loadAbonnement();
+    }
+
+    async function loadAbonnement() {
+      var res = await apiFetch('/abonnement');
+      var loading = document.getElementById('sub-loading');
+      var actif = document.getElementById('sub-actif');
+      var inactif = document.getElementById('sub-inactif');
+      var badge = document.getElementById('sub-badge');
+      if (loading) loading.style.display = 'none';
+      if (!res || !res.success || !res.data) {
+        if (inactif) inactif.style.display = '';
+        if (badge) badge.innerHTML = '<span class="badge badge-gray">Inactif</span>';
+        return;
+      }
+      var sub = res.data;
+      var statut = sub.statut;
+      var isActif = statut === 'actif' || statut === 'active';
+      var isEssai = statut === 'essai' || statut === 'trial';
+      if (isActif || isEssai) {
+        if (actif) actif.style.display = '';
+        if (inactif) inactif.style.display = 'none';
+        if (badge) badge.innerHTML = isActif
+          ? '<span class="badge badge-green">Actif</span>'
+          : '<span class="badge badge-yellow">Période d\'essai</span>';
+        var nextDate = sub.nextBillingDate ? new Date(sub.nextBillingDate).toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric'}) : '—';
+        var startDate = (sub.startDate || sub.dateDebut) ? new Date(sub.startDate || sub.dateDebut).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+        if (document.getElementById('sub-next-date')) document.getElementById('sub-next-date').textContent = nextDate;
+        if (document.getElementById('sub-start-date')) document.getElementById('sub-start-date').textContent = startDate;
+        var history = sub.billingHistory || [];
+        var histBody = document.getElementById('sub-history-body');
+        if (histBody) {
+          if (!history.length) {
+            histBody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text-dim);">Aucun paiement enregistré</td></tr>';
+          } else {
+            histBody.innerHTML = history.slice().reverse().map(function(h) {
+              return '<tr><td>' + new Date(h.date).toLocaleDateString('fr-FR') + '</td><td style="font-weight:700;color:#a5b4fc;">' + (h.montant||0).toLocaleString('fr-FR') + ' €</td><td><span class="badge badge-green">' + (h.statut||'payé') + '</span></td></tr>';
+            }).join('');
+          }
+        }
+      } else {
+        if (actif) actif.style.display = 'none';
+        if (inactif) inactif.style.display = '';
+        if (badge) badge.innerHTML = statut === 'annule'
+          ? '<span class="badge badge-red">Annulé</span>'
+          : '<span class="badge badge-gray">Inactif</span>';
+      }
+    }
+
+    async function activerAbonnement() {
+      var email = document.getElementById('sub-email')?.value.trim();
+      var errEl = document.getElementById('sub-error');
+      var btn = document.getElementById('sub-activate-btn');
+      if (errEl) errEl.textContent = '';
+      if (!email) { if (errEl) errEl.textContent = 'Renseignez un email de facturation.'; return; }
+      if (btn) { btn.disabled = true; btn.textContent = 'Activation...'; }
+      try {
+        var res = await fetch(API + '/abonnement/activer', {
+          method: 'POST', headers: apiHeaders(),
+          body: JSON.stringify({ emailFacturation: email })
+        });
+        var data = await res.json();
+        if (data.success) {
+          showToast('Abonnement activé — premier prélèvement le 5 du mois prochain', 'success');
+          loadAbonnement();
+        } else {
+          if (errEl) errEl.textContent = data.message || 'Erreur lors de l\'activation.';
+        }
+      } catch(e) {
+        if (errEl) errEl.textContent = 'Erreur réseau.';
+      }
+      if (btn) { btn.disabled = false; btn.textContent = '✅ Activer l\'abonnement'; }
+    }
+
+    async function annulerAbonnement() {
+      if (!confirm('Confirmer l\'annulation de l\'abonnement Novexa Pro ?')) return;
+      var res = await fetch(API + '/abonnement/annuler', { method: 'POST', headers: apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Abonnement annulé', 'success'); loadAbonnement(); }
+      else showToast(data.message || 'Erreur', 'error');
     }
     async function saveProfile() {
       var prenom = document.getElementById('set-prenom').value.trim();
