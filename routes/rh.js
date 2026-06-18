@@ -18,4 +18,12 @@ router.post('/paie/virements', c.effectuerVirements);
 router.put('/paie/:id/valider', c.validerFiche);
 router.get('/paie/:employeeId', c.getPayslips);
 
+// Avances sur salaire
+router.get('/avances', c.getAvances);
+router.post('/avances', c.createAvance);
+router.put('/avances/:id/approuver', c.approuverAvance);
+router.put('/avances/:id/rejeter', c.rejeterAvance);
+router.put('/avances/:id/rembourser', c.rembourserAvance);
+router.delete('/avances/:id', c.deleteAvance);
+
 module.exports = router;

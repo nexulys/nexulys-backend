@@ -915,6 +915,9 @@
       <button class="nav-item" onclick="switchSection('projets')">
         <span class="icon">📁</span><span class="label">Projets</span>
       </button>
+      <button class="nav-item" onclick="switchSection('agenda')">
+        <span class="icon">📅</span><span class="label">Agenda</span>
+      </button>
 
       <span class="nav-section-label" style="margin-top:8px;">Outils</span>
       <button class="nav-item" onclick="switchSection('ia')">
@@ -1172,6 +1175,11 @@
           <button class="rh-tab" id="compta-tab-devis" onclick="switchComptaTab('devis')">📋 Devis</button>
           <button class="rh-tab" id="compta-tab-tva" onclick="switchComptaTab('tva')">🧾 TVA</button>
           <button class="rh-tab" id="compta-tab-catalogue" onclick="switchComptaTab('catalogue')">📦 Catalogue</button>
+          <button class="rh-tab" id="compta-tab-avoirs" onclick="switchComptaTab('avoirs')">↩️ Avoirs</button>
+          <button class="rh-tab" id="compta-tab-immos" onclick="switchComptaTab('immos')">🏗 Immobilisations</button>
+          <button class="rh-tab" id="compta-tab-rapprochement" onclick="switchComptaTab('rapprochement')">🏦 Rapprochement</button>
+          <button class="rh-tab" id="compta-tab-cashflow" onclick="switchComptaTab('cashflow')">💧 Cash Flow</button>
+          <button class="rh-tab" id="compta-tab-is" onclick="switchComptaTab('is')">🏛 Impôt (IS)</button>
         </div>
 
         <!-- Panel: Factures & Dépenses -->
@@ -1329,6 +1337,7 @@
           <button class="rh-tab" id="rh-tab-conges" onclick="switchRHTab('conges')">🏖 Congés</button>
           <button class="rh-tab" id="rh-tab-paie" onclick="switchRHTab('paie')">💰 Fiches de paie</button>
           <button class="rh-tab" id="rh-tab-virements" onclick="switchRHTab('virements')">💸 Virements</button>
+          <button class="rh-tab" id="rh-tab-avances" onclick="switchRHTab('avances')">💵 Avances</button>
           <button class="rh-tab" id="rh-tab-notes" onclick="switchRHTab('notes')">💳 Notes de frais</button>
         </div>
 
@@ -1440,6 +1449,20 @@
           </div>
         </div>
 
+        <!-- Panneau Avances sur salaire -->
+        <div id="rh-panel-avances" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Avances sur salaire</div>
+              <button class="btn-primary" onclick="openModal('avance-salaire')">+ Nouvelle avance</button>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>Employé</th><th>Montant</th><th>Motif</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody id="avances-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune avance</td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
+
         <!-- Panneau Notes de frais -->
         <div id="rh-panel-notes" style="display:none;">
           <div class="card">
@@ -1504,6 +1527,16 @@
             </div>
           </div>
         </div>
+        <div class="card">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div><div class="card-title">Bons de commande</div><div style="font-size:12px;color:var(--text-dim);">Commandes fournisseurs</div></div>
+            <button class="btn-primary" onclick="openModal('bon-commande')">+ Nouveau BC</button>
+          </div>
+          <div style="overflow-x:auto;"><table class="data-table">
+            <thead><tr><th>N°</th><th>Fournisseur</th><th>Montant TTC</th><th>Date commande</th><th>Livraison prévue</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="bons-commande-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun bon de commande</td></tr></tbody>
+          </table></div>
+        </div>
       </div>
 
         <!-- Panneau Devis -->
@@ -1556,6 +1589,101 @@
                 <thead><tr><th>Nom</th><th>Référence</th><th>Prix HT</th><th>TVA</th><th>Unité</th><th>Catégorie</th><th></th></tr></thead>
                 <tbody id="catalogue-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau Avoirs -->
+        <div id="compta-panel-avoirs" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="card-title">Avoirs / Notes de crédit</div><div style="font-size:12px;color:var(--text-dim);">Annuler ou corriger une facture émise</div></div>
+              <button class="btn-primary" onclick="openModal('avoir')">+ Nouvel avoir</button>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>N°</th><th>Client</th><th>Facture liée</th><th>Motif</th><th>Montant TTC</th><th>Statut</th><th></th></tr></thead>
+              <tbody id="avoirs-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- Panneau Immobilisations -->
+        <div id="compta-panel-immos" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="card-title">Immobilisations</div><div style="font-size:12px;color:var(--text-dim);">Actifs, amortissements, valeur nette comptable</div></div>
+              <button class="btn-primary" onclick="openModal('immobilisation')">+ Ajouter</button>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>Désignation</th><th>Catégorie</th><th>Acquisition</th><th>Valeur d'achat</th><th>Durée</th><th>Annuité</th><th>VNC actuelle</th><th>Statut</th><th></th></tr></thead>
+              <tbody id="immos-body"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- Panneau Rapprochement bancaire -->
+        <div id="compta-panel-rapprochement" style="display:none;">
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="card-title">Rapprochement bancaire</div><div style="font-size:12px;color:var(--text-dim);">Importez votre relevé CSV et rapprochez les transactions</div></div>
+              <button class="btn-primary" onclick="openModal('rapprochement')">📥 Importer relevé</button>
+            </div>
+            <div id="rapprochements-list" style="padding:16px;">
+              <div style="font-size:13px;color:var(--text-dim);">Chargement...</div>
+            </div>
+          </div>
+          <div class="card" id="rapprochement-detail" style="display:none;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title" id="rapprochement-detail-title">Transactions</div>
+              <button class="btn-outline" onclick="validerRapprochement()" style="padding:6px 14px;font-size:12px;">✅ Valider le relevé</button>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>Date</th><th>Libellé</th><th>Montant</th><th>Statut</th><th>Rapproché avec</th><th></th></tr></thead>
+              <tbody id="rapprochement-transactions-body"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- Panneau Cash Flow -->
+        <div id="compta-panel-cashflow" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Trésorerie prévisionnelle</div>
+              <button class="btn-outline" onclick="loadCashflow()" style="padding:6px 14px;font-size:12px;">🔄 Actualiser</button>
+            </div>
+            <div class="card-body">
+              <div id="cashflow-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;"></div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-muted);">Historique (3 derniers mois)</div>
+              <div style="overflow-x:auto;margin-bottom:24px;"><table class="data-table">
+                <thead><tr><th>Mois</th><th>Entrées</th><th>Sorties</th><th>Solde</th></tr></thead>
+                <tbody id="cashflow-historique-body"></tbody>
+              </table></div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-muted);">Prévisions (3 mois suivants)</div>
+              <div style="overflow-x:auto;"><table class="data-table">
+                <thead><tr><th>Mois</th><th>Entrées prévues</th><th>Sorties prévues</th><th>Solde prévisionnel</th></tr></thead>
+                <tbody id="cashflow-previsions-body"></tbody>
+              </table></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau IS -->
+        <div id="compta-panel-is" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Impôt sur les Sociétés (IS)</div>
+              <button class="btn-outline" onclick="loadCalculIS()" style="padding:6px 14px;font-size:12px;">🔄 Recalculer</button>
+            </div>
+            <div class="card-body">
+              <div id="is-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;"></div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-muted);">Acomptes IS à verser</div>
+              <div style="overflow-x:auto;"><table class="data-table">
+                <thead><tr><th>Échéance</th><th>Montant</th><th>Statut</th></tr></thead>
+                <tbody id="is-acomptes-body"></tbody>
+              </table></div>
+              <div style="margin-top:16px;padding:14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:10px;font-size:12px;color:var(--text-dim);">
+                Taux IS 2024 : 15% jusqu'à 42 500 € de bénéfice, 25% au-delà (PME éligibles). Calculé sur la base de l'exercice en cours.
+              </div>
             </div>
           </div>
         </div>
@@ -1962,6 +2090,18 @@
           </div>
         </div>
 
+        <!-- Équipe & Rôles -->
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div><div class="card-title">👤 Équipe & Accès</div><div style="font-size:12px;color:var(--text-dim);">Invitez des collaborateurs et gérez leurs rôles</div></div>
+            <button class="btn-primary" onclick="openModal('invite-membre')">+ Inviter</button>
+          </div>
+          <div style="overflow-x:auto;"><table class="data-table">
+            <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="equipe-body"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+          </table></div>
+        </div>
+
         <!-- Abonnement -->
         <div class="card" style="margin-top:20px;">
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
@@ -2021,6 +2161,32 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- ── SECTION: AGENDA ── -->
+      <div id="section-agenda" class="section">
+        <div class="section-topbar">
+          <div><div class="section-label">Planning</div><h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Agenda</h2></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="loadAgenda()">🔄 Actualiser</button>
+            <button class="btn-outline" onclick="loadEcheancesFiscales()">🏛 Échéances fiscales</button>
+            <button class="btn-primary" onclick="openModal('agenda')">+ Événement</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Événements à venir</div></div>
+            <div id="agenda-list" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="font-size:13px;color:var(--text-dim);padding:20px;text-align:center;">Chargement...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Échéances fiscales</div></div>
+            <div id="echeances-fiscales-list" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="font-size:13px;color:var(--text-dim);padding:20px;text-align:center;">Cliquez sur "Échéances fiscales" pour charger</div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </main>
@@ -2555,6 +2721,169 @@
     </div>
   </div>
 
+  <!-- Modal Avoir -->
+  <div class="modal-overlay" id="modal-avoir" onclick="closeModalOnOverlay(event,'modal-avoir')">
+    <div class="modal" style="max-width:600px;">
+      <button class="modal-close" onclick="closeModal('modal-avoir')">✕</button>
+      <div class="modal-title">↩️ Nouvel avoir / Note de crédit</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Client *</label><input class="modal-input" id="av-client" placeholder="Nom du client" /></div>
+        <div class="modal-field"><label class="modal-label">N° facture liée</label><input class="modal-input" id="av-facture-num" placeholder="FAC-2026-0001 (optionnel)" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Motif *</label><input class="modal-input" id="av-motif" placeholder="Erreur de facturation, retour produit..." /></div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Description prestation *</label><input class="modal-input" id="av-desc" placeholder="Avoir sur prestation" /></div>
+        <div class="modal-field"><label class="modal-label">Montant HT *</label><input class="modal-input" id="av-montant" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">TVA (%)</label><input class="modal-input" id="av-tva" type="number" value="20" /></div>
+        <div class="modal-field"><label class="modal-label">Quantité</label><input class="modal-input" id="av-qty" type="number" value="1" min="1" /></div>
+      </div>
+      <div class="modal-error" id="av-error"></div>
+      <button class="modal-btn" id="av-btn" onclick="submitAvoir()">Créer l'avoir</button>
+    </div>
+  </div>
+
+  <!-- Modal Immobilisation -->
+  <div class="modal-overlay" id="modal-immobilisation" onclick="closeModalOnOverlay(event,'modal-immobilisation')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-immobilisation')">✕</button>
+      <div class="modal-title">🏗 Nouvelle immobilisation</div>
+      <div class="modal-field"><label class="modal-label">Désignation *</label><input class="modal-input" id="immo-nom" placeholder="MacBook Pro M3, Véhicule utilitaire..." /></div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Catégorie</label>
+          <select class="modal-select" id="immo-categorie">
+            <option value="materiel">Matériel</option><option value="vehicule">Véhicule</option><option value="logiciel">Logiciel</option>
+            <option value="mobilier">Mobilier</option><option value="immeuble">Immeuble</option><option value="autre">Autre</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Fournisseur</label><input class="modal-input" id="immo-fournisseur" placeholder="Apple, Renault..." /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Date d'acquisition *</label><input class="modal-input" id="immo-date" type="date" /></div>
+        <div class="modal-field"><label class="modal-label">Valeur d'achat HT (€) *</label><input class="modal-input" id="immo-valeur" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Durée amortissement (années) *</label><input class="modal-input" id="immo-duree" type="number" min="1" max="50" placeholder="3" /></div>
+        <div class="modal-field"><label class="modal-label">Méthode</label>
+          <select class="modal-select" id="immo-methode"><option value="lineaire">Linéaire</option><option value="degressif">Dégressif</option></select>
+        </div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Notes</label><input class="modal-input" id="immo-notes" placeholder="Numéro de série, usage..." /></div>
+      <div class="modal-error" id="immo-error"></div>
+      <button class="modal-btn" id="immo-btn" onclick="submitImmobilisation()">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- Modal Rapprochement bancaire -->
+  <div class="modal-overlay" id="modal-rapprochement" onclick="closeModalOnOverlay(event,'modal-rapprochement')">
+    <div class="modal" style="max-width:600px;">
+      <button class="modal-close" onclick="closeModal('modal-rapprochement')">✕</button>
+      <div class="modal-title">🏦 Importer un relevé bancaire</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Banque</label><input class="modal-input" id="rap-banque" placeholder="BNP Paribas, Crédit Agricole..." /></div>
+        <div class="modal-field"><label class="modal-label">Période</label><input class="modal-input" id="rap-periode" placeholder="Juin 2026" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Solde d'ouverture (€)</label><input class="modal-input" id="rap-solde-ouv" type="number" step="0.01" placeholder="0.00" /></div>
+        <div class="modal-field"><label class="modal-label">Solde de clôture (€)</label><input class="modal-input" id="rap-solde-clo" type="number" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Transactions (CSV — format: date;libelle;montant)</label>
+        <textarea class="modal-input" id="rap-csv" rows="8" style="font-family:monospace;font-size:12px;resize:vertical;" placeholder="2026-06-01;Virement client Acme;1500.00&#10;2026-06-03;Loyer bureaux;-800.00&#10;2026-06-05;Facture téléphone;-45.00"></textarea>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Montant positif = encaissement, négatif = décaissement</div>
+      </div>
+      <div class="modal-error" id="rap-error"></div>
+      <button class="modal-btn" id="rap-btn" onclick="submitRapprochement()">Importer le relevé</button>
+    </div>
+  </div>
+
+  <!-- Modal Bon de commande -->
+  <div class="modal-overlay" id="modal-bon-commande" onclick="closeModalOnOverlay(event,'modal-bon-commande')">
+    <div class="modal" style="max-width:600px;">
+      <button class="modal-close" onclick="closeModal('modal-bon-commande')">✕</button>
+      <div class="modal-title">📦 Nouveau bon de commande</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Fournisseur *</label><input class="modal-input" id="bc-fournisseur" placeholder="Nom du fournisseur" /></div>
+        <div class="modal-field"><label class="modal-label">Email fournisseur</label><input class="modal-input" id="bc-email" type="email" placeholder="contact@fournisseur.fr" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Description *</label><input class="modal-input" id="bc-desc" placeholder="Fournitures de bureau" /></div>
+        <div class="modal-field"><label class="modal-label">Prix unitaire HT *</label><input class="modal-input" id="bc-prix" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Quantité</label><input class="modal-input" id="bc-qty" type="number" min="1" value="1" /></div>
+        <div class="modal-field"><label class="modal-label">Livraison prévue</label><input class="modal-input" id="bc-livraison" type="date" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Notes</label><input class="modal-input" id="bc-notes" placeholder="Références, conditions..." /></div>
+      <div class="modal-error" id="bc-error"></div>
+      <button class="modal-btn" id="bc-btn" onclick="submitBonCommande()">Créer le bon de commande</button>
+    </div>
+  </div>
+
+  <!-- Modal Avance sur salaire -->
+  <div class="modal-overlay" id="modal-avance-salaire" onclick="closeModalOnOverlay(event,'modal-avance-salaire')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-avance-salaire')">✕</button>
+      <div class="modal-title">💵 Nouvelle avance sur salaire</div>
+      <div class="modal-field"><label class="modal-label">Employé *</label><select class="modal-select" id="avs-employe"></select></div>
+      <div class="modal-field"><label class="modal-label">Montant (€) *</label><input class="modal-input" id="avs-montant" type="number" min="0" step="0.01" placeholder="500" /></div>
+      <div class="modal-field"><label class="modal-label">Motif</label><input class="modal-input" id="avs-motif" placeholder="Urgence personnelle, dépense imprévue..." /></div>
+      <div class="modal-field"><label class="modal-label">Date</label><input class="modal-input" id="avs-date" type="date" /></div>
+      <div class="modal-error" id="avs-error"></div>
+      <button class="modal-btn" id="avs-btn" onclick="submitAvanceSalaire()">Enregistrer la demande</button>
+    </div>
+  </div>
+
+  <!-- Modal Événement agenda -->
+  <div class="modal-overlay" id="modal-agenda" onclick="closeModalOnOverlay(event,'modal-agenda')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-agenda')">✕</button>
+      <div class="modal-title">📅 Nouvel événement</div>
+      <div class="modal-field"><label class="modal-label">Titre *</label><input class="modal-input" id="ag-titre" placeholder="Réunion équipe, Déclaration TVA..." /></div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Type</label>
+          <select class="modal-select" id="ag-type">
+            <option value="reunion">Réunion</option><option value="echeance">Échéance</option>
+            <option value="fiscal">Fiscal</option><option value="rappel">Rappel</option><option value="autre">Autre</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Lieu</label><input class="modal-input" id="ag-lieu" placeholder="Salle de réunion, visio..." /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Début *</label><input class="modal-input" id="ag-debut" type="datetime-local" /></div>
+        <div class="modal-field"><label class="modal-label">Fin</label><input class="modal-input" id="ag-fin" type="datetime-local" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Description</label><input class="modal-input" id="ag-desc" placeholder="Détails, ordre du jour..." /></div>
+      <div class="modal-error" id="ag-error"></div>
+      <button class="modal-btn" id="ag-btn" onclick="submitAgenda()">Créer l'événement</button>
+    </div>
+  </div>
+
+  <!-- Modal Inviter membre -->
+  <div class="modal-overlay" id="modal-invite-membre" onclick="closeModalOnOverlay(event,'modal-invite-membre')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-invite-membre')">✕</button>
+      <div class="modal-title">👤 Inviter un collaborateur</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Prénom *</label><input class="modal-input" id="inv-prenom" placeholder="Jean" /></div>
+        <div class="modal-field"><label class="modal-label">Nom *</label><input class="modal-input" id="inv-nom" placeholder="Dupont" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Email *</label><input class="modal-input" id="inv-email" type="email" placeholder="jean@monentreprise.fr" /></div>
+      <div class="modal-field"><label class="modal-label">Mot de passe temporaire *</label><input class="modal-input" id="inv-mdp" type="password" placeholder="Minimum 8 caractères" /></div>
+      <div class="modal-field"><label class="modal-label">Rôle</label>
+        <select class="modal-select" id="inv-role">
+          <option value="admin">Admin — accès complet</option>
+          <option value="comptable">Comptable — comptabilité uniquement</option>
+          <option value="manager">Manager — RH + projets</option>
+          <option value="employe" selected>Employé — lecture seule</option>
+        </select>
+      </div>
+      <div class="modal-error" id="inv-error"></div>
+      <button class="modal-btn" id="inv-btn" onclick="submitInviteMembre()">Créer le compte</button>
+    </div>
+  </div>
+
   <script>
     // ── Auth guard ──
     const token = localStorage.getItem('novexa_token');
@@ -2614,17 +2943,19 @@
     // ── Section switching ──
     const SECTION_TITLES = {
       dashboard: 'Dashboard', comptabilite: 'Comptabilité', rh: 'Ressources Humaines',
-      stocks: 'Stocks', taches: 'Tâches', ia: 'IA Assistant', parametres: 'Paramètres'
+      stocks: 'Stocks', taches: 'Tâches', ia: 'IA Assistant', parametres: 'Paramètres',
+      agenda: 'Agenda', crm: 'CRM', projets: 'Projets'
     };
     const SECTION_LOADERS = {
       comptabilite: function() { loadAllInvoices(); loadDepenses(); },
       rh: loadRHSection,
-      stocks: function() { loadStocksSection(); loadFournisseurs(); },
+      stocks: function() { loadStocksSection(); loadFournisseurs(); loadBonsCommande(); },
       taches: loadKanban,
       ia: loadIASection,
       parametres: loadParametres,
       crm: loadCRM,
-      projets: loadProjets
+      projets: loadProjets,
+      agenda: loadAgenda
     };
 
     function switchSection(name) {
@@ -2843,6 +3174,15 @@
       if (type === 'recurrence') {
         var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
         document.getElementById('rec-date').value = tomorrow.toISOString().split('T')[0];
+      }
+      if (type === 'avance-salaire') {
+        loadEmployesForSelect('avs-employe', true);
+        document.getElementById('avs-date').value = new Date().toISOString().split('T')[0];
+      }
+      if (type === 'agenda') {
+        var now = new Date();
+        now.setMinutes(0, 0, 0);
+        document.getElementById('ag-debut').value = now.toISOString().slice(0, 16);
       }
     }
     function closeModal(id) {
@@ -3081,7 +3421,7 @@
 
     // ── Comptabilité Tabs ──
     function switchComptaTab(tab) {
-      ['factures','recurrences','documents','clients','devis','tva','catalogue'].forEach(function(t) {
+      ['factures','recurrences','documents','clients','devis','tva','catalogue','avoirs','immos','rapprochement','cashflow','is'].forEach(function(t) {
         var tabEl = document.getElementById('compta-tab-' + t);
         var panelEl = document.getElementById('compta-panel-' + t);
         var actionsEl = document.getElementById('compta-actions-' + t);
@@ -3094,10 +3434,12 @@
       if (tab === 'clients') loadScoresClients();
       if (tab === 'devis') loadDevis();
       if (tab === 'catalogue') loadCatalogue();
-      if (tab === 'tva') {
-        initTVAAnne();
-        loadDeclarationTVA();
-      }
+      if (tab === 'tva') { initTVAAnne(); loadDeclarationTVA(); }
+      if (tab === 'avoirs') loadAvoirs();
+      if (tab === 'immos') loadImmos();
+      if (tab === 'rapprochement') loadRapprochements();
+      if (tab === 'cashflow') loadCashflow();
+      if (tab === 'is') loadCalculIS();
     }
 
     // ── Récurrences ──
@@ -3905,6 +4247,7 @@
       loadCompanySettings();
       loadExpertAccess();
       loadPortails();
+      loadEquipe();
       loadAbonnement();
     }
 
@@ -4326,7 +4669,7 @@
 
     function switchRHTab(tab) {
       currentRHTab = tab;
-      ['employes','conges','paie','virements','notes'].forEach(function(t) {
+      ['employes','conges','paie','virements','avances','notes'].forEach(function(t) {
         var panel = document.getElementById('rh-panel-' + t);
         var tabBtn = document.getElementById('rh-tab-' + t);
         var actions = document.getElementById('rh-actions-' + t);
@@ -4338,6 +4681,7 @@
       else if (tab === 'conges') { loadConges(); loadEmployesForSelect('c-employe'); }
       else if (tab === 'paie') { loadPayslipsAll(); loadEmployesForSelect('p-employe', true); loadEmployesForSelect('paie-filter-employe', true, true); }
       else if (tab === 'virements') { initVirementPeriode(); loadVirements(); }
+      else if (tab === 'avances') { loadAvances(); loadEmployesForSelect('avs-employe', true); }
       else if (tab === 'notes') loadNotesFrais();
     }
 
@@ -4991,6 +5335,475 @@
       var res = await fetch(API + '/notes-frais/' + id + '/rembourser', { method:'POST', headers:apiHeaders() });
       var data = await res.json();
       if (data.success) { showToast('Note marquée remboursée', 'success'); loadNotesFrais(); }
+    }
+
+    // ── Avoirs ──
+    async function loadAvoirs() {
+      var res = await apiFetch('/avoirs');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('avoirs-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun avoir</td></tr>'; return; }
+      var statMap = { brouillon:'badge-gray', valide:'badge-green', annule:'badge-red' };
+      var statLabel = { brouillon:'Brouillon', valide:'Validé', annule:'Annulé' };
+      tbody.innerHTML = list.map(function(a) {
+        return '<tr>'
+          + '<td style="font-weight:700;color:#a5b4fc;">' + (a.numero||'—') + '</td>'
+          + '<td>' + (a.clientNom||'—') + '</td>'
+          + '<td style="color:var(--text-dim);font-size:12px;">' + (a.factureNumero||'—') + '</td>'
+          + '<td>' + (a.motif||'—') + '</td>'
+          + '<td style="font-weight:700;">' + (a.montantTTC||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td><span class="badge ' + (statMap[a.statut]||'badge-gray') + '">' + (statLabel[a.statut]||a.statut) + '</span></td>'
+          + '<td><button class="btn-sm btn-del-sm" onclick="deleteAvoir(\'' + a._id + '\')">🗑</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+    async function submitAvoir() {
+      clearModalError('av');
+      var clientNom = document.getElementById('av-client').value.trim();
+      var motif = document.getElementById('av-motif').value.trim();
+      var desc = document.getElementById('av-desc').value.trim();
+      var montant = parseFloat(document.getElementById('av-montant').value) || 0;
+      if (!clientNom || !motif || !desc || montant <= 0) return modalError('av', 'Renseignez tous les champs obligatoires.');
+      var tva = parseFloat(document.getElementById('av-tva').value) || 20;
+      var qty = parseFloat(document.getElementById('av-qty').value) || 1;
+      setModalLoading('av-btn', true, "Créer l'avoir");
+      try {
+        var res = await fetch(API + '/avoirs', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          clientNom, factureNumero: document.getElementById('av-facture-num').value.trim(),
+          motif, lignes: [{ description: desc, quantite: qty, prixUnitaire: montant, tva, montantHT: qty * montant }]
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-avoir'); showToast('Avoir créé', 'success'); loadAvoirs(); }
+        else modalError('av', data.message || 'Erreur.');
+      } catch(e) { modalError('av', 'Erreur réseau.'); }
+      setModalLoading('av-btn', false, "Créer l'avoir");
+    }
+    async function deleteAvoir(id) {
+      if (!confirm('Supprimer cet avoir ?')) return;
+      var res = await fetch(API + '/avoirs/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Avoir supprimé', 'success'); loadAvoirs(); }
+    }
+
+    // ── Immobilisations ──
+    async function loadImmos() {
+      var res = await apiFetch('/immobilisations');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('immos-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune immobilisation</td></tr>'; return; }
+      var catLabels = { materiel:'Matériel', vehicule:'Véhicule', logiciel:'Logiciel', mobilier:'Mobilier', immeuble:'Immeuble', autre:'Autre' };
+      var statMap = { actif:'badge-green', amorti:'badge-gray', cede:'badge-red' };
+      tbody.innerHTML = list.map(function(i) {
+        var acq = i.dateAcquisition ? new Date(i.dateAcquisition).toLocaleDateString('fr') : '—';
+        return '<tr>'
+          + '<td style="font-weight:600;">' + (i.nom||'—') + '</td>'
+          + '<td>' + (catLabels[i.categorie]||i.categorie||'—') + '</td>'
+          + '<td>' + acq + '</td>'
+          + '<td style="font-weight:700;">' + (i.valeurAchat||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td style="text-align:center;">' + (i.dureeAmortissement||'—') + ' ans</td>'
+          + '<td>' + (i.annuiteAmortissement||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td style="font-weight:700;color:#a5b4fc;">' + (i.valeurNetteComptable||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td><span class="badge ' + (statMap[i.statut]||'badge-gray') + '">' + (i.statut||'actif') + '</span></td>'
+          + '<td><button class="btn-sm btn-del-sm" onclick="deleteImmobilisation(\'' + i._id + '\')">🗑</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+    async function submitImmobilisation() {
+      clearModalError('immo');
+      var nom = document.getElementById('immo-nom').value.trim();
+      var valeur = parseFloat(document.getElementById('immo-valeur').value) || 0;
+      var duree = parseInt(document.getElementById('immo-duree').value) || 0;
+      var date = document.getElementById('immo-date').value;
+      if (!nom || valeur <= 0 || duree <= 0 || !date) return modalError('immo', 'Renseignez tous les champs obligatoires.');
+      setModalLoading('immo-btn', true, 'Enregistrer');
+      try {
+        var res = await fetch(API + '/immobilisations', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          nom, categorie: document.getElementById('immo-categorie').value,
+          fournisseur: document.getElementById('immo-fournisseur').value.trim(),
+          dateAcquisition: date, valeurAchat: valeur, dureeAmortissement: duree,
+          methodeAmortissement: document.getElementById('immo-methode').value,
+          notes: document.getElementById('immo-notes').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-immobilisation'); showToast('Immobilisation ajoutée', 'success'); loadImmos(); }
+        else modalError('immo', data.message || 'Erreur.');
+      } catch(e) { modalError('immo', 'Erreur réseau.'); }
+      setModalLoading('immo-btn', false, 'Enregistrer');
+    }
+    async function deleteImmobilisation(id) {
+      if (!confirm('Supprimer cette immobilisation ?')) return;
+      var res = await fetch(API + '/immobilisations/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Supprimée', 'success'); loadImmos(); }
+    }
+
+    // ── Rapprochement bancaire ──
+    var _currentReleveId = null;
+    async function loadRapprochements() {
+      var res = await apiFetch('/rapprochement');
+      var list = (res && res.data) ? res.data : [];
+      var container = document.getElementById('rapprochements-list');
+      if (!container) return;
+      if (!list.length) { container.innerHTML = '<div style="font-size:13px;color:var(--text-dim);padding:20px;text-align:center;">Aucun relevé importé. Cliquez sur "Importer relevé" pour commencer.</div>'; return; }
+      var statMap = { en_cours:'badge-yellow', valide:'badge-green' };
+      container.innerHTML = list.map(function(r) {
+        var nb = (r.transactions||[]).length;
+        var rapp = (r.transactions||[]).filter(function(t){ return t.rapproche; }).length;
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:8px;margin-bottom:8px;cursor:pointer;" onclick="openReleve(\'' + r._id + '\')">'
+          + '<div><div style="font-weight:600;font-size:13px;">' + (r.banque||'—') + ' — ' + (r.periode||'—') + '</div>'
+          + '<div style="font-size:12px;color:var(--text-dim);">' + rapp + '/' + nb + ' transactions rapprochées</div></div>'
+          + '<div style="display:flex;align-items:center;gap:10px;">'
+          + '<span class="badge ' + (statMap[r.statut]||'badge-gray') + '">' + (r.statut||'—') + '</span>'
+          + '<button class="btn-sm btn-del-sm" onclick="event.stopPropagation();deleteReleve(\'' + r._id + '\')">🗑</button></div>'
+          + '</div>';
+      }).join('');
+    }
+    async function openReleve(id) {
+      _currentReleveId = id;
+      var res = await apiFetch('/rapprochement/' + id);
+      var r = res && res.data;
+      if (!r) return;
+      document.getElementById('rapprochement-detail-title').textContent = (r.banque||'—') + ' — ' + (r.periode||'—');
+      var tbody = document.getElementById('rapprochement-transactions-body');
+      var txs = r.transactions || [];
+      if (!txs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-dim);">Aucune transaction</td></tr>'; }
+      else tbody.innerHTML = txs.map(function(t, idx) {
+        var montant = (t.montant||0).toLocaleString('fr-FR',{minimumFractionDigits:2});
+        var sign = t.montant >= 0 ? '+' : '';
+        var color = t.montant >= 0 ? '#4ade80' : '#f87171';
+        var statut = t.rapproche ? '<span class="badge badge-green">Rapproché</span>' : '<span class="badge badge-gray">Non rapproché</span>';
+        var action = t.rapproche ? '' : '<button class="btn-sm btn-success-sm" onclick="rapprochierTransaction(\'' + id + '\',' + idx + ')">✓ Rapprocher</button>';
+        return '<tr><td>' + (t.date ? new Date(t.date).toLocaleDateString('fr') : '—') + '</td><td>' + (t.libelle||'—') + '</td>'
+          + '<td style="font-weight:700;color:' + color + ';">' + sign + montant + ' €</td>'
+          + '<td>' + statut + '</td><td style="font-size:12px;color:var(--text-dim);">' + (t.rapprochePar||'—') + '</td>'
+          + '<td>' + action + '</td></tr>';
+      }).join('');
+      document.getElementById('rapprochement-detail').style.display = '';
+    }
+    async function rapprochierTransaction(releveId, idx) {
+      var res = await fetch(API + '/rapprochement/' + releveId + '/rapprocher/' + idx, { method:'PUT', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Transaction rapprochée', 'success'); openReleve(releveId); }
+      else showToast(data.message || 'Erreur', 'error');
+    }
+    async function validerRapprochement() {
+      if (!_currentReleveId) return;
+      if (!confirm('Valider ce relevé bancaire ?')) return;
+      var res = await fetch(API + '/rapprochement/' + _currentReleveId + '/valider', { method:'PUT', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Relevé validé', 'success'); loadRapprochements(); document.getElementById('rapprochement-detail').style.display = 'none'; }
+    }
+    async function submitRapprochement() {
+      clearModalError('rap');
+      var banque = document.getElementById('rap-banque').value.trim();
+      var periode = document.getElementById('rap-periode').value.trim();
+      var csv = document.getElementById('rap-csv').value.trim();
+      if (!banque || !periode || !csv) return modalError('rap', 'Renseignez tous les champs obligatoires.');
+      var transactions = csv.split('\n').filter(function(l){ return l.trim(); }).map(function(line) {
+        var parts = line.split(';');
+        return { date: parts[0]&&parts[0].trim(), libelle: parts[1]&&parts[1].trim(), montant: parseFloat(parts[2]) || 0 };
+      });
+      setModalLoading('rap-btn', true, 'Importer');
+      try {
+        var res = await fetch(API + '/rapprochement', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          banque, periode,
+          soldeOuverture: parseFloat(document.getElementById('rap-solde-ouv').value) || 0,
+          soldeCloture: parseFloat(document.getElementById('rap-solde-clo').value) || 0,
+          transactions
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-rapprochement'); showToast('Relevé importé', 'success'); loadRapprochements(); }
+        else modalError('rap', data.message || 'Erreur.');
+      } catch(e) { modalError('rap', 'Erreur réseau.'); }
+      setModalLoading('rap-btn', false, 'Importer');
+    }
+    async function deleteReleve(id) {
+      if (!confirm('Supprimer ce relevé ?')) return;
+      var res = await fetch(API + '/rapprochement/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Relevé supprimé', 'success'); loadRapprochements(); document.getElementById('rapprochement-detail').style.display = 'none'; }
+    }
+
+    // ── Cash Flow ──
+    async function loadCashflow() {
+      var res = await apiFetch('/comptabilite/cashflow');
+      if (!res || !res.data) return;
+      var d = res.data;
+      var kpis = document.getElementById('cashflow-kpis');
+      var fmt = function(v){ return (v||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €'; };
+      kpis.innerHTML = [
+        { label:'Solde actuel', val: fmt(d.soldeActuel), color:'#a5b4fc' },
+        { label:'Entrées (3 mois)', val: fmt(d.totalEntrees), color:'#4ade80' },
+        { label:'Sorties (3 mois)', val: fmt(d.totalSorties), color:'#f87171' }
+      ].map(function(k){ return '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:18px;text-align:center;"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">' + k.label + '</div><div style="font-size:20px;font-weight:800;color:' + k.color + ';">' + k.val + '</div></div>'; }).join('');
+      var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      var histBody = document.getElementById('cashflow-historique-body');
+      var hist = d.historique || [];
+      histBody.innerHTML = hist.length ? hist.map(function(m){
+        var solde = (m.entrees||0) - (m.sorties||0);
+        var sc = solde >= 0 ? '#4ade80' : '#f87171';
+        return '<tr><td>' + (moisLabels[m.mois]||m.mois) + ' ' + m.annee + '</td><td style="color:#4ade80;">' + fmt(m.entrees) + '</td><td style="color:#f87171;">' + fmt(m.sorties) + '</td><td style="font-weight:700;color:' + sc + ';">' + fmt(solde) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">Aucune donnée</td></tr>';
+      var prevBody = document.getElementById('cashflow-previsions-body');
+      var prev = d.previsions || [];
+      prevBody.innerHTML = prev.length ? prev.map(function(m){
+        var solde = (m.entreesPrevues||0) - (m.sortiesPrevues||0);
+        var sc = solde >= 0 ? '#4ade80' : '#f87171';
+        return '<tr><td>' + (moisLabels[m.mois]||m.mois) + ' ' + m.annee + '</td><td style="color:#4ade80;">' + fmt(m.entreesPrevues) + '</td><td style="color:#f87171;">' + fmt(m.sortiesPrevues) + '</td><td style="font-weight:700;color:' + sc + ';">' + fmt(solde) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">Aucune prévision</td></tr>';
+    }
+
+    // ── IS (Impôt sur les Sociétés) ──
+    async function loadCalculIS() {
+      var res = await apiFetch('/comptabilite/calcul-is');
+      if (!res || !res.data) return;
+      var d = res.data;
+      var fmt = function(v){ return (v||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €'; };
+      var kpis = document.getElementById('is-kpis');
+      kpis.innerHTML = [
+        { label:'Résultat fiscal estimé', val: fmt(d.resultatFiscal), color:'#a5b4fc' },
+        { label:'IS estimé', val: fmt(d.isEstime), color:'#f87171' },
+        { label:'Taux effectif', val: (d.tauxEffectif||0).toFixed(1) + '%', color:'#fbbf24' }
+      ].map(function(k){ return '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:18px;text-align:center;"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">' + k.label + '</div><div style="font-size:20px;font-weight:800;color:' + k.color + ';">' + k.val + '</div></div>'; }).join('');
+      var tbody = document.getElementById('is-acomptes-body');
+      var acomptes = d.acomptes || [];
+      var statMap = { a_verser:'badge-yellow', paye:'badge-green', na:'badge-gray' };
+      tbody.innerHTML = acomptes.length ? acomptes.map(function(a){
+        var dt = a.echeance ? new Date(a.echeance).toLocaleDateString('fr') : '—';
+        return '<tr><td>' + dt + '</td><td style="font-weight:700;">' + fmt(a.montant) + '</td><td><span class="badge ' + (statMap[a.statut]||'badge-gray') + '">' + (a.statut==='a_verser'?'À verser':a.statut==='paye'?'Payé':'N/A') + '</span></td></tr>';
+      }).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);">Aucun acompte</td></tr>';
+    }
+
+    // ── Bons de commande ──
+    async function loadBonsCommande() {
+      var res = await apiFetch('/bon-commandes');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('bons-commande-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-dim);">Aucun bon de commande</td></tr>'; return; }
+      var statMap = { brouillon:'badge-gray', envoye:'badge-yellow', confirme:'badge-green', livre:'badge-green', annule:'badge-red' };
+      var statLabel = { brouillon:'Brouillon', envoye:'Envoyé', confirme:'Confirmé', livre:'Livré', annule:'Annulé' };
+      tbody.innerHTML = list.map(function(b) {
+        var dateCmd = b.dateCommande ? new Date(b.dateCommande).toLocaleDateString('fr') : '—';
+        var dateLiv = b.dateLivraisonPrevue ? new Date(b.dateLivraisonPrevue).toLocaleDateString('fr') : '—';
+        var actions = '<button class="btn-sm" onclick="recevoirBonCommande(\'' + b._id + '\')" title="Marquer livré" style="margin-right:4px;">✅ Reçu</button>'
+          + '<button class="btn-sm btn-del-sm" onclick="deleteBonCommande(\'' + b._id + '\')">🗑</button>';
+        return '<tr><td style="font-weight:700;color:#a5b4fc;">' + (b.numero||'—') + '</td>'
+          + '<td>' + (b.fournisseurNom||'—') + '</td>'
+          + '<td style="font-weight:700;">' + (b.montantTTC||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td>' + dateCmd + '</td><td>' + dateLiv + '</td>'
+          + '<td><span class="badge ' + (statMap[b.statut]||'badge-gray') + '">' + (statLabel[b.statut]||b.statut) + '</span></td>'
+          + '<td>' + actions + '</td></tr>';
+      }).join('');
+    }
+    async function submitBonCommande() {
+      clearModalError('bc');
+      var fournisseur = document.getElementById('bc-fournisseur').value.trim();
+      var desc = document.getElementById('bc-desc').value.trim();
+      var prix = parseFloat(document.getElementById('bc-prix').value) || 0;
+      if (!fournisseur || !desc || prix <= 0) return modalError('bc', 'Renseignez tous les champs obligatoires.');
+      var qty = parseFloat(document.getElementById('bc-qty').value) || 1;
+      setModalLoading('bc-btn', true, 'Créer le bon');
+      try {
+        var res = await fetch(API + '/bon-commandes', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          fournisseurNom: fournisseur, fournisseurEmail: document.getElementById('bc-email').value.trim(),
+          lignes: [{ description: desc, quantite: qty, prixUnitaire: prix, montantHT: qty * prix }],
+          dateLivraisonPrevue: document.getElementById('bc-livraison').value || null,
+          notes: document.getElementById('bc-notes').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-bon-commande'); showToast('Bon de commande créé', 'success'); loadBonsCommande(); }
+        else modalError('bc', data.message || 'Erreur.');
+      } catch(e) { modalError('bc', 'Erreur réseau.'); }
+      setModalLoading('bc-btn', false, 'Créer le bon');
+    }
+    async function recevoirBonCommande(id) {
+      var res = await fetch(API + '/bon-commandes/' + id + '/recevoir', { method:'PUT', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Bon marqué livré', 'success'); loadBonsCommande(); }
+    }
+    async function deleteBonCommande(id) {
+      if (!confirm('Supprimer ce bon de commande ?')) return;
+      var res = await fetch(API + '/bon-commandes/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Supprimé', 'success'); loadBonsCommande(); }
+    }
+
+    // ── Avances sur salaire ──
+    async function loadAvances() {
+      var res = await apiFetch('/rh/avances');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('avances-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune avance</td></tr>'; return; }
+      var statMap = { en_attente:'badge-yellow', approuvee:'badge-green', rejetee:'badge-red', remboursee:'badge-gray' };
+      var statLabel = { en_attente:'En attente', approuvee:'Approuvée', rejetee:'Rejetée', remboursee:'Remboursée' };
+      tbody.innerHTML = list.map(function(a) {
+        var empName = a.employee ? (a.employee.prenom + ' ' + a.employee.nom) : (a.employeeNom||'—');
+        var date = a.dateAvance ? new Date(a.dateAvance).toLocaleDateString('fr') : '—';
+        var actions = '';
+        if (a.statut === 'en_attente') {
+          actions = '<button class="btn-sm btn-success-sm" onclick="approuverAvanceSalaire(\'' + a._id + '\')" style="margin-right:4px;">✓</button>'
+            + '<button class="btn-sm btn-del-sm" onclick="rejeterAvanceSalaire(\'' + a._id + '\')">✗</button>';
+        } else if (a.statut === 'approuvee') {
+          actions = '<button class="btn-sm btn-outline" onclick="rembourserAvanceSalaire(\'' + a._id + '\')" style="font-size:11px;padding:4px 8px;">Remboursé</button>';
+        }
+        return '<tr><td style="font-weight:600;">' + empName + '</td>'
+          + '<td style="font-weight:700;">' + (a.montant||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td>' + (a.motif||'—') + '</td><td>' + date + '</td>'
+          + '<td><span class="badge ' + (statMap[a.statut]||'badge-gray') + '">' + (statLabel[a.statut]||a.statut) + '</span></td>'
+          + '<td>' + actions + '</td></tr>';
+      }).join('');
+    }
+    async function submitAvanceSalaire() {
+      clearModalError('avs');
+      var employee = document.getElementById('avs-employe').value;
+      var montant = parseFloat(document.getElementById('avs-montant').value) || 0;
+      if (!employee || montant <= 0) return modalError('avs', 'Sélectionnez un employé et saisissez un montant.');
+      setModalLoading('avs-btn', true, 'Enregistrer');
+      try {
+        var res = await fetch(API + '/rh/avances', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          employee, montant,
+          motif: document.getElementById('avs-motif').value.trim(),
+          dateAvance: document.getElementById('avs-date').value
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-avance-salaire'); showToast('Demande enregistrée', 'success'); loadAvances(); }
+        else modalError('avs', data.message || 'Erreur.');
+      } catch(e) { modalError('avs', 'Erreur réseau.'); }
+      setModalLoading('avs-btn', false, 'Enregistrer');
+    }
+    async function approuverAvanceSalaire(id) {
+      var res = await fetch(API + '/rh/avances/' + id + '/approuver', { method:'PUT', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Avance approuvée', 'success'); loadAvances(); }
+    }
+    async function rejeterAvanceSalaire(id) {
+      var res = await fetch(API + '/rh/avances/' + id + '/rejeter', { method:'PUT', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Avance rejetée', 'success'); loadAvances(); }
+    }
+    async function rembourserAvanceSalaire(id) {
+      var res = await fetch(API + '/rh/avances/' + id + '/rembourser', { method:'PUT', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Marquée remboursée', 'success'); loadAvances(); }
+    }
+
+    // ── Agenda ──
+    async function loadAgenda() {
+      var res = await apiFetch('/agenda');
+      var list = (res && res.data) ? res.data : [];
+      var container = document.getElementById('agenda-list');
+      if (!container) return;
+      if (!list.length) { container.innerHTML = '<div style="font-size:13px;color:var(--text-dim);padding:20px;text-align:center;">Aucun événement à venir. Créez-en un !</div>'; return; }
+      var typeColors = { reunion:'#6366f1', echeance:'#f59e0b', fiscal:'#ef4444', rappel:'#8b5cf6', autre:'#6b7280' };
+      var typeIcons = { reunion:'👥', echeance:'⏰', fiscal:'🏛', rappel:'🔔', autre:'📅' };
+      container.innerHTML = list.map(function(e) {
+        var dt = e.dateDebut ? new Date(e.dateDebut) : null;
+        var dateStr = dt ? dt.toLocaleDateString('fr', { weekday:'short', day:'numeric', month:'short' }) : '—';
+        var timeStr = dt ? dt.toLocaleTimeString('fr', { hour:'2-digit', minute:'2-digit' }) : '';
+        var color = typeColors[e.type] || '#6b7280';
+        var icon = typeIcons[e.type] || '📅';
+        return '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:rgba(255,255,255,.04);border-left:3px solid ' + color + ';border-radius:8px;">'
+          + '<div style="font-size:18px;">' + icon + '</div>'
+          + '<div style="flex:1;">'
+          + '<div style="font-weight:600;font-size:13px;">' + (e.titre||'—') + '</div>'
+          + '<div style="font-size:12px;color:var(--text-dim);margin-top:2px;">' + dateStr + (timeStr ? ' — ' + timeStr : '') + (e.lieu ? ' · ' + e.lieu : '') + '</div>'
+          + '</div>'
+          + '<button class="btn-sm btn-del-sm" onclick="deleteEvenement(\'' + e._id + '\')">🗑</button>'
+          + '</div>';
+      }).join('');
+    }
+    async function loadEcheancesFiscales() {
+      var res = await apiFetch('/agenda/echeances-fiscales');
+      var list = (res && res.data) ? res.data : [];
+      var container = document.getElementById('echeances-fiscales-list');
+      if (!container) return;
+      if (!list.length) { container.innerHTML = '<div style="font-size:13px;color:var(--text-dim);padding:20px;text-align:center;">Aucune échéance calculée</div>'; return; }
+      container.innerHTML = list.map(function(e) {
+        var dt = e.date ? new Date(e.date) : null;
+        var dateStr = dt ? dt.toLocaleDateString('fr', { day:'numeric', month:'long', year:'numeric' }) : '—';
+        var ecart = dt ? Math.ceil((dt - Date.now()) / 86400000) : null;
+        var urgColor = ecart !== null ? (ecart <= 7 ? '#f87171' : ecart <= 30 ? '#fbbf24' : '#4ade80') : '#6b7280';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.04);border-left:3px solid ' + urgColor + ';border-radius:8px;">'
+          + '<div><div style="font-weight:600;font-size:13px;">' + (e.titre||'—') + '</div>'
+          + '<div style="font-size:12px;color:var(--text-dim);">' + dateStr + '</div></div>'
+          + (ecart !== null ? '<div style="font-size:12px;font-weight:700;color:' + urgColor + ';">' + (ecart <= 0 ? 'Expiré' : 'J-' + ecart) + '</div>' : '')
+          + '</div>';
+      }).join('');
+    }
+    async function submitAgenda() {
+      clearModalError('ag');
+      var titre = document.getElementById('ag-titre').value.trim();
+      var debut = document.getElementById('ag-debut').value;
+      if (!titre || !debut) return modalError('ag', 'Titre et date de début requis.');
+      setModalLoading('ag-btn', true, "Créer l'événement");
+      try {
+        var res = await fetch(API + '/agenda', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          titre, type: document.getElementById('ag-type').value,
+          lieu: document.getElementById('ag-lieu').value.trim(),
+          dateDebut: debut, dateFin: document.getElementById('ag-fin').value || null,
+          description: document.getElementById('ag-desc').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-agenda'); showToast('Événement créé', 'success'); loadAgenda(); }
+        else modalError('ag', data.message || 'Erreur.');
+      } catch(e) { modalError('ag', 'Erreur réseau.'); }
+      setModalLoading('ag-btn', false, "Créer l'événement");
+    }
+    async function deleteEvenement(id) {
+      if (!confirm('Supprimer cet événement ?')) return;
+      var res = await fetch(API + '/agenda/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Événement supprimé', 'success'); loadAgenda(); }
+    }
+
+    // ── Équipe & Accès ──
+    async function loadEquipe() {
+      var res = await apiFetch('/equipe');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('equipe-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-dim);">Aucun membre</td></tr>'; return; }
+      var roleLabels = { superAdmin:'Super Admin', admin:'Admin', comptable:'Comptable', manager:'Manager', employe:'Employé', lecture:'Lecture seule' };
+      var roleBadges = { superAdmin:'badge-red', admin:'badge-yellow', comptable:'badge-green', manager:'badge-green', employe:'badge-gray', lecture:'badge-gray' };
+      tbody.innerHTML = list.map(function(m) {
+        return '<tr>'
+          + '<td style="font-weight:600;">' + (m.prenom||'') + ' ' + (m.nom||'') + '</td>'
+          + '<td>' + (m.email||'—') + '</td>'
+          + '<td><span class="badge ' + (roleBadges[m.role]||'badge-gray') + '">' + (roleLabels[m.role]||m.role||'—') + '</span></td>'
+          + '<td><span class="badge badge-green">Actif</span></td>'
+          + '<td><button class="btn-sm btn-del-sm" onclick="supprimerMembre(\'' + m._id + '\')">🗑</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+    async function submitInviteMembre() {
+      clearModalError('inv');
+      var prenom = document.getElementById('inv-prenom').value.trim();
+      var nom = document.getElementById('inv-nom').value.trim();
+      var email = document.getElementById('inv-email').value.trim();
+      var mdp = document.getElementById('inv-mdp').value;
+      if (!prenom || !nom || !email || !mdp) return modalError('inv', 'Tous les champs sont requis.');
+      if (mdp.length < 8) return modalError('inv', 'Le mot de passe doit faire au moins 8 caractères.');
+      setModalLoading('inv-btn', true, 'Créer le compte');
+      try {
+        var res = await fetch(API + '/equipe', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          prenom, nom, email, password: mdp, role: document.getElementById('inv-role').value
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-invite-membre'); showToast('Membre invité', 'success'); loadEquipe(); }
+        else modalError('inv', data.message || 'Erreur.');
+      } catch(e) { modalError('inv', 'Erreur réseau.'); }
+      setModalLoading('inv-btn', false, 'Créer le compte');
+    }
+    async function supprimerMembre(id) {
+      if (!confirm('Supprimer ce membre ? Cette action est irréversible.')) return;
+      var res = await fetch(API + '/equipe/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Membre supprimé', 'success'); loadEquipe(); }
+      else showToast(data.message || 'Erreur', 'error');
     }
 
     // ── Init ──

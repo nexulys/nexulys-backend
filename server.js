@@ -68,6 +68,12 @@ app.use('/api/crm', require('./routes/crm'));
 app.use('/api/catalogue', require('./routes/catalogue'));
 app.use('/api/projets', require('./routes/projets'));
 app.use('/api/notes-frais', require('./routes/notesFrais'));
+app.use('/api/avoirs', require('./routes/avoirs'));
+app.use('/api/immobilisations', require('./routes/immobilisations'));
+app.use('/api/bon-commandes', require('./routes/bonCommandes'));
+app.use('/api/agenda', require('./routes/agenda'));
+app.use('/api/rapprochement', require('./routes/rapprochement'));
+app.use('/api/equipe', require('./routes/equipe'));
 if (process.env.SEED_SECRET) app.use('/api/seed', require('./routes/seed'));
 
 app.use('/api/health', require('./routes/health'));

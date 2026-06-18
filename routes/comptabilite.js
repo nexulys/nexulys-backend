@@ -20,5 +20,7 @@ router.post('/depenses/:id/rejeter', c.rejeterDepense);
 router.get('/export-fec', c.exportFEC);
 router.get('/declaration-tva', c.getDeclarationTVA);
 router.get('/alertes-proactives', c.getAlertesProactives);
+router.get('/cashflow', c.getCashflow);
+router.get('/calcul-is', c.getCalculIS);
 
 module.exports = router;

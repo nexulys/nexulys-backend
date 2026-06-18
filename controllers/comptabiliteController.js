@@ -416,6 +416,144 @@ exports.getDeclarationTVA = async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
+// ── Cash flow prévisionnel ──
+exports.getCashflow = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Last 3 months (historique)
+    const historique = [];
+    for (let i = 2; i >= 0; i--) {
+      const d = new Date(currentYear, currentMonth - i, 1);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+
+      const [invoicesPaids, expenses] = await Promise.all([
+        Invoice.find({ company: req.user.company, statut: 'payee', createdAt: { $gte: start, $lt: end } }),
+        Expense.find({ company: req.user.company, statut: 'approuvee', date: { $gte: start, $lt: end } })
+      ]);
+
+      const entrees = invoicesPaids.reduce((s, inv) => s + inv.montantTTC, 0);
+      const sorties = expenses.reduce((s, exp) => s + exp.montant, 0);
+      historique.push({
+        mois: `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`,
+        entrees: Math.round(entrees * 100) / 100,
+        sorties: Math.round(sorties * 100) / 100,
+        solde: Math.round((entrees - sorties) * 100) / 100
+      });
+    }
+
+    // Next 3 months (prévisions)
+    const previsions = [];
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(currentYear, currentMonth + i, 1);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+
+      const invoicesEnvoyees = await Invoice.find({
+        company: req.user.company,
+        statut: 'envoyee',
+        dateEcheance: { $gte: start, $lt: end }
+      });
+
+      let entresPrevues = invoicesEnvoyees.reduce((s, inv) => s + inv.montantTTC, 0);
+
+      // Try recurring invoices
+      try {
+        const RecurringInvoice = require('../models/RecurringInvoice');
+        const recurrents = await RecurringInvoice.find({
+          company: req.user.company,
+          actif: true,
+          prochainEnvoi: { $gte: start, $lt: end }
+        });
+        recurrents.forEach(r => {
+          const montant = r.lignes.reduce((s, l) => s + l.montantHT, 0) * 1.2;
+          entresPrevues += montant;
+        });
+      } catch (e) { /* skip if no model */ }
+
+      // Estimate future expenses as average of last 3 months
+      const avgSorties = historique.reduce((s, h) => s + h.sorties, 0) / (historique.length || 1);
+
+      previsions.push({
+        mois: `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`,
+        entrees_prevues: Math.round(entresPrevues * 100) / 100,
+        sorties_prevues: Math.round(avgSorties * 100) / 100,
+        solde_prevu: Math.round((entresPrevues - avgSorties) * 100) / 100
+      });
+    }
+
+    // Solde actuel: sum of all paid invoices - all approved expenses
+    const [allPaid, allExpenses] = await Promise.all([
+      Invoice.find({ company: req.user.company, statut: 'payee' }),
+      Expense.find({ company: req.user.company, statut: 'approuvee' })
+    ]);
+    const totalEntrees = allPaid.reduce((s, i) => s + i.montantTTC, 0);
+    const totalSorties = allExpenses.reduce((s, e) => s + e.montant, 0);
+    const soldeActuel = Math.round((totalEntrees - totalSorties) * 100) / 100;
+
+    res.json({ success: true, data: { historique, previsions, soldeActuel } });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+// ── Calcul IS (Impôt sur les Sociétés) ──
+exports.getCalculIS = async (req, res) => {
+  try {
+    const annee = parseInt(req.query.annee) || new Date().getFullYear();
+    const start = new Date(annee, 0, 1);
+    const end = new Date(annee + 1, 0, 1);
+
+    const [invoices, expenses] = await Promise.all([
+      Invoice.find({ company: req.user.company, statut: 'payee', createdAt: { $gte: start, $lt: end } }),
+      Expense.find({ company: req.user.company, date: { $gte: start, $lt: end } })
+    ]);
+
+    const ca = invoices.reduce((s, i) => s + i.montantHT, 0);
+    const charges = expenses.reduce((s, e) => s + e.montant, 0);
+    const resultatAvantIS = ca - charges;
+
+    // French PME 2024 rates: 15% up to 42500€, 25% above
+    let is = 0;
+    if (resultatAvantIS > 0) {
+      const seuilReduit = 42500;
+      if (resultatAvantIS <= seuilReduit) {
+        is = resultatAvantIS * 0.15;
+      } else {
+        is = seuilReduit * 0.15 + (resultatAvantIS - seuilReduit) * 0.25;
+      }
+    }
+
+    const resultatNet = resultatAvantIS - is;
+    const tauxEffectif = resultatAvantIS > 0 ? Math.round((is / resultatAvantIS) * 10000) / 100 : 0;
+
+    // 4 acomptes of 25% each
+    const acompteUnitaire = Math.max(0, is / 4);
+    const acomptes = [
+      { echeance: `15/03/${annee}`, montant: Math.round(acompteUnitaire * 100) / 100, label: '1er acompte' },
+      { echeance: `15/06/${annee}`, montant: Math.round(acompteUnitaire * 100) / 100, label: '2e acompte' },
+      { echeance: `15/09/${annee}`, montant: Math.round(acompteUnitaire * 100) / 100, label: '3e acompte' },
+      { echeance: `15/12/${annee}`, montant: Math.round(acompteUnitaire * 100) / 100, label: '4e acompte' }
+    ];
+
+    const r = v => Math.round(v * 100) / 100;
+    res.json({
+      success: true,
+      data: {
+        annee,
+        ca: r(ca),
+        charges: r(charges),
+        resultatAvantIS: r(resultatAvantIS),
+        is: r(is),
+        resultatNet: r(resultatNet),
+        tauxEffectif,
+        acomptes
+      }
+    });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
 // ── Alertes proactives IA ──
 exports.getAlertesProactives = async (req, res) => {
   try {
