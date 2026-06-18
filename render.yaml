@@ -23,6 +23,10 @@ services:
         value: Novexa
       - key: APP_VERSION
         value: 1.0.0
+      - key: ALLOWED_ORIGINS
+        value: https://novexa.nexulyspro2002.workers.dev
+      - key: GROQ_API_KEY
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: STRIPE_SECRET_KEY

@@ -2150,7 +2150,7 @@
     if (!token) window.location.href = '/login.html';
     const user = JSON.parse(localStorage.getItem('novexa_user') || '{}');
 
-    const API = '/api';
+    const API = 'https://nexulys-backend-1.onrender.com/api';
 
     // ── API helper ──
     const apiHeaders = () => ({
@@ -3986,7 +3986,7 @@
 
       // Keepalive ping every 14 min to prevent Render free tier sleep
       setInterval(function() {
-        fetch('/api/health/live').catch(function() {});
+        fetch('https://nexulys-backend-1.onrender.com/api/health/live').catch(function() {});
       }, 14 * 60 * 1000);
 
       // Register service worker for PWA

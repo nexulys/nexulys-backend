@@ -71,7 +71,7 @@ const catLabels = {fournitures:'Fournitures',transport:'Transport',restauration:
 async function load() {
   if (!token) { show('error-view'); return; }
   try {
-    const res = await fetch('/api/expert/view/' + token);
+    const res = await fetch('https://nexulys-backend-1.onrender.com/api/expert/view/' + token);
     const data = await res.json();
     if (!data.success) { show('error-view'); return; }
     const d = data.data;

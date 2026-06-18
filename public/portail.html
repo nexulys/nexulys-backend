@@ -100,7 +100,7 @@ function statusBadge(s) {
 async function load() {
   if (!token) { show('error-view'); return; }
   try {
-    const res = await fetch('/api/portail/' + token);
+    const res = await fetch('https://nexulys-backend-1.onrender.com/api/portail/' + token);
     const data = await res.json();
     if (!data.success) { show('error-view'); return; }
     const d = data.data;
@@ -154,7 +154,7 @@ async function load() {
 async function payer(invoiceId, btn) {
   btn.disabled = true; btn.textContent = 'Redirection...';
   try {
-    const res = await fetch(`/api/portail/${token}/payer/${invoiceId}`, { method:'POST', headers:{'Content-Type':'application/json'} });
+    const res = await fetch(`https://nexulys-backend-1.onrender.com/api/portail/${token}/payer/${invoiceId}`, { method:'POST', headers:{'Content-Type':'application/json'} });
     const data = await res.json();
     if (data.success && data.data?.url) { window.location.href = data.data.url; }
     else { showToast(data.message || 'Erreur de paiement', 'error'); btn.disabled = false; btn.textContent = '💳 Payer en ligne'; }
