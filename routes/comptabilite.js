@@ -17,5 +17,8 @@ router.post('/factures/:id/relancer', c.relancerFacture);
 router.route('/depenses').get(c.getExpenses).post(c.createExpense);
 router.post('/depenses/:id/approuver', c.approuverDepense);
 router.post('/depenses/:id/rejeter', c.rejeterDepense);
+router.get('/export-fec', c.exportFEC);
+router.get('/declaration-tva', c.getDeclarationTVA);
+router.get('/alertes-proactives', c.getAlertesProactives);
 
 module.exports = router;

@@ -909,6 +909,12 @@
       <button class="nav-item" onclick="switchSection('taches')">
         <span class="icon">✅</span><span class="label">Tâches</span>
       </button>
+      <button class="nav-item" onclick="switchSection('crm')">
+        <span class="icon">🤝</span><span class="label">CRM</span>
+      </button>
+      <button class="nav-item" onclick="switchSection('projets')">
+        <span class="icon">📁</span><span class="label">Projets</span>
+      </button>
 
       <span class="nav-section-label" style="margin-top:8px;">Outils</span>
       <button class="nav-item" onclick="switchSection('ia')">
@@ -963,6 +969,9 @@
     <main class="content">
 
       <div id="section-dashboard" class="section active">
+
+        <!-- Alertes proactives -->
+        <div id="alertes-container" style="margin-bottom:16px;display:none;"></div>
 
         <!-- KPI Cards -->
         <div class="kpi-grid">
@@ -1160,6 +1169,9 @@
           <button class="rh-tab" id="compta-tab-recurrences" onclick="switchComptaTab('recurrences')">🔄 Récurrences</button>
           <button class="rh-tab" id="compta-tab-documents" onclick="switchComptaTab('documents')">📊 Documents</button>
           <button class="rh-tab" id="compta-tab-clients" onclick="switchComptaTab('clients')">📊 Scores clients</button>
+          <button class="rh-tab" id="compta-tab-devis" onclick="switchComptaTab('devis')">📋 Devis</button>
+          <button class="rh-tab" id="compta-tab-tva" onclick="switchComptaTab('tva')">🧾 TVA</button>
+          <button class="rh-tab" id="compta-tab-catalogue" onclick="switchComptaTab('catalogue')">📦 Catalogue</button>
         </div>
 
         <!-- Panel: Factures & Dépenses -->
@@ -1316,6 +1328,7 @@
           <button class="rh-tab active" id="rh-tab-employes" onclick="switchRHTab('employes')">👥 Équipe</button>
           <button class="rh-tab" id="rh-tab-conges" onclick="switchRHTab('conges')">🏖 Congés</button>
           <button class="rh-tab" id="rh-tab-paie" onclick="switchRHTab('paie')">💰 Fiches de paie</button>
+          <button class="rh-tab" id="rh-tab-notes" onclick="switchRHTab('notes')">💳 Notes de frais</button>
         </div>
 
         <!-- Équipe tab -->
@@ -1371,6 +1384,21 @@
               </div>
             </div>
           </div>
+        <!-- Panneau Notes de frais -->
+        <div id="rh-panel-notes" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Notes de frais</div>
+              <button class="btn-primary" onclick="openModal('note-frais')">+ Nouvelle note</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr><th>Employé</th><th>Titre</th><th>Catégorie</th><th>Montant</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+                <tbody id="notes-frais-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -1418,6 +1446,105 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+        <!-- Panneau Devis -->
+        <div id="compta-panel-devis" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Devis</div>
+              <button class="btn-primary" onclick="openModal('devis')">+ Nouveau devis</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr><th>N°</th><th>Client</th><th>Montant TTC</th><th>Devise</th><th>Statut</th><th>Validité</th><th>Actions</th></tr></thead>
+                <tbody id="devis-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau TVA CA3 -->
+        <div id="compta-panel-tva" style="display:none;">
+          <div class="card">
+            <div class="card-header">Déclaration TVA (CA3)</div>
+            <div class="card-body">
+              <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;">
+                <select id="tva-annee" class="modal-select" style="width:100px;padding:8px 12px;font-size:13px;"></select>
+                <select id="tva-mois" class="modal-select" style="width:140px;padding:8px 12px;font-size:13px;">
+                  <option value="">Année entière</option>
+                  <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+                  <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+                  <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+                  <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+                </select>
+                <button class="btn-primary" onclick="loadDeclarationTVA()" style="padding:8px 18px;">Calculer</button>
+                <button class="btn-outline" onclick="exportFEC()" style="padding:8px 18px;">📥 Export FEC</button>
+              </div>
+              <div id="tva-result"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau Catalogue -->
+        <div id="compta-panel-catalogue" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Catalogue produits & services</div>
+              <button class="btn-primary" onclick="openModal('catalogue')">+ Nouvel article</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr><th>Nom</th><th>Référence</th><th>Prix HT</th><th>TVA</th><th>Unité</th><th>Catégorie</th><th></th></tr></thead>
+                <tbody id="catalogue-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      <!-- ── SECTION: CRM ── -->
+      <div id="section-crm" class="section">
+        <div class="section-topbar">
+          <div><div class="section-label">CRM</div><div class="page-title">Pipeline Commercial</div></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-primary" onclick="openModal('prospect')">+ Nouveau prospect</button>
+          </div>
+        </div>
+        <div id="crm-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px;"></div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">Pipeline</div>
+          <div id="crm-pipeline" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:16px;overflow-x:auto;min-height:200px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Tous les prospects</div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Nom</th><th>Entreprise</th><th>Statut</th><th>Valeur estimée</th><th>Probabilité</th><th>Source</th><th>Actions</th></tr></thead>
+              <tbody id="crm-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: PROJETS ── -->
+      <div id="section-projets" class="section">
+        <div class="section-topbar">
+          <div><div class="section-label">Gestion</div><div class="page-title">Projets & Temps</div></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-outline" onclick="openModal('temps')">⏱ Saisir du temps</button>
+            <button class="btn-primary" onclick="openModal('projet')">+ Nouveau projet</button>
+          </div>
+        </div>
+        <div id="projets-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:20px;"></div>
+        <div class="card">
+          <div class="card-header">Dernières saisies de temps</div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Projet</th><th>Employé</th><th>Date</th><th>Heures</th><th>Description</th><th>Facturable</th><th></th></tr></thead>
+              <tbody id="temps-body"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -2144,6 +2271,167 @@
     </div>
   </div>
 
+  <!-- Modal Devis -->
+  <div class="modal-overlay" id="modal-devis" onclick="closeModalOnOverlay(event,'modal-devis')">
+    <div class="modal" style="max-width:600px;">
+      <button class="modal-close" onclick="closeModal('modal-devis')">✕</button>
+      <div class="modal-title">📋 Nouveau devis</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Client *</label><input class="modal-input" id="dv-client" placeholder="Nom du client" /></div>
+        <div class="modal-field"><label class="modal-label">Email client</label><input class="modal-input" id="dv-email" type="email" placeholder="client@email.com" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Description *</label><input class="modal-input" id="dv-desc" placeholder="Prestation ou produit" /></div>
+        <div class="modal-field"><label class="modal-label">Prix unitaire HT *</label><input class="modal-input" id="dv-prix" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Quantité</label><input class="modal-input" id="dv-qty" type="number" min="1" value="1" /></div>
+        <div class="modal-field"><label class="modal-label">TVA (%)</label><input class="modal-input" id="dv-tva" type="number" value="20" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Devise</label>
+          <select class="modal-select" id="dv-devise">
+            <option value="EUR">€ Euro</option><option value="USD">$ Dollar</option><option value="GBP">£ Livre</option><option value="CHF">CHF Franc suisse</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Validité (jours)</label><input class="modal-input" id="dv-validite" type="number" value="30" min="1" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Notes</label><input class="modal-input" id="dv-notes" placeholder="Conditions, remarques..." /></div>
+      <div class="modal-error" id="dv-error"></div>
+      <button class="modal-btn" id="dv-btn" onclick="submitDevis()">Créer le devis</button>
+    </div>
+  </div>
+
+  <!-- Modal Prospect CRM -->
+  <div class="modal-overlay" id="modal-prospect" onclick="closeModalOnOverlay(event,'modal-prospect')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-prospect')">✕</button>
+      <div class="modal-title">🤝 Nouveau prospect</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Nom *</label><input class="modal-input" id="pr-nom" placeholder="Jean Dupont" /></div>
+        <div class="modal-field"><label class="modal-label">Entreprise</label><input class="modal-input" id="pr-entreprise" placeholder="ACME Corp" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Email</label><input class="modal-input" id="pr-email" type="email" placeholder="jean@acme.fr" /></div>
+        <div class="modal-field"><label class="modal-label">Téléphone</label><input class="modal-input" id="pr-tel" placeholder="06 12 34 56 78" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Valeur estimée (€)</label><input class="modal-input" id="pr-valeur" type="number" min="0" placeholder="5000" /></div>
+        <div class="modal-field"><label class="modal-label">Probabilité (%)</label><input class="modal-input" id="pr-proba" type="number" min="0" max="100" value="50" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Statut</label>
+          <select class="modal-select" id="pr-statut">
+            <option value="prospect">Prospect</option><option value="contact">Contact établi</option><option value="negociation">Négociation</option><option value="gagne">Gagné</option><option value="perdu">Perdu</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Source</label>
+          <select class="modal-select" id="pr-source">
+            <option value="inbound">Inbound</option><option value="referral">Référence</option><option value="cold">Cold outreach</option><option value="reseaux">Réseaux sociaux</option><option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Notes</label><input class="modal-input" id="pr-notes" placeholder="Contexte, besoins..." /></div>
+      <div class="modal-error" id="pr-error"></div>
+      <button class="modal-btn" id="pr-btn" onclick="submitProspect()">Ajouter le prospect</button>
+    </div>
+  </div>
+
+  <!-- Modal Projet -->
+  <div class="modal-overlay" id="modal-projet" onclick="closeModalOnOverlay(event,'modal-projet')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-projet')">✕</button>
+      <div class="modal-title">📁 Nouveau projet</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Nom du projet *</label><input class="modal-input" id="pj-nom" placeholder="Refonte site web" /></div>
+        <div class="modal-field"><label class="modal-label">Client</label><input class="modal-input" id="pj-client" placeholder="Nom du client" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Budget (€)</label><input class="modal-input" id="pj-budget" type="number" min="0" placeholder="10000" /></div>
+        <div class="modal-field"><label class="modal-label">TJM (€/jour)</label><input class="modal-input" id="pj-tjm" type="number" min="0" placeholder="600" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Date de début</label><input class="modal-input" id="pj-debut" type="date" /></div>
+        <div class="modal-field"><label class="modal-label">Date de fin prévue</label><input class="modal-input" id="pj-fin" type="date" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Description</label><input class="modal-input" id="pj-desc" placeholder="Objectifs du projet..." /></div>
+      <div class="modal-error" id="pj-error"></div>
+      <button class="modal-btn" id="pj-btn" onclick="submitProjet()">Créer le projet</button>
+    </div>
+  </div>
+
+  <!-- Modal Saisie Temps -->
+  <div class="modal-overlay" id="modal-temps" onclick="closeModalOnOverlay(event,'modal-temps')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-temps')">✕</button>
+      <div class="modal-title">⏱ Saisir du temps</div>
+      <div class="modal-field"><label class="modal-label">Projet *</label><select class="modal-select" id="te-projet"></select></div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Heures *</label><input class="modal-input" id="te-heures" type="number" min="0.25" step="0.25" placeholder="3.5" /></div>
+        <div class="modal-field"><label class="modal-label">Date</label><input class="modal-input" id="te-date" type="date" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Employé</label><input class="modal-input" id="te-employe" placeholder="Votre nom" /></div>
+      <div class="modal-field"><label class="modal-label">Description</label><input class="modal-input" id="te-desc" placeholder="Ce qui a été fait..." /></div>
+      <div class="modal-field" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="te-facturable" checked style="width:16px;height:16px;accent-color:#6366f1;" />
+        <label style="font-size:13px;color:var(--text-muted);">Temps facturable</label>
+      </div>
+      <div class="modal-error" id="te-error"></div>
+      <button class="modal-btn" id="te-btn" onclick="submitTemps()">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- Modal Note de frais -->
+  <div class="modal-overlay" id="modal-note-frais" onclick="closeModalOnOverlay(event,'modal-note-frais')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-note-frais')">✕</button>
+      <div class="modal-title">💳 Nouvelle note de frais</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Employé *</label><input class="modal-input" id="nf-employe" placeholder="Prénom Nom" /></div>
+        <div class="modal-field"><label class="modal-label">Titre *</label><input class="modal-input" id="nf-titre" placeholder="Déjeuner client..." /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Montant (€) *</label><input class="modal-input" id="nf-montant" type="number" min="0" step="0.01" placeholder="42.50" /></div>
+        <div class="modal-field"><label class="modal-label">Date</label><input class="modal-input" id="nf-date" type="date" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Catégorie</label>
+        <select class="modal-select" id="nf-categorie">
+          <option value="transport">Transport</option><option value="restauration">Restauration</option>
+          <option value="hebergement">Hébergement</option><option value="fournitures">Fournitures</option><option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="modal-error" id="nf-error"></div>
+      <button class="modal-btn" id="nf-btn" onclick="submitNoteFrais()">Soumettre la note</button>
+    </div>
+  </div>
+
+  <!-- Modal Catalogue -->
+  <div class="modal-overlay" id="modal-catalogue" onclick="closeModalOnOverlay(event,'modal-catalogue')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-catalogue')">✕</button>
+      <div class="modal-title">📦 Nouvel article catalogue</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Nom *</label><input class="modal-input" id="cat-nom" placeholder="Développement web" /></div>
+        <div class="modal-field"><label class="modal-label">Référence</label><input class="modal-input" id="cat-ref" placeholder="DEV-001" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Prix HT *</label><input class="modal-input" id="cat-prix" type="number" min="0" step="0.01" placeholder="500" /></div>
+        <div class="modal-field"><label class="modal-label">TVA (%)</label><input class="modal-input" id="cat-tva" type="number" value="20" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Unité</label><input class="modal-input" id="cat-unite" placeholder="jour, heure, unité..." /></div>
+        <div class="modal-field"><label class="modal-label">Catégorie</label>
+          <select class="modal-select" id="cat-categorie">
+            <option value="service">Service</option><option value="produit">Produit</option><option value="abonnement">Abonnement</option><option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Description</label><input class="modal-input" id="cat-desc" placeholder="Description de la prestation..." /></div>
+      <div class="modal-error" id="cat-error"></div>
+      <button class="modal-btn" id="cat-btn" onclick="submitCatalogueItem()">Ajouter au catalogue</button>
+    </div>
+  </div>
+
   <script>
     // ── Auth guard ──
     const token = localStorage.getItem('novexa_token');
@@ -2211,7 +2499,9 @@
       stocks: function() { loadStocksSection(); loadFournisseurs(); },
       taches: loadKanban,
       ia: loadIASection,
-      parametres: loadParametres
+      parametres: loadParametres,
+      crm: loadCRM,
+      projets: loadProjets
     };
 
     function switchSection(name) {
@@ -2667,7 +2957,7 @@
 
     // ── Comptabilité Tabs ──
     function switchComptaTab(tab) {
-      ['factures','recurrences','documents','clients'].forEach(function(t) {
+      ['factures','recurrences','documents','clients','devis','tva','catalogue'].forEach(function(t) {
         var tabEl = document.getElementById('compta-tab-' + t);
         var panelEl = document.getElementById('compta-panel-' + t);
         var actionsEl = document.getElementById('compta-actions-' + t);
@@ -2678,6 +2968,12 @@
       if (tab === 'documents') loadDocumentsComptables();
       if (tab === 'recurrences') loadRecurrences();
       if (tab === 'clients') loadScoresClients();
+      if (tab === 'devis') loadDevis();
+      if (tab === 'catalogue') loadCatalogue();
+      if (tab === 'tva') {
+        initTVAAnne();
+        loadDeclarationTVA();
+      }
     }
 
     // ── Récurrences ──
@@ -3823,7 +4119,7 @@
 
     function switchRHTab(tab) {
       currentRHTab = tab;
-      ['employes','conges','paie'].forEach(function(t) {
+      ['employes','conges','paie','notes'].forEach(function(t) {
         var panel = document.getElementById('rh-panel-' + t);
         var tabBtn = document.getElementById('rh-tab-' + t);
         var actions = document.getElementById('rh-actions-' + t);
@@ -3834,6 +4130,7 @@
       if (tab === 'employes') loadEmployes();
       else if (tab === 'conges') { loadConges(); loadEmployesForSelect('c-employe'); }
       else if (tab === 'paie') { loadPayslipsAll(); loadEmployesForSelect('p-employe', true); loadEmployesForSelect('paie-filter-employe', true, true); }
+      else if (tab === 'notes') loadNotesFrais();
     }
 
     // Store employees in module-level var (overrides local)
@@ -3969,6 +4266,399 @@
         } else modalError('p', data.message || 'Erreur.');
       } catch(e) { modalError('p', 'Erreur réseau.'); }
       setModalLoading('p-btn', false, 'Générer la fiche');
+    }
+
+    // ── Alertes proactives ──
+    async function loadAlertesProactives() {
+      var res = await apiFetch('/comptabilite/alertes-proactives');
+      var alertes = (res && res.data) ? res.data : [];
+      var container = document.getElementById('alertes-container');
+      if (!alertes.length || !container) return;
+      var colMap = { danger: '#f87171', warning: '#f59e0b', info: '#a5b4fc' };
+      var bgMap = { danger: 'rgba(248,113,113,.08)', warning: 'rgba(245,158,11,.08)', info: 'rgba(99,102,241,.08)' };
+      container.innerHTML = alertes.map(function(a) {
+        return '<div onclick="switchSection(\'' + (a.action||'dashboard') + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:' + bgMap[a.type] + ';border:1px solid ' + colMap[a.type] + '33;border-radius:10px;margin-bottom:8px;cursor:pointer;">'
+          + '<span style="font-size:20px;">' + a.icon + '</span>'
+          + '<div><div style="font-size:13px;font-weight:600;color:' + colMap[a.type] + ';">' + a.titre + '</div><div style="font-size:12px;color:var(--text-muted);">' + a.message + '</div></div>'
+          + '</div>';
+      }).join('');
+      container.style.display = '';
+    }
+
+    // ── SECTION_LOADERS updates ──
+    // (handled inside SECTION_LOADERS object below — this replaces the existing one)
+
+    // ── Devis ──
+    async function loadDevis() {
+      var res = await apiFetch('/devis');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('devis-body');
+      if (!tbody) return;
+      var statMap = { brouillon:'badge-gray', envoye:'badge-yellow', accepte:'badge-green', refuse:'badge-red', expire:'badge-gray' };
+      var statLabel = { brouillon:'Brouillon', envoye:'Envoyé', accepte:'Accepté', refuse:'Refusé', expire:'Expiré' };
+      var devises = { EUR:'€', USD:'$', GBP:'£', CHF:'CHF' };
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun devis</td></tr>'; return; }
+      tbody.innerHTML = list.map(function(d) {
+        var exp = d.dateValidite ? new Date(d.dateValidite).toLocaleDateString('fr') : '—';
+        var symb = devises[d.devise] || '€';
+        var canConvert = d.statut === 'accepte' && !d.factureId;
+        var actions = '<button class="btn-sm" onclick="envoyerDevis(\'' + d._id + '\')" style="margin-right:4px;" title="Envoyer par email">📧</button>'
+          + (canConvert ? '<button class="btn-sm btn-success-sm" onclick="convertirDevis(\'' + d._id + '\')" style="margin-right:4px;" title="Convertir en facture">↗ Facture</button>' : '')
+          + '<button class="btn-sm btn-del-sm" onclick="deleteDevis(\'' + d._id + '\')">🗑</button>';
+        return '<tr><td style="font-weight:600;color:#a5b4fc;">' + d.numero + '</td><td>' + (d.client?.nom||'—') + '</td><td style="font-weight:700;">' + (d.montantTTC||0).toLocaleString('fr') + ' ' + symb + '</td><td>' + (d.devise||'EUR') + '</td><td><span class="badge ' + (statMap[d.statut]||'badge-gray') + '">' + (statLabel[d.statut]||d.statut) + '</span></td><td style="color:var(--text-dim);">' + exp + '</td><td>' + actions + '</td></tr>';
+      }).join('');
+    }
+    async function submitDevis() {
+      clearModalError('dv');
+      var client = document.getElementById('dv-client').value.trim();
+      var prix = parseFloat(document.getElementById('dv-prix').value) || 0;
+      var desc = document.getElementById('dv-desc').value.trim();
+      if (!client) return modalError('dv', 'Le nom du client est requis.');
+      if (!desc || prix <= 0) return modalError('dv', 'Description et prix requis.');
+      var qty = parseFloat(document.getElementById('dv-qty').value) || 1;
+      var tva = parseFloat(document.getElementById('dv-tva').value) || 20;
+      var montantHT = qty * prix;
+      var validite = parseInt(document.getElementById('dv-validite').value) || 30;
+      var dateValidite = new Date(Date.now() + validite * 86400000).toISOString();
+      setModalLoading('dv-btn', true, 'Créer le devis');
+      try {
+        var res = await fetch(API + '/devis', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          client: { nom: client, email: document.getElementById('dv-email').value.trim() },
+          lignes: [{ description: desc, quantite: qty, prixUnitaire: prix, tva, montantHT }],
+          notes: document.getElementById('dv-notes').value.trim(),
+          devise: document.getElementById('dv-devise').value,
+          dateValidite
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-devis'); showToast('Devis créé', 'success'); loadDevis(); }
+        else modalError('dv', data.message || 'Erreur.');
+      } catch(e) { modalError('dv', 'Erreur réseau.'); }
+      setModalLoading('dv-btn', false, 'Créer le devis');
+    }
+    async function envoyerDevis(id) {
+      var res = await fetch(API + '/devis/' + id + '/envoyer', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) {
+        showToast('Devis envoyé par email', 'success');
+        if (data.data?.url) copyToClipboard(data.data.url);
+        loadDevis();
+      } else showToast(data.message || 'Erreur', 'error');
+    }
+    async function convertirDevis(id) {
+      if (!confirm('Convertir ce devis en facture ?')) return;
+      var res = await fetch(API + '/devis/' + id + '/convertir', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Facture créée depuis le devis', 'success'); loadDevis(); loadAllInvoices(); }
+      else showToast(data.message || 'Erreur', 'error');
+    }
+    async function deleteDevis(id) {
+      if (!confirm('Supprimer ce devis ?')) return;
+      var res = await fetch(API + '/devis/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Devis supprimé', 'success'); loadDevis(); }
+      else showToast(data.message || 'Erreur', 'error');
+    }
+
+    // ── Déclaration TVA & FEC ──
+    function initTVAAnne() {
+      var sel = document.getElementById('tva-annee');
+      if (!sel || sel.options.length > 1) return;
+      var y = new Date().getFullYear();
+      for (var i = y; i >= y - 4; i--) { var o = document.createElement('option'); o.value = i; o.textContent = i; sel.appendChild(o); }
+    }
+    async function loadDeclarationTVA() {
+      var annee = document.getElementById('tva-annee')?.value || new Date().getFullYear();
+      var mois = document.getElementById('tva-mois')?.value || '';
+      var url = '/comptabilite/declaration-tva?annee=' + annee + (mois ? '&mois=' + mois : '');
+      var res = await apiFetch(url);
+      var el = document.getElementById('tva-result');
+      if (!res || !res.success || !el) return;
+      var d = res.data;
+      var soldeColor = d.soldeTVA >= 0 ? '#f87171' : '#34d399';
+      var soldeLabel = d.aRembourser ? 'TVA à récupérer' : 'TVA à reverser';
+      el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px;">'
+        + kpiCard('CA HT', d.caHT.toLocaleString('fr') + ' €', '#a5b4fc')
+        + kpiCard('TVA collectée', d.tvaCollectee.toLocaleString('fr') + ' €', '#f87171')
+        + kpiCard('TVA déductible', d.tvaDeductible.toLocaleString('fr') + ' €', '#34d399')
+        + kpiCard(soldeLabel, Math.abs(d.soldeTVA).toLocaleString('fr') + ' €', soldeColor)
+        + '</div>'
+        + '<div style="padding:16px;background:rgba(255,255,255,.03);border-radius:10px;font-size:13px;color:var(--text-muted);">Période : <strong style="color:var(--text);">' + d.periode + '</strong> — ' + d.nbFactures + ' factures analysées</div>';
+    }
+    function kpiCard(label, val, color) {
+      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;text-align:center;"><div style="font-size:20px;font-weight:800;color:' + color + ';">' + val + '</div><div style="font-size:12px;color:var(--text-dim);margin-top:4px;">' + label + '</div></div>';
+    }
+    async function exportFEC() {
+      var annee = document.getElementById('tva-annee')?.value || new Date().getFullYear();
+      window.open(API + '/comptabilite/export-fec?annee=' + annee, '_blank');
+    }
+
+    // ── Catalogue ──
+    async function loadCatalogue() {
+      var res = await apiFetch('/catalogue');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('catalogue-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun article dans le catalogue</td></tr>'; return; }
+      var catLabel = { service:'Service', produit:'Produit', abonnement:'Abonnement', autre:'Autre' };
+      tbody.innerHTML = list.map(function(c) {
+        return '<tr><td style="font-weight:600;">' + c.nom + '</td><td style="color:var(--text-dim);">' + (c.reference||'—') + '</td><td style="font-weight:700;color:#a5b4fc;">' + (c.prixUnitaire||0).toLocaleString('fr') + ' €</td><td>' + (c.tva||20) + ' %</td><td>' + (c.unite||'unité') + '</td><td><span class="badge badge-gray">' + (catLabel[c.categorie]||c.categorie) + '</span></td><td><button class="btn-sm btn-del-sm" onclick="deleteCatalogueItem(\'' + c._id + '\')">🗑</button></td></tr>';
+      }).join('');
+    }
+    async function submitCatalogueItem() {
+      clearModalError('cat');
+      var nom = document.getElementById('cat-nom').value.trim();
+      var prix = parseFloat(document.getElementById('cat-prix').value);
+      if (!nom) return modalError('cat', 'Le nom est requis.');
+      if (isNaN(prix)) return modalError('cat', 'Le prix est requis.');
+      setModalLoading('cat-btn', true, 'Ajouter');
+      try {
+        var res = await fetch(API + '/catalogue', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          nom, prixUnitaire: prix,
+          reference: document.getElementById('cat-ref').value.trim(),
+          tva: parseFloat(document.getElementById('cat-tva').value) || 20,
+          unite: document.getElementById('cat-unite').value.trim() || 'unité',
+          categorie: document.getElementById('cat-categorie').value,
+          description: document.getElementById('cat-desc').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-catalogue'); showToast('Article ajouté', 'success'); loadCatalogue(); }
+        else modalError('cat', data.message || 'Erreur.');
+      } catch(e) { modalError('cat', 'Erreur réseau.'); }
+      setModalLoading('cat-btn', false, 'Ajouter au catalogue');
+    }
+    async function deleteCatalogueItem(id) {
+      if (!confirm('Supprimer cet article ?')) return;
+      var res = await fetch(API + '/catalogue/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Article supprimé', 'success'); loadCatalogue(); }
+    }
+
+    // ── CRM ──
+    async function loadCRM() {
+      var [prosRes, kpiRes] = await Promise.all([apiFetch('/crm'), apiFetch('/crm/kpis')]);
+      var prospects = (prosRes && prosRes.data) ? prosRes.data : [];
+      var pipeline = (prosRes && prosRes.pipeline) ? prosRes.pipeline : [];
+      var kpis = (kpiRes && kpiRes.data) ? kpiRes.data : {};
+      var kpiEl = document.getElementById('crm-kpis');
+      if (kpiEl) kpiEl.innerHTML = [
+        ['Prospects total', kpis.total || 0, '#a5b4fc'],
+        ['Deals gagnés', kpis.gagnes || 0, '#34d399'],
+        ['Taux de conversion', (kpis.tauxConversion || 0) + ' %', '#f59e0b'],
+        ['Valeur pipeline', (kpis.valeurPipeline || 0).toLocaleString('fr') + ' €', '#6366f1']
+      ].map(function(k) { return kpiCard(k[0], k[1], k[2]); }).join('');
+      var statLabels = { prospect:'🔵 Prospect', contact:'📞 Contact', negociation:'🤝 Négo.', gagne:'✅ Gagné', perdu:'❌ Perdu' };
+      var pipelineEl = document.getElementById('crm-pipeline');
+      if (pipelineEl) {
+        pipelineEl.innerHTML = pipeline.map(function(col) {
+          var cards = prospects.filter(function(p) { return p.statut === col.statut; });
+          return '<div style="background:rgba(255,255,255,.02);border-radius:10px;padding:12px;">'
+            + '<div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px;">' + (statLabels[col.statut]||col.statut) + ' <span style="color:var(--text-muted);">(' + col.count + ')</span></div>'
+            + cards.map(function(p) { return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;" onclick="updateProspectStatut(\'' + p._id + '\')">'
+              + '<div style="font-size:13px;font-weight:600;margin-bottom:2px;">' + p.nom + '</div>'
+              + '<div style="font-size:11px;color:var(--text-dim);">' + (p.entreprise||'') + '</div>'
+              + (p.valeurEstimee ? '<div style="font-size:12px;color:#a5b4fc;margin-top:4px;font-weight:600;">' + p.valeurEstimee.toLocaleString('fr') + ' €</div>' : '')
+              + '</div>'; }).join('')
+            + '</div>';
+        }).join('');
+      }
+      var tbody = document.getElementById('crm-body');
+      if (!tbody) return;
+      var badgeMap = { prospect:'badge-blue', contact:'badge-yellow', negociation:'badge-orange', gagne:'badge-green', perdu:'badge-red' };
+      var srcLabel = { inbound:'Inbound', referral:'Référence', cold:'Cold', reseaux:'Réseaux', autre:'Autre' };
+      if (!prospects.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun prospect</td></tr>'; return; }
+      tbody.innerHTML = prospects.map(function(p) {
+        return '<tr><td style="font-weight:600;">' + p.nom + '</td><td style="color:var(--text-dim);">' + (p.entreprise||'—') + '</td>'
+          + '<td><span class="badge ' + (badgeMap[p.statut]||'badge-gray') + '">' + (statLabels[p.statut]||p.statut) + '</span></td>'
+          + '<td style="font-weight:700;color:#a5b4fc;">' + (p.valeurEstimee||0).toLocaleString('fr') + ' €</td>'
+          + '<td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:rgba(255,255,255,.06);border-radius:4px;height:6px;"><div style="background:#6366f1;width:' + (p.probabilite||0) + '%;height:6px;border-radius:4px;"></div></div><span style="font-size:12px;color:var(--text-dim);">' + (p.probabilite||0) + '%</span></div></td>'
+          + '<td style="color:var(--text-dim);">' + (srcLabel[p.source]||p.source||'—') + '</td>'
+          + '<td><select class="btn-sm" style="background:rgba(255,255,255,.06);border:none;color:var(--text);font-size:12px;padding:4px 8px;border-radius:6px;cursor:pointer;" onchange="updateProspectStatutDirect(\'' + p._id + '\',this.value)">'
+          + ['prospect','contact','negociation','gagne','perdu'].map(function(s) { return '<option value="' + s + '"' + (p.statut===s?' selected':'') + '>' + (statLabels[s]||s) + '</option>'; }).join('')
+          + '</select> <button class="btn-sm btn-del-sm" onclick="deleteProspect(\'' + p._id + '\')">🗑</button></td></tr>';
+      }).join('');
+    }
+    async function submitProspect() {
+      clearModalError('pr');
+      var nom = document.getElementById('pr-nom').value.trim();
+      if (!nom) return modalError('pr', 'Le nom est requis.');
+      setModalLoading('pr-btn', true, 'Ajouter');
+      try {
+        var res = await fetch(API + '/crm', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          nom, entreprise: document.getElementById('pr-entreprise').value.trim(),
+          email: document.getElementById('pr-email').value.trim(),
+          telephone: document.getElementById('pr-tel').value.trim(),
+          valeurEstimee: parseFloat(document.getElementById('pr-valeur').value) || 0,
+          probabilite: parseInt(document.getElementById('pr-proba').value) || 50,
+          statut: document.getElementById('pr-statut').value,
+          source: document.getElementById('pr-source').value,
+          notes: document.getElementById('pr-notes').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-prospect'); showToast('Prospect ajouté', 'success'); loadCRM(); }
+        else modalError('pr', data.message || 'Erreur.');
+      } catch(e) { modalError('pr', 'Erreur réseau.'); }
+      setModalLoading('pr-btn', false, 'Ajouter le prospect');
+    }
+    async function updateProspectStatutDirect(id, statut) {
+      var res = await fetch(API + '/crm/' + id, { method:'PUT', headers:apiHeaders(), body:JSON.stringify({ statut }) });
+      var data = await res.json();
+      if (data.success) { showToast('Statut mis à jour', 'success'); loadCRM(); }
+    }
+    async function deleteProspect(id) {
+      if (!confirm('Supprimer ce prospect ?')) return;
+      var res = await fetch(API + '/crm/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Prospect supprimé', 'success'); loadCRM(); }
+    }
+
+    // ── Projets & Temps ──
+    async function loadProjets() {
+      var res = await apiFetch('/projets');
+      var list = (res && res.data) ? res.data : [];
+      var el = document.getElementById('projets-list');
+      var statutColors = { en_cours:'#a5b4fc', en_pause:'#f59e0b', termine:'#34d399', annule:'#94a3b8' };
+      var statutLabels = { en_cours:'En cours', en_pause:'En pause', termine:'Terminé', annule:'Annulé' };
+      if (!list.length) { if(el) el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px;grid-column:1/-1;">Aucun projet — créez votre premier projet</div>'; return; }
+      if (el) el.innerHTML = list.map(function(p) {
+        var rentColor = p.rentabilite ? (p.rentabilite >= 80 ? '#34d399' : p.rentabilite >= 50 ? '#f59e0b' : '#f87171') : 'var(--text-dim)';
+        return '<div class="card" style="padding:0;">'
+          + '<div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">'
+          + '<span style="font-weight:700;">' + p.nom + '</span>'
+          + '<span style="font-size:11px;font-weight:600;color:' + (statutColors[p.statut]||'#94a3b8') + ';">' + (statutLabels[p.statut]||p.statut) + '</span>'
+          + '</div><div class="card-body" style="padding:16px;">'
+          + (p.client ? '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Client : ' + p.client + '</div>' : '')
+          + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">'
+          + '<div><div style="color:var(--text-dim);font-size:11px;">Budget</div><div style="font-weight:700;color:#a5b4fc;">' + (p.budget||0).toLocaleString('fr') + ' €</div></div>'
+          + '<div><div style="color:var(--text-dim);font-size:11px;">Heures saisies</div><div style="font-weight:700;">' + (p.totalHeures||0) + ' h</div></div>'
+          + '<div><div style="color:var(--text-dim);font-size:11px;">Valeur facturée</div><div style="font-weight:700;color:#34d399;">' + (p.valeurFacturee||0).toLocaleString('fr') + ' €</div></div>'
+          + '<div><div style="color:var(--text-dim);font-size:11px;">Rentabilité</div><div style="font-weight:700;color:' + rentColor + ';">' + (p.rentabilite !== null ? p.rentabilite + ' %' : '—') + '</div></div>'
+          + '</div>'
+          + '<button class="btn-sm btn-del-sm" onclick="deleteProjet(\'' + p._id + '\')" style="margin-top:12px;">🗑 Supprimer</button>'
+          + '</div></div>';
+      }).join('');
+      await loadTimeEntries();
+    }
+    async function loadTimeEntries() {
+      var res = await apiFetch('/projets/temps');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('temps-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-dim);">Aucune saisie de temps</td></tr>'; return; }
+      tbody.innerHTML = list.map(function(e) {
+        return '<tr><td style="font-weight:600;">' + (e.projet?.nom || e.projet || '—') + '</td><td>' + (e.employeNom||'—') + '</td><td style="color:var(--text-dim);">' + new Date(e.date).toLocaleDateString('fr') + '</td><td style="font-weight:700;color:#a5b4fc;">' + e.heures + ' h</td><td style="color:var(--text-dim);">' + (e.description||'—') + '</td><td><span class="badge ' + (e.facturable?'badge-green':'badge-gray') + '">' + (e.facturable?'Oui':'Non') + '</span></td><td><button class="btn-sm btn-del-sm" onclick="deleteTemps(\'' + e._id + '\')">🗑</button></td></tr>';
+      }).join('');
+    }
+    async function submitProjet() {
+      clearModalError('pj');
+      var nom = document.getElementById('pj-nom').value.trim();
+      if (!nom) return modalError('pj', 'Le nom est requis.');
+      setModalLoading('pj-btn', true, 'Créer');
+      try {
+        var res = await fetch(API + '/projets', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          nom, client: document.getElementById('pj-client').value.trim(),
+          budget: parseFloat(document.getElementById('pj-budget').value) || 0,
+          tjm: parseFloat(document.getElementById('pj-tjm').value) || 0,
+          dateDebut: document.getElementById('pj-debut').value,
+          dateFin: document.getElementById('pj-fin').value,
+          description: document.getElementById('pj-desc').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-projet'); showToast('Projet créé', 'success'); loadProjets(); }
+        else modalError('pj', data.message || 'Erreur.');
+      } catch(e) { modalError('pj', 'Erreur réseau.'); }
+      setModalLoading('pj-btn', false, 'Créer le projet');
+    }
+    async function submitTemps() {
+      clearModalError('te');
+      var projetId = document.getElementById('te-projet')?.value;
+      var heures = parseFloat(document.getElementById('te-heures').value);
+      if (!projetId) return modalError('te', 'Choisissez un projet.');
+      if (!heures || heures <= 0) return modalError('te', 'Nombre d\'heures requis.');
+      setModalLoading('te-btn', true, 'Enregistrer');
+      try {
+        var res = await fetch(API + '/projets/temps', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          projetId, heures,
+          description: document.getElementById('te-desc').value.trim(),
+          date: document.getElementById('te-date').value,
+          employeNom: document.getElementById('te-employe').value.trim(),
+          facturable: document.getElementById('te-facturable').checked
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-temps'); showToast('Temps enregistré', 'success'); loadProjets(); }
+        else modalError('te', data.message || 'Erreur.');
+      } catch(e) { modalError('te', 'Erreur réseau.'); }
+      setModalLoading('te-btn', false, 'Enregistrer');
+    }
+    async function deleteProjet(id) {
+      if (!confirm('Supprimer ce projet et ses saisies de temps ?')) return;
+      var res = await fetch(API + '/projets/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Projet supprimé', 'success'); loadProjets(); }
+    }
+    async function deleteTemps(id) {
+      var res = await fetch(API + '/projets/temps/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Entrée supprimée', 'success'); loadProjets(); }
+    }
+    async function loadProjetsForSelect() {
+      var res = await apiFetch('/projets');
+      var list = (res && res.data) ? res.data : [];
+      var sel = document.getElementById('te-projet');
+      if (!sel) return;
+      sel.innerHTML = list.map(function(p) { return '<option value="' + p._id + '">' + p.nom + '</option>'; }).join('');
+    }
+
+    // ── Notes de frais ──
+    async function loadNotesFrais() {
+      var res = await apiFetch('/notes-frais');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('notes-frais-body');
+      if (!tbody) return;
+      var statMap = { en_attente:'badge-yellow', approuvee:'badge-green', rejetee:'badge-red', remboursee:'badge-blue' };
+      var statLabel = { en_attente:'En attente', approuvee:'Approuvée', rejetee:'Rejetée', remboursee:'Remboursée' };
+      var catLabel = { transport:'Transport', restauration:'Restauration', hebergement:'Hébergement', fournitures:'Fournitures', autre:'Autre' };
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune note de frais</td></tr>'; return; }
+      tbody.innerHTML = list.map(function(n) {
+        var actions = '';
+        if (n.statut === 'en_attente') actions = '<button class="btn-sm btn-success-sm" onclick="approuverNoteFrais(\'' + n._id + '\')" style="margin-right:4px;">✓</button><button class="btn-sm btn-del-sm" onclick="rejeterNoteFrais(\'' + n._id + '\')">✗</button>';
+        else if (n.statut === 'approuvee') actions = '<button class="btn-sm" onclick="rembourserNoteFrais(\'' + n._id + '\')">💸 Rembourser</button>';
+        return '<tr><td style="font-weight:600;">' + (n.employeNom||'—') + '</td><td>' + n.titre + '</td><td style="color:var(--text-dim);">' + (catLabel[n.categorie]||n.categorie) + '</td><td style="font-weight:700;color:#a5b4fc;">' + (n.montant||0).toLocaleString('fr') + ' €</td><td style="color:var(--text-dim);">' + new Date(n.date||n.createdAt).toLocaleDateString('fr') + '</td><td><span class="badge ' + (statMap[n.statut]||'badge-gray') + '">' + (statLabel[n.statut]||n.statut) + '</span></td><td>' + actions + '</td></tr>';
+      }).join('');
+    }
+    async function submitNoteFrais() {
+      clearModalError('nf');
+      var employe = document.getElementById('nf-employe').value.trim();
+      var titre = document.getElementById('nf-titre').value.trim();
+      var montant = parseFloat(document.getElementById('nf-montant').value);
+      if (!employe || !titre) return modalError('nf', 'Employé et titre requis.');
+      if (!montant || montant <= 0) return modalError('nf', 'Montant invalide.');
+      setModalLoading('nf-btn', true, 'Soumettre');
+      try {
+        var res = await fetch(API + '/notes-frais', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          employeNom: employe, titre, montant,
+          categorie: document.getElementById('nf-categorie').value,
+          date: document.getElementById('nf-date').value
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-note-frais'); showToast('Note de frais soumise', 'success'); loadNotesFrais(); }
+        else modalError('nf', data.message || 'Erreur.');
+      } catch(e) { modalError('nf', 'Erreur réseau.'); }
+      setModalLoading('nf-btn', false, 'Soumettre la note');
+    }
+    async function approuverNoteFrais(id) {
+      var res = await fetch(API + '/notes-frais/' + id + '/approuver', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Note approuvée', 'success'); loadNotesFrais(); }
+    }
+    async function rejeterNoteFrais(id) {
+      var res = await fetch(API + '/notes-frais/' + id + '/rejeter', { method:'POST', headers:apiHeaders(), body:JSON.stringify({ commentaire: 'Rejeté' }) });
+      var data = await res.json();
+      if (data.success) { showToast('Note rejetée', 'success'); loadNotesFrais(); }
+    }
+    async function rembourserNoteFrais(id) {
+      var res = await fetch(API + '/notes-frais/' + id + '/rembourser', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Note marquée remboursée', 'success'); loadNotesFrais(); }
     }
 
     // ── Init ──

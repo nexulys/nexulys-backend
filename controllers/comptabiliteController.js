@@ -341,3 +341,121 @@ exports.getSettings = async (req, res) => {
     res.json({ success: true, data: company });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
+
+// ── Export FEC (Fichier d'Écritures Comptables) ──
+exports.exportFEC = async (req, res) => {
+  try {
+    const annee = parseInt(req.query.annee) || new Date().getFullYear();
+    const company = await Company.findById(req.user.company);
+    const debut = new Date(annee, 0, 1);
+    const fin = new Date(annee, 11, 31, 23, 59, 59);
+    const invoices = await Invoice.find({ company: req.user.company, statut: 'payee', createdAt: { $gte: debut, $lte: fin } });
+    const expenses = await Expense.find({ company: req.user.company, createdAt: { $gte: debut, $lte: fin } });
+
+    const pad = (n, l = 2) => String(n).padStart(l, '0');
+    const fmtDate = d => { const dt = new Date(d); return `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}`; };
+    const fmtMontant = n => Math.abs(n || 0).toFixed(2).replace('.', ',');
+
+    let lines = ['JournalCode\tJournalLib\tEcritureNum\tEcritureDate\tCompteNum\tCompteLib\tCompAuxNum\tCompAuxLib\tPieceRef\tPieceDate\tEcritureLib\tDebit\tCredit\tEcritureLet\tDateLet\tValidDate\tMontantdevise\tIdevise'];
+    let num = 1;
+
+    invoices.forEach(inv => {
+      const dt = fmtDate(inv.createdAt);
+      const ref = inv.numero;
+      const clientCode = 'CLI' + ref.slice(-4);
+      lines.push(`VT\tVentes\t${String(num).padStart(6,'0')}\t${dt}\t411\tClients\t${clientCode}\t${inv.client?.nom||''}\t${ref}\t${dt}\t${ref}\t${fmtMontant(inv.montantTTC)}\t0,00\t\t\t${dt}\t\t`);
+      lines.push(`VT\tVentes\t${String(num).padStart(6,'0')}\t${dt}\t706\tPrestations\t\t\t${ref}\t${dt}\t${ref}\t0,00\t${fmtMontant(inv.montantHT)}\t\t\t${dt}\t\t`);
+      if (inv.montantTVA > 0) lines.push(`VT\tVentes\t${String(num).padStart(6,'0')}\t${dt}\t44571\tTVA collectée\t\t\t${ref}\t${dt}\t${ref}\t0,00\t${fmtMontant(inv.montantTVA)}\t\t\t${dt}\t\t`);
+      num++;
+    });
+
+    expenses.forEach(exp => {
+      const dt = fmtDate(exp.date || exp.createdAt);
+      const ref = `DEP-${String(num).padStart(4,'0')}`;
+      lines.push(`AC\tAchats\t${String(num).padStart(6,'0')}\t${dt}\t606\tCharges\t\t\t${ref}\t${dt}\t${exp.titre||'Dépense'}\t${fmtMontant(exp.montant)}\t0,00\t\t\t${dt}\t\t`);
+      lines.push(`AC\tAchats\t${String(num).padStart(6,'0')}\t${dt}\t512\tBanque\t\t\t${ref}\t${dt}\t${exp.titre||'Dépense'}\t0,00\t${fmtMontant(exp.montant)}\t\t\t${dt}\t\t`);
+      num++;
+    });
+
+    const content = lines.join('\n');
+    const filename = `FEC_${(company?.nom || 'Novexa').replace(/\s/g, '_')}_${annee}.txt`;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(content);
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+// ── Déclaration TVA CA3 ──
+exports.getDeclarationTVA = async (req, res) => {
+  try {
+    const annee = parseInt(req.query.annee) || new Date().getFullYear();
+    const mois = req.query.mois ? parseInt(req.query.mois) : null;
+    const debut = mois ? new Date(annee, mois - 1, 1) : new Date(annee, 0, 1);
+    const fin = mois ? new Date(annee, mois, 0, 23, 59, 59) : new Date(annee, 11, 31, 23, 59, 59);
+
+    const invoices = await Invoice.find({ company: req.user.company, statut: { $in: ['payee', 'envoyee', 'en_retard'] }, createdAt: { $gte: debut, $lte: fin } });
+    const expenses = await Expense.find({ company: req.user.company, createdAt: { $gte: debut, $lte: fin } });
+
+    const caHT = invoices.reduce((s, i) => s + i.montantHT, 0);
+    const tvaCollectee = invoices.reduce((s, i) => s + i.montantTVA, 0);
+    const tvaDeductible = expenses.reduce((s, e) => s + (e.montant * 0.2 / 1.2), 0);
+    const soldeTVA = tvaCollectee - tvaDeductible;
+
+    res.json({
+      success: true,
+      data: {
+        periode: mois ? `${String(mois).padStart(2,'0')}/${annee}` : String(annee),
+        caHT: Math.round(caHT * 100) / 100,
+        tvaCollectee: Math.round(tvaCollectee * 100) / 100,
+        tvaDeductible: Math.round(tvaDeductible * 100) / 100,
+        soldeTVA: Math.round(soldeTVA * 100) / 100,
+        aRembourser: soldeTVA < 0,
+        nbFactures: invoices.length
+      }
+    });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+// ── Alertes proactives IA ──
+exports.getAlertesProactives = async (req, res) => {
+  try {
+    const now = new Date();
+    const alertes = [];
+
+    // Factures en retard
+    const enRetard = await Invoice.find({ company: req.user.company, statut: 'en_retard' });
+    if (enRetard.length > 0) {
+      const montant = enRetard.reduce((s, i) => s + i.montantTTC, 0);
+      alertes.push({ type: 'danger', icon: '⚠️', titre: 'Factures en retard de paiement', message: `${enRetard.length} facture(s) impayée(s) pour un total de ${montant.toFixed(0)} €`, action: 'comptabilite' });
+    }
+
+    // Factures envoyées depuis plus de 30 jours
+    const vieilles = await Invoice.find({ company: req.user.company, statut: 'envoyee', createdAt: { $lt: new Date(now - 30 * 86400000) } });
+    if (vieilles.length > 0) alertes.push({ type: 'warning', icon: '📅', titre: 'Factures sans réponse depuis 30+ jours', message: `${vieilles.length} facture(s) envoyées sans paiement depuis plus d'un mois`, action: 'comptabilite' });
+
+    // Stock critique
+    const Product = require('../models/Product');
+    const stockCritique = await Product.find({ company: req.user.company, actif: true, alerteActive: true, $expr: { $lte: ['$quantite', '$seuilAlerte'] } });
+    if (stockCritique.length > 0) alertes.push({ type: 'warning', icon: '📦', titre: 'Stock en alerte', message: `${stockCritique.length} produit(s) sous le seuil d'alerte`, action: 'stocks' });
+
+    // Dépenses en attente d'approbation
+    const depensesEnAttente = await Expense.countDocuments({ company: req.user.company, statut: 'en_attente' });
+    if (depensesEnAttente > 0) alertes.push({ type: 'info', icon: '💸', titre: 'Dépenses en attente d\'approbation', message: `${depensesEnAttente} dépense(s) attendent votre validation`, action: 'comptabilite' });
+
+    // Notes de frais en attente
+    try {
+      const NoteFrais = require('../models/NoteFrais');
+      const notesEnAttente = await NoteFrais.countDocuments({ company: req.user.company, statut: 'en_attente' });
+      if (notesEnAttente > 0) alertes.push({ type: 'info', icon: '🧾', titre: 'Notes de frais en attente', message: `${notesEnAttente} note(s) de frais à traiter`, action: 'rh' });
+    } catch {}
+
+    // Devis expirés
+    try {
+      const Devis = require('../models/Devis');
+      const devisExpires = await Devis.countDocuments({ company: req.user.company, statut: 'envoye', dateValidite: { $lt: now } });
+      if (devisExpires > 0) alertes.push({ type: 'warning', icon: '📋', titre: 'Devis expirés sans réponse', message: `${devisExpires} devis ont dépassé leur date de validité`, action: 'comptabilite' });
+    } catch {}
+
+    res.json({ success: true, data: alertes, count: alertes.length });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};

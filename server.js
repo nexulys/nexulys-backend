@@ -63,6 +63,11 @@ app.use('/api/rapport', require('./routes/rapport'));
 // Routes publiques — limiter dédié plus restrictif
 app.use('/api/expert', publicLimiter, require('./routes/expert'));
 app.use('/api/portail', publicLimiter, require('./routes/portail'));
+app.use('/api/devis', publicLimiter, require('./routes/devis'));
+app.use('/api/crm', require('./routes/crm'));
+app.use('/api/catalogue', require('./routes/catalogue'));
+app.use('/api/projets', require('./routes/projets'));
+app.use('/api/notes-frais', require('./routes/notesFrais'));
 if (process.env.SEED_SECRET) app.use('/api/seed', require('./routes/seed'));
 
 app.use('/api/health', require('./routes/health'));
