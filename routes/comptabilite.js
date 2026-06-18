@@ -22,5 +22,6 @@ router.get('/declaration-tva', c.getDeclarationTVA);
 router.get('/alertes-proactives', c.getAlertesProactives);
 router.get('/cashflow', c.getCashflow);
 router.get('/calcul-is', c.getCalculIS);
+router.get('/dsn', c.getDSN);
 
 module.exports = router;

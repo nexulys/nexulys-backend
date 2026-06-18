@@ -1,3 +1,47 @@
+const nodemailer = require('nodemailer');
+const logger = require('../utils/logger');
+
+const getTransporter = () => {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+  });
+};
+
+exports.sendEmail = async ({ to, subject, html, text }) => {
+  const t = getTransporter();
+  if (!t) { logger.warn('Email non configuré — SMTP non défini'); return { mock: true }; }
+  try {
+    return await t.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER, to, subject, html, text });
+  } catch (err) {
+    logger.warn('Envoi email échoué', { error: err.message });
+    return { mock: true, error: err.message };
+  }
+};
+
+exports.sendPayslipNotif = async (employee, mois, annee) => {
+  const moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  if (!employee.email) return { mock: true };
+  return exports.sendEmail({
+    to: employee.email,
+    subject: `Votre fiche de paie ${moisLabels[mois]} ${annee}`,
+    html: `<p>Bonjour ${employee.prenom},</p><p>Votre fiche de paie pour ${moisLabels[mois]} ${annee} est disponible dans votre espace Novexa.</p>`
+  });
+};
+
+exports.sendLeaveNotif = async (employeeEmail, employeePrenom, statut) => {
+  const label = statut === 'approuve' ? 'approuvée ✅' : 'rejetée ❌';
+  return exports.sendEmail({
+    to: employeeEmail,
+    subject: `Demande de congé ${label}`,
+    html: `<p>Bonjour ${employeePrenom},</p><p>Votre demande de congé a été ${label}.</p>`
+  });
+};
+
+// ── Legacy template helpers (kept for backward compatibility) ──
 const { sendMail } = require('../utils/mailer');
 
 const emailTemplates = {
@@ -13,7 +57,7 @@ const emailTemplates = {
       </div>`
   }),
 
-  alerteStockBas: (product, company) => ({
+  alerteStockBas: (product) => ({
     subject: `⚠️ Alerte stock bas — ${product.nom}`,
     html: `
       <div style="font-family:Inter,sans-serif;max-width:600px;margin:auto;background:#0a0a0f;color:#fff;padding:40px;border-radius:12px">

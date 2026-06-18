@@ -2,6 +2,8 @@ const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
 const Product = require('../models/Product');
 const Company = require('../models/Company');
+const Payslip = require('../models/Payslip');
+const Employee = require('../models/Employee');
 const { calculerTVA } = require('../utils/tvaCalculator');
 const { sendMail } = require('../utils/mailer');
 const { sendSlack } = require('../utils/slack');
@@ -200,21 +202,54 @@ exports.getCompteResultat = async (req, res) => {
 
 exports.getBilan = async (req, res) => {
   try {
-    const { annee } = req.query;
-    const y = +annee || new Date().getFullYear();
-    const start = new Date(y, 0, 1); const end = new Date(y + 1, 0, 1);
-    const [invoices, expenses] = await Promise.all([
-      Invoice.find({ company: req.user.company, createdAt: { $gte: start, $lt: end }, statut: 'payee' }),
-      Expense.find({ company: req.user.company, date: { $gte: start, $lt: end } })
+    const annee = parseInt(req.query.annee) || new Date().getFullYear();
+    const start = new Date(annee, 0, 1);
+    const end = new Date(annee + 1, 0, 1);
+
+    const [invoices, expenses, payslips] = await Promise.all([
+      Invoice.find({ company: req.user.company, statut: 'payee', createdAt: { $gte: start, $lt: end } }),
+      Expense.find({ company: req.user.company, date: { $gte: start, $lt: end } }),
+      Payslip.find({ company: req.user.company, annee, statut: 'paye' })
     ]);
-    const totalRevenu = invoices.reduce((s, i) => s + i.montantTTC, 0);
-    const totalDepenses = expenses.reduce((s, e) => s + e.montant, 0);
-    const benefice = totalRevenu - totalDepenses;
+
+    const produits = invoices.reduce((s, i) => s + i.montantTTC, 0);
+    const charges = expenses.reduce((s, e) => s + e.montant, 0);
+    const salaires = payslips.reduce((s, p) => s + p.salaireNet, 0);
+    const resultatBrut = produits - charges - salaires;
+
+    // IS : 15% sur les premiers 42500€, 25% au-delà
+    let is = 0;
+    if (resultatBrut > 0) {
+      const seuil = 42500;
+      if (resultatBrut <= seuil) {
+        is = resultatBrut * 0.15;
+      } else {
+        is = seuil * 0.15 + (resultatBrut - seuil) * 0.25;
+      }
+    }
+    const resultatNet = resultatBrut - is;
+
+    // Agrégat mensuel
     const moisLabels = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const mensuel = Object.fromEntries(moisLabels.map(m => [m, { revenu: 0, depenses: 0 }]));
-    invoices.forEach(i => { const k = moisLabels[new Date(i.createdAt).getMonth()]; mensuel[k].revenu += i.montantTTC; });
-    expenses.forEach(e => { const k = moisLabels[new Date(e.date).getMonth()]; mensuel[k].depenses += e.montant; });
-    res.json({ success: true, data: { annee: y, totalRevenu, totalDepenses, benefice, mensuel } });
+    const mensuel = Object.fromEntries(moisLabels.map(m => [m, { produits: 0, charges: 0, salaires: 0 }]));
+    invoices.forEach(i => { const k = moisLabels[new Date(i.createdAt).getMonth()]; mensuel[k].produits += i.montantTTC; });
+    expenses.forEach(e => { const k = moisLabels[new Date(e.date).getMonth()]; mensuel[k].charges += e.montant; });
+    payslips.forEach(p => { const k = moisLabels[p.mois - 1]; if (k) mensuel[k].salaires += p.salaireNet; });
+
+    const r = v => Math.round(v * 100) / 100;
+    res.json({
+      success: true,
+      data: {
+        annee,
+        produits: r(produits),
+        charges: r(charges),
+        salaires: r(salaires),
+        resultatBrut: r(resultatBrut),
+        is: r(is),
+        resultatNet: r(resultatNet),
+        mensuel
+      }
+    });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
@@ -549,6 +584,36 @@ exports.getCalculIS = async (req, res) => {
         resultatNet: r(resultatNet),
         tauxEffectif,
         acomptes
+      }
+    });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.getDSN = async (req, res) => {
+  try {
+    const mois = parseInt(req.query.mois) || new Date().getMonth() + 1;
+    const annee = parseInt(req.query.annee) || new Date().getFullYear();
+
+    const [employes, payslipsDuMois] = await Promise.all([
+      Employee.find({ company: req.user.company, statut: 'actif' }),
+      Payslip.find({ company: req.user.company, mois, annee }).populate('employee', 'prenom nom')
+    ]);
+
+    const masseSalarialeBrute = employes.reduce((s, e) => s + (e.salaireBase || 0), 0);
+    const cotisationsPatronales = Math.round(masseSalarialeBrute * 0.42 * 100) / 100;
+    const cotisationsSalariales = Math.round(masseSalarialeBrute * 0.22 * 100) / 100;
+
+    res.json({
+      success: true,
+      data: {
+        mois,
+        annee,
+        nbEmployes: employes.length,
+        employes: employes.map(e => ({ id: e._id, nom: e.nom, prenom: e.prenom, poste: e.poste, salaireBase: e.salaireBase })),
+        masseSalarialeBrute: Math.round(masseSalarialeBrute * 100) / 100,
+        cotisationsPatronales,
+        cotisationsSalariales,
+        payslips: payslipsDuMois
       }
     });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }

@@ -918,6 +918,9 @@
       <button class="nav-item" onclick="switchSection('agenda')">
         <span class="icon">📅</span><span class="label">Agenda</span>
       </button>
+      <button class="nav-item" onclick="switchSection('support')">
+        <span class="icon">🎫</span><span class="label">Support</span>
+      </button>
 
       <span class="nav-section-label" style="margin-top:8px;">Outils</span>
       <button class="nav-item" onclick="switchSection('ia')">
@@ -1180,6 +1183,9 @@
           <button class="rh-tab" id="compta-tab-rapprochement" onclick="switchComptaTab('rapprochement')">🏦 Rapprochement</button>
           <button class="rh-tab" id="compta-tab-cashflow" onclick="switchComptaTab('cashflow')">💧 Cash Flow</button>
           <button class="rh-tab" id="compta-tab-is" onclick="switchComptaTab('is')">🏛 Impôt (IS)</button>
+          <button class="rh-tab" id="compta-tab-bilan" onclick="switchComptaTab('bilan')">📊 Bilan</button>
+          <button class="rh-tab" id="compta-tab-budget" onclick="switchComptaTab('budget')">💼 Budget</button>
+          <button class="rh-tab" id="compta-tab-analytique" onclick="switchComptaTab('analytique')">📈 Analytique</button>
         </div>
 
         <!-- Panel: Factures & Dépenses -->
@@ -1339,6 +1345,8 @@
           <button class="rh-tab" id="rh-tab-virements" onclick="switchRHTab('virements')">💸 Virements</button>
           <button class="rh-tab" id="rh-tab-avances" onclick="switchRHTab('avances')">💵 Avances</button>
           <button class="rh-tab" id="rh-tab-notes" onclick="switchRHTab('notes')">💳 Notes de frais</button>
+          <button class="rh-tab" id="rh-tab-contrats" onclick="switchRHTab('contrats')">📋 Contrats</button>
+          <button class="rh-tab" id="rh-tab-planning" onclick="switchRHTab('planning')">📅 Planning</button>
         </div>
 
         <!-- Équipe tab -->
@@ -1371,11 +1379,13 @@
 
         <!-- Fiches de paie tab -->
         <div id="rh-panel-paie" style="display:none;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
             <label style="font-size:13px;color:var(--text-muted);white-space:nowrap;">Employé :</label>
             <select id="paie-filter-employe" class="modal-select" style="width:220px;padding:8px 12px;" onchange="loadPayslipsAll()">
               <option value="">Tous les employés</option>
             </select>
+            <button class="btn-outline" onclick="exportDSN()" style="padding:7px 14px;font-size:12px;margin-left:auto;">📋 Export DSN</button>
+            <button class="btn-outline" onclick="exportCSVPayslips()" style="padding:7px 14px;font-size:12px;">📥 Export CSV</button>
           </div>
           <div class="card">
             <div class="card-header">
@@ -1477,7 +1487,49 @@
               </table>
             </div>
           </div>
+        <!-- Panneau Contrats RH -->
+        <div id="rh-panel-contrats" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Contrats de travail</div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-outline" onclick="exportCSVTable('contrats-body',['Employé','Type','Début','Fin','Salaire brut','Statut'],'contrats')" style="font-size:12px;padding:6px 12px;">📥 CSV</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>Employé</th><th>Type</th><th>Début</th><th>Fin</th><th>Salaire brut</th><th>Statut</th></tr></thead>
+              <tbody id="contrats-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+            </table></div>
+          </div>
         </div>
+
+        <!-- Panneau Planning des absences -->
+        <div id="rh-panel-planning" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Planning des absences</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select id="planning-mois" class="modal-select" style="padding:6px 10px;font-size:12px;" onchange="renderPlanning()">
+                  <option value="0">Janvier</option><option value="1">Février</option><option value="2">Mars</option>
+                  <option value="3">Avril</option><option value="4">Mai</option><option value="5">Juin</option>
+                  <option value="6">Juillet</option><option value="7">Août</option><option value="8">Septembre</option>
+                  <option value="9">Octobre</option><option value="10">Novembre</option><option value="11">Décembre</option>
+                </select>
+                <select id="planning-annee" class="modal-select" style="padding:6px 10px;font-size:12px;" onchange="renderPlanning()"></select>
+              </div>
+            </div>
+            <div id="planning-grid" style="padding:16px;overflow-x:auto;min-height:200px;font-size:12px;">
+              <div style="color:var(--text-dim);text-align:center;padding:32px;">Chargement du planning...</div>
+            </div>
+            <div style="padding:12px 16px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;border-top:1px solid rgba(255,255,255,.05);">
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;background:#4ade80;border-radius:3px;display:inline-block;"></span>Congé payé</span>
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;background:#f59e0b;border-radius:3px;display:inline-block;"></span>RTT</span>
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;background:#f87171;border-radius:3px;display:inline-block;"></span>Maladie</span>
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;background:#a5b4fc;border-radius:3px;display:inline-block;"></span>Autre</span>
+            </div>
+          </div>
+        </div>
+
         </div>
       </div>
 
@@ -1685,6 +1737,67 @@
                 Taux IS 2024 : 15% jusqu'à 42 500 € de bénéfice, 25% au-delà (PME éligibles). Calculé sur la base de l'exercice en cours.
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Panneau Bilan -->
+        <div id="compta-panel-bilan" style="display:none;">
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Bilan & Compte de résultat</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select id="bilan-annee" class="modal-select" style="padding:6px 10px;font-size:12px;" onchange="loadBilan()"></select>
+                <button class="btn-outline" onclick="printBilan()" style="font-size:12px;padding:6px 12px;">🖨 Imprimer</button>
+                <button class="btn-outline" onclick="loadBilan()" style="font-size:12px;padding:6px 12px;">🔄</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="bilan-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div>
+                  <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#4ade80;">PRODUITS</div>
+                  <table class="data-table"><thead><tr><th>Poste</th><th>Montant</th></tr></thead>
+                  <tbody id="bilan-produits-body"></tbody></table>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#f87171;">CHARGES</div>
+                  <table class="data-table"><thead><tr><th>Poste</th><th>Montant</th></tr></thead>
+                  <tbody id="bilan-charges-body"></tbody></table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau Budget -->
+        <div id="compta-panel-budget" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Budget prévisionnel</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select id="budget-annee" class="modal-select" style="padding:6px 10px;font-size:12px;" onchange="loadBudget()"></select>
+                <button class="btn-outline" onclick="exportCSVTable('budget-body',['Catégorie','Type','Mois','Prévu','Réel','Écart'],'budget')" style="font-size:12px;padding:6px 12px;">📥 CSV</button>
+                <button class="btn-primary" onclick="openModal('budget-ligne')">+ Ligne</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>Catégorie</th><th>Type</th><th>Mois</th><th>Prévu</th><th>Réel</th><th>Écart</th><th></th></tr></thead>
+              <tbody id="budget-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- Panneau Analytique -->
+        <div id="compta-panel-analytique" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Centres analytiques</div>
+              <button class="btn-primary" onclick="openModal('centre-analytique')">+ Centre</button>
+            </div>
+            <div style="overflow-x:auto;"><table class="data-table">
+              <thead><tr><th>Code</th><th>Nom</th><th>Budget annuel</th><th>Couleur</th><th>Statut</th><th></th></tr></thead>
+              <tbody id="centres-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+            </table></div>
           </div>
         </div>
 
@@ -2189,6 +2302,24 @@
         </div>
       </div>
 
+      <!-- ── SECTION: SUPPORT ── -->
+      <div id="section-support" class="section">
+        <div class="section-topbar">
+          <div><div class="section-label">Helpdesk</div><h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Support & Tickets</h2></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="loadTickets()" style="padding:8px 16px;font-size:13px;">🔄 Actualiser</button>
+            <button class="btn-primary" onclick="openModal('ticket')">+ Nouveau ticket</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;" id="tickets-kpis"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;" id="tickets-columns">
+          <div class="card"><div class="card-header" style="border-bottom:3px solid #6366f1;">🔵 Ouvert</div><div id="tickets-col-ouvert" style="padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;"></div></div>
+          <div class="card"><div class="card-header" style="border-bottom:3px solid #f59e0b;">🟡 En cours</div><div id="tickets-col-en_cours" style="padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;"></div></div>
+          <div class="card"><div class="card-header" style="border-bottom:3px solid #4ade80;">🟢 Résolu</div><div id="tickets-col-resolu" style="padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;"></div></div>
+          <div class="card"><div class="card-header" style="border-bottom:3px solid #6b7280;">⚫ Fermé</div><div id="tickets-col-ferme" style="padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;"></div></div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -2346,8 +2477,12 @@
       <button class="modal-close" onclick="closeModal('modal-depense')">✕</button>
       <div class="modal-title">💸 Nouvelle dépense</div>
       <div class="modal-field">
-        <label class="modal-label">Titre</label>
+        <label class="modal-label" style="display:flex;align-items:center;justify-content:space-between;">Titre <button onclick="ocrDepense()" style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;">🤖 OCR / IA</button></label>
         <input class="modal-input" id="d-titre" placeholder="Loyer bureaux, abonnement logiciel..." />
+      </div>
+      <div id="d-ocr-area" style="display:none;margin-bottom:10px;">
+        <textarea class="modal-input" id="d-ocr-text" rows="4" style="font-size:12px;resize:vertical;" placeholder="Collez ici le texte de votre facture fournisseur — l'IA extraira automatiquement le montant et la catégorie..."></textarea>
+        <button onclick="runOCR()" class="btn-outline" style="font-size:12px;padding:6px 14px;margin-top:6px;width:100%;">Extraire les données</button>
       </div>
       <div class="modal-row">
         <div class="modal-field">
@@ -2586,6 +2721,14 @@
         <div class="modal-field"><label class="modal-label">Validité (jours)</label><input class="modal-input" id="dv-validite" type="number" value="30" min="1" /></div>
       </div>
       <div class="modal-field"><label class="modal-label">Notes</label><input class="modal-input" id="dv-notes" placeholder="Conditions, remarques..." /></div>
+      <div class="modal-field">
+        <label class="modal-label" style="display:flex;align-items:center;justify-content:space-between;">
+          Signature client (optionnel)
+          <button onclick="clearSignature()" style="background:none;border:1px solid rgba(255,255,255,.15);color:var(--text-dim);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;">Effacer</button>
+        </label>
+        <canvas id="signature-canvas" width="520" height="120" style="border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);width:100%;touch-action:none;cursor:crosshair;"></canvas>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Signez en maintenant le clic ou le doigt</div>
+      </div>
       <div class="modal-error" id="dv-error"></div>
       <button class="modal-btn" id="dv-btn" onclick="submitDevis()">Créer le devis</button>
     </div>
@@ -2884,6 +3027,79 @@
     </div>
   </div>
 
+  <!-- Modal Ligne de budget -->
+  <div class="modal-overlay" id="modal-budget-ligne" onclick="closeModalOnOverlay(event,'modal-budget-ligne')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-budget-ligne')">✕</button>
+      <div class="modal-title">💼 Nouvelle ligne de budget</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Catégorie *</label><input class="modal-input" id="bud-categorie" placeholder="Loyer, Salaires, Ventes produits..." /></div>
+        <div class="modal-field"><label class="modal-label">Type *</label>
+          <select class="modal-select" id="bud-type"><option value="recette">Recette</option><option value="charge">Charge</option></select>
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Mois *</label>
+          <select class="modal-select" id="bud-mois">
+            <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+            <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+            <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Montant prévu (€) *</label><input class="modal-input" id="bud-montant" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Notes</label><input class="modal-input" id="bud-notes" placeholder="Précisions..." /></div>
+      <div class="modal-error" id="bud-error"></div>
+      <button class="modal-btn" id="bud-btn" onclick="submitBudgetLigne()">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- Modal Ticket support -->
+  <div class="modal-overlay" id="modal-ticket" onclick="closeModalOnOverlay(event,'modal-ticket')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-ticket')">✕</button>
+      <div class="modal-title">🎫 Nouveau ticket</div>
+      <div class="modal-field"><label class="modal-label">Titre *</label><input class="modal-input" id="tkt-titre" placeholder="Décrivez le problème en une ligne" /></div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Catégorie</label>
+          <select class="modal-select" id="tkt-categorie">
+            <option value="technique">Technique</option><option value="rh">RH</option>
+            <option value="comptabilite">Comptabilité</option><option value="autre">Autre</option>
+          </select>
+        </div>
+        <div class="modal-field"><label class="modal-label">Priorité</label>
+          <select class="modal-select" id="tkt-priorite">
+            <option value="basse">Basse</option><option value="normale" selected>Normale</option>
+            <option value="haute">Haute</option><option value="urgente">Urgente</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Description</label><textarea class="modal-input" id="tkt-desc" rows="4" style="resize:vertical;" placeholder="Décrivez le problème en détail, les étapes pour le reproduire..."></textarea></div>
+      <div class="modal-error" id="tkt-error"></div>
+      <button class="modal-btn" id="tkt-btn" onclick="submitTicket()">Créer le ticket</button>
+    </div>
+  </div>
+
+  <!-- Modal Centre analytique -->
+  <div class="modal-overlay" id="modal-centre-analytique" onclick="closeModalOnOverlay(event,'modal-centre-analytique')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-centre-analytique')">✕</button>
+      <div class="modal-title">📈 Nouveau centre analytique</div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Nom *</label><input class="modal-input" id="ca-nom" placeholder="Direction commerciale, Production..." /></div>
+        <div class="modal-field"><label class="modal-label">Code</label><input class="modal-input" id="ca-code" placeholder="COM, PROD..." /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label class="modal-label">Budget annuel (€)</label><input class="modal-input" id="ca-budget" type="number" min="0" placeholder="0" /></div>
+        <div class="modal-field"><label class="modal-label">Couleur</label><input class="modal-input" id="ca-couleur" type="color" value="#6366f1" style="padding:4px;" /></div>
+      </div>
+      <div class="modal-field"><label class="modal-label">Description</label><input class="modal-input" id="ca-desc" placeholder="Périmètre et objectifs..." /></div>
+      <div class="modal-error" id="ca-error"></div>
+      <button class="modal-btn" id="ca-btn" onclick="submitCentreAnalytique()">Créer</button>
+    </div>
+  </div>
+
   <script>
     // ── Auth guard ──
     const token = localStorage.getItem('novexa_token');
@@ -2944,7 +3160,7 @@
     const SECTION_TITLES = {
       dashboard: 'Dashboard', comptabilite: 'Comptabilité', rh: 'Ressources Humaines',
       stocks: 'Stocks', taches: 'Tâches', ia: 'IA Assistant', parametres: 'Paramètres',
-      agenda: 'Agenda', crm: 'CRM', projets: 'Projets'
+      agenda: 'Agenda', crm: 'CRM', projets: 'Projets', support: 'Support & Tickets'
     };
     const SECTION_LOADERS = {
       comptabilite: function() { loadAllInvoices(); loadDepenses(); },
@@ -2955,7 +3171,8 @@
       parametres: loadParametres,
       crm: loadCRM,
       projets: loadProjets,
-      agenda: loadAgenda
+      agenda: loadAgenda,
+      support: loadTickets
     };
 
     function switchSection(name) {
@@ -3421,7 +3638,7 @@
 
     // ── Comptabilité Tabs ──
     function switchComptaTab(tab) {
-      ['factures','recurrences','documents','clients','devis','tva','catalogue','avoirs','immos','rapprochement','cashflow','is'].forEach(function(t) {
+      ['factures','recurrences','documents','clients','devis','tva','catalogue','avoirs','immos','rapprochement','cashflow','is','bilan','budget','analytique'].forEach(function(t) {
         var tabEl = document.getElementById('compta-tab-' + t);
         var panelEl = document.getElementById('compta-panel-' + t);
         var actionsEl = document.getElementById('compta-actions-' + t);
@@ -3440,6 +3657,9 @@
       if (tab === 'rapprochement') loadRapprochements();
       if (tab === 'cashflow') loadCashflow();
       if (tab === 'is') loadCalculIS();
+      if (tab === 'bilan') loadBilan();
+      if (tab === 'budget') loadBudget();
+      if (tab === 'analytique') loadCentresAnalytiques();
     }
 
     // ── Récurrences ──
@@ -4669,7 +4889,7 @@
 
     function switchRHTab(tab) {
       currentRHTab = tab;
-      ['employes','conges','paie','virements','avances','notes'].forEach(function(t) {
+      ['employes','conges','paie','virements','avances','notes','contrats','planning'].forEach(function(t) {
         var panel = document.getElementById('rh-panel-' + t);
         var tabBtn = document.getElementById('rh-tab-' + t);
         var actions = document.getElementById('rh-actions-' + t);
@@ -4683,6 +4903,8 @@
       else if (tab === 'virements') { initVirementPeriode(); loadVirements(); }
       else if (tab === 'avances') { loadAvances(); loadEmployesForSelect('avs-employe', true); }
       else if (tab === 'notes') loadNotesFrais();
+      else if (tab === 'contrats') loadContrats();
+      else if (tab === 'planning') initPlanning();
     }
 
     // Store employees in module-level var (overrides local)
@@ -4795,7 +5017,8 @@
         var actionBtn = statut === 'brouillon'
           ? '<button class="btn-sm" onclick="validerFiche(\'' + p._id + '\')" style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Valider</button>'
           : (statut === 'valide' ? '<span style="font-size:12px;color:#34d399;">Prête au virement</span>' : '<span style="font-size:12px;color:#64748b;">Payée</span>');
-        return '<tr><td style="font-weight:600;">' + empName + '</td><td>' + (moisLabels[p.mois] || p.mois) + ' ' + (p.annee || '') + '</td><td style="font-weight:700;">' + (p.salaireBrut || 0).toLocaleString('fr') + ' €</td><td style="font-weight:700;color:var(--green);">' + (p.salaireNet || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statMap[statut] || 'badge-gray') + '">' + (statLabels[statut] || statut) + '</span></td><td>' + actionBtn + '</td></tr>';
+        var printBtn = '<button class="btn-sm" onclick="printPayslip(\'' + p._id + '\')" title="Imprimer" style="margin-left:4px;">🖨</button>';
+        return '<tr data-payslip-id="' + p._id + '"><td style="font-weight:600;">' + empName + '</td><td>' + (moisLabels[p.mois] || p.mois) + ' ' + (p.annee || '') + '</td><td style="font-weight:700;">' + (p.salaireBrut || 0).toLocaleString('fr') + ' €</td><td style="font-weight:700;color:var(--green);">' + (p.salaireNet || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statMap[statut] || 'badge-gray') + '">' + (statLabels[statut] || statut) + '</span></td><td>' + actionBtn + printBtn + '</td></tr>';
       }).join('');
     }
 
@@ -5335,6 +5558,428 @@
       var res = await fetch(API + '/notes-frais/' + id + '/rembourser', { method:'POST', headers:apiHeaders() });
       var data = await res.json();
       if (data.success) { showToast('Note marquée remboursée', 'success'); loadNotesFrais(); }
+    }
+
+    // ── Export CSV générique ──
+    function exportCSVTable(tbodyId, headers, filename) {
+      var tbody = document.getElementById(tbodyId);
+      if (!tbody) return;
+      var rows = [headers.join(';')];
+      Array.from(tbody.querySelectorAll('tr')).forEach(function(tr) {
+        var cells = Array.from(tr.querySelectorAll('td')).map(function(td) {
+          return '"' + (td.innerText || td.textContent || '').replace(/"/g, '""').trim() + '"';
+        });
+        if (cells.length) rows.push(cells.join(';'));
+      });
+      var blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename + '_' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+    }
+
+    // ── Export CSV fiches de paie ──
+    function exportCSVPayslips() {
+      exportCSVTable('payslips-body', ['Employé','Période','Salaire brut','Salaire net','Statut'], 'fiches-paie');
+    }
+
+    // ── Export DSN simplifié ──
+    async function exportDSN() {
+      var now = new Date();
+      var mois = now.getMonth() + 1;
+      var annee = now.getFullYear();
+      var res = await apiFetch('/comptabilite/dsn?mois=' + mois + '&annee=' + annee);
+      if (!res || !res.data) { showToast('Erreur chargement DSN', 'error'); return; }
+      var d = res.data;
+      var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      var lines = [
+        'DSN MENSUELLE SIMPLIFIÉE — ' + (moisLabels[mois]||mois) + ' ' + annee,
+        '',
+        'MASSE SALARIALE BRUTE;' + (d.massesSalarialeBrute||0).toFixed(2) + ' €',
+        'NB SALARIÉS;' + (d.nbEmployes||0),
+        'COTISATIONS PATRONALES (~42%);' + (d.cotisationsPatronales||0).toFixed(2) + ' €',
+        'COTISATIONS SALARIALES (~22%);' + (d.cotisationsSalariales||0).toFixed(2) + ' €',
+        'NET À PAYER TOTAL;' + (d.netTotal||0).toFixed(2) + ' €',
+        '',
+        'DÉTAIL PAR SALARIÉ',
+        'Prénom;Nom;Salaire brut;Salaire net'
+      ];
+      (d.payslips || []).forEach(function(p) {
+        var emp = p.employee || {};
+        lines.push([emp.prenom||'', emp.nom||'', (p.salaireBrut||0).toFixed(2), (p.salaireNet||0).toFixed(2)].join(';'));
+      });
+      var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'DSN_' + (moisLabels[mois]||mois) + '_' + annee + '.csv';
+      a.click();
+      showToast('DSN exporté', 'success');
+    }
+
+    // ── Impression fiche de paie ──
+    function printPayslip(id) {
+      var row = document.querySelector('[data-payslip-id="' + id + '"]');
+      if (!row) return;
+      var cells = row.querySelectorAll('td');
+      var html = '<html><head><meta charset="utf-8"><title>Fiche de paie</title><style>body{font-family:Arial,sans-serif;padding:40px;max-width:700px;margin:0 auto;}h1{border-bottom:2px solid #333;padding-bottom:10px;}table{width:100%;border-collapse:collapse;margin-top:20px;}td,th{border:1px solid #ddd;padding:10px 14px;}th{background:#f5f5f5;font-weight:600;}@media print{button{display:none!important;}}</style></head><body>'
+        + '<h1>Fiche de paie</h1>'
+        + '<table><tr><th>Employé</th><td>' + (cells[0]&&cells[0].innerText||'—') + '</td></tr>'
+        + '<tr><th>Période</th><td>' + (cells[1]&&cells[1].innerText||'—') + '</td></tr>'
+        + '<tr><th>Salaire brut</th><td>' + (cells[2]&&cells[2].innerText||'—') + '</td></tr>'
+        + '<tr><th>Salaire net</th><td style="font-size:1.2em;font-weight:bold;">' + (cells[3]&&cells[3].innerText||'—') + '</td></tr>'
+        + '<tr><th>Statut</th><td>' + (cells[4]&&cells[4].innerText||'—') + '</td></tr></table>'
+        + '<p style="margin-top:40px;font-size:12px;color:#888;">Document généré par Novexa · ' + new Date().toLocaleDateString('fr') + '</p>'
+        + '<button onclick="window.print()">Imprimer</button>'
+        + '</body></html>';
+      var w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+    }
+
+    // ── OCR dépense via IA ──
+    function ocrDepense() {
+      var area = document.getElementById('d-ocr-area');
+      area.style.display = area.style.display === 'none' ? '' : 'none';
+    }
+    async function runOCR() {
+      var text = document.getElementById('d-ocr-text').value.trim();
+      if (!text) { showToast('Collez le texte de la facture d\'abord', 'error'); return; }
+      showToast('Analyse en cours...', 'success');
+      try {
+        var res = await fetch(API + '/ai/analyse', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          type: 'ocr_depense',
+          prompt: 'Analyse ce texte de facture fournisseur et extrait : le montant total TTC, la catégorie (loyer/logiciel/materiel/restauration/transport/marketing/autre), et le nom du fournisseur. Réponds en JSON strict : {"titre":"...","montant":0,"categorie":"..."}',
+          content: text
+        }) });
+        var data = await res.json();
+        var txt = (data && (data.response || data.content || data.result || ''));
+        var jsonMatch = txt.match(/\{[\s\S]*?\}/);
+        if (jsonMatch) {
+          var parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.titre) document.getElementById('d-titre').value = parsed.titre;
+          if (parsed.montant) document.getElementById('d-montant').value = parsed.montant;
+          if (parsed.categorie) document.getElementById('d-categorie').value = parsed.categorie;
+          document.getElementById('d-ocr-area').style.display = 'none';
+          showToast('Données extraites', 'success');
+        } else { showToast('IA n\'a pas pu extraire les données', 'error'); }
+      } catch(e) { showToast('Erreur OCR', 'error'); }
+    }
+
+    // ── Signature électronique ──
+    (function initSignature() {
+      var canvas, ctx, drawing = false;
+      document.addEventListener('DOMContentLoaded', function() {
+        canvas = document.getElementById('signature-canvas');
+        if (!canvas) return;
+        ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#a5b4fc';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        function getPos(e) {
+          var r = canvas.getBoundingClientRect();
+          var scaleX = canvas.width / r.width;
+          var scaleY = canvas.height / r.height;
+          if (e.touches) return { x: (e.touches[0].clientX - r.left) * scaleX, y: (e.touches[0].clientY - r.top) * scaleY };
+          return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY };
+        }
+        canvas.addEventListener('mousedown', function(e) { drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+        canvas.addEventListener('mousemove', function(e) { if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+        canvas.addEventListener('mouseup', function() { drawing = false; });
+        canvas.addEventListener('touchstart', function(e) { e.preventDefault(); drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+        canvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
+        canvas.addEventListener('touchend', function() { drawing = false; });
+      });
+    })();
+    function clearSignature() {
+      var canvas = document.getElementById('signature-canvas');
+      if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ── Impression Bilan ──
+    function printBilan() {
+      var kpis = document.getElementById('bilan-kpis');
+      var prod = document.getElementById('bilan-produits-body');
+      var charges = document.getElementById('bilan-charges-body');
+      var annee = document.getElementById('bilan-annee') ? document.getElementById('bilan-annee').value : new Date().getFullYear();
+      var html = '<html><head><meta charset="utf-8"><title>Bilan ' + annee + '</title><style>body{font-family:Arial,sans-serif;padding:40px;}h1{border-bottom:2px solid #333;padding-bottom:10px;}table{width:100%;border-collapse:collapse;margin-top:16px;}td,th{border:1px solid #ddd;padding:8px 12px;}th{background:#f5f5f5;}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}.kpis{display:flex;gap:20px;flex-wrap:wrap;margin:16px 0;}.kpi{background:#f9f9f9;border:1px solid #ddd;border-radius:6px;padding:12px;text-align:center;min-width:120px;}.kpi-label{font-size:11px;color:#666;}.kpi-val{font-size:18px;font-weight:bold;margin-top:4px;}@media print{button{display:none!important;}}</style></head><body>'
+        + '<h1>Bilan & Compte de résultat — ' + annee + '</h1>'
+        + '<div class="kpis">' + (kpis ? kpis.innerHTML : '') + '</div>'
+        + '<div class="grid"><div><h3 style="color:green;">Produits</h3><table><thead><tr><th>Poste</th><th>Montant</th></tr></thead><tbody>' + (prod ? prod.innerHTML : '') + '</tbody></table></div>'
+        + '<div><h3 style="color:red;">Charges</h3><table><thead><tr><th>Poste</th><th>Montant</th></tr></thead><tbody>' + (charges ? charges.innerHTML : '') + '</tbody></table></div></div>'
+        + '<p style="margin-top:40px;font-size:11px;color:#888;">Document généré par Novexa · ' + new Date().toLocaleDateString('fr') + '</p>'
+        + '<button onclick="window.print()">Imprimer</button>'
+        + '</body></html>';
+      var w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+    }
+
+    // ── Bilan comptable ──
+    async function loadBilan() {
+      var sel = document.getElementById('bilan-annee');
+      if (sel && !sel.options.length) {
+        var y = new Date().getFullYear();
+        for (var i = y; i >= y - 4; i--) sel.innerHTML += '<option value="' + i + '">' + i + '</option>';
+      }
+      var annee = sel ? sel.value : new Date().getFullYear();
+      var res = await apiFetch('/comptabilite/bilan?annee=' + annee);
+      if (!res || !res.data) return;
+      var d = res.data;
+      var fmt = function(v){ return (v||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €'; };
+      var kpis = document.getElementById('bilan-kpis');
+      var rNet = d.resultatNet || 0;
+      var rColor = rNet >= 0 ? '#4ade80' : '#f87171';
+      kpis.innerHTML = [
+        { label:'Chiffre d\'affaires', val: fmt(d.produits), color:'#4ade80' },
+        { label:'Total charges', val: fmt((d.charges||0)+(d.salaires||0)), color:'#f87171' },
+        { label:'Résultat brut', val: fmt(d.resultatBrut), color:'#a5b4fc' },
+        { label:'IS estimé', val: fmt(d.is), color:'#f59e0b' },
+        { label:'Résultat net', val: fmt(rNet), color: rColor }
+      ].map(function(k){ return '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:16px;text-align:center;"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">' + k.label + '</div><div style="font-size:18px;font-weight:800;color:' + k.color + ';">' + k.val + '</div></div>'; }).join('');
+      document.getElementById('bilan-produits-body').innerHTML =
+        '<tr><td>Chiffre d\'affaires (factures)</td><td style="font-weight:700;color:#4ade80;">' + fmt(d.produits) + '</td></tr>';
+      document.getElementById('bilan-charges-body').innerHTML =
+        '<tr><td>Charges d\'exploitation</td><td style="color:#f87171;">' + fmt(d.charges) + '</td></tr>'
+        + '<tr><td>Masse salariale</td><td style="color:#f87171;">' + fmt(d.salaires) + '</td></tr>'
+        + '<tr><td style="font-weight:700;">IS estimé</td><td style="font-weight:700;color:#f59e0b;">' + fmt(d.is) + '</td></tr>'
+        + '<tr style="border-top:2px solid rgba(255,255,255,.1);"><td style="font-weight:700;">Résultat net</td><td style="font-weight:800;color:' + rColor + ';">' + fmt(rNet) + '</td></tr>';
+    }
+
+    // ── Budget prévisionnel ──
+    async function loadBudget() {
+      var sel = document.getElementById('budget-annee');
+      if (sel && !sel.options.length) {
+        var y = new Date().getFullYear();
+        for (var i = y; i >= y - 2; i--) sel.innerHTML += '<option value="' + i + '">' + i + '</option>';
+      }
+      var annee = sel ? sel.value : new Date().getFullYear();
+      var res = await apiFetch('/budget?annee=' + annee);
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('budget-body');
+      if (!tbody) return;
+      var moisLabels = ['','Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune ligne de budget. Cliquez sur "+ Ligne" pour commencer.</td></tr>'; return; }
+      tbody.innerHTML = list.map(function(b) {
+        var ecart = (b.montantReel||0) - (b.montantPrevu||0);
+        var ecartColor = b.type === 'recette' ? (ecart >= 0 ? '#4ade80' : '#f87171') : (ecart <= 0 ? '#4ade80' : '#f87171');
+        return '<tr>'
+          + '<td style="font-weight:600;">' + (b.categorie||'—') + '</td>'
+          + '<td><span class="badge ' + (b.type==='recette'?'badge-green':'badge-red') + '">' + (b.type==='recette'?'Recette':'Charge') + '</span></td>'
+          + '<td>' + (moisLabels[b.mois]||b.mois) + '</td>'
+          + '<td>' + (b.montantPrevu||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td>' + (b.montantReel||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td style="font-weight:700;color:' + ecartColor + ';">' + (ecart >= 0 ? '+' : '') + ecart.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td><button class="btn-sm btn-del-sm" onclick="deleteBudgetLigne(\'' + b._id + '\')">🗑</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+    async function submitBudgetLigne() {
+      clearModalError('bud');
+      var categorie = document.getElementById('bud-categorie').value.trim();
+      var montant = parseFloat(document.getElementById('bud-montant').value) || 0;
+      if (!categorie || montant <= 0) return modalError('bud', 'Catégorie et montant requis.');
+      var annee = parseInt(document.getElementById('budget-annee') ? document.getElementById('budget-annee').value : new Date().getFullYear());
+      setModalLoading('bud-btn', true, 'Enregistrer');
+      try {
+        var res = await fetch(API + '/budget', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          categorie, type: document.getElementById('bud-type').value,
+          mois: parseInt(document.getElementById('bud-mois').value), annee,
+          montantPrevu: montant, notes: document.getElementById('bud-notes').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-budget-ligne'); showToast('Ligne ajoutée', 'success'); loadBudget(); }
+        else modalError('bud', data.message || 'Erreur.');
+      } catch(e) { modalError('bud', 'Erreur réseau.'); }
+      setModalLoading('bud-btn', false, 'Enregistrer');
+    }
+    async function deleteBudgetLigne(id) {
+      if (!confirm('Supprimer cette ligne ?')) return;
+      var res = await fetch(API + '/budget/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Supprimée', 'success'); loadBudget(); }
+    }
+
+    // ── Centres analytiques ──
+    async function loadCentresAnalytiques() {
+      var res = await apiFetch('/centres-analytiques');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('centres-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun centre analytique</td></tr>'; return; }
+      tbody.innerHTML = list.map(function(c) {
+        return '<tr>'
+          + '<td style="font-family:monospace;font-weight:700;color:#a5b4fc;">' + (c.code||'—') + '</td>'
+          + '<td style="font-weight:600;">' + (c.nom||'—') + '</td>'
+          + '<td>' + (c.budgetAnnuel||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td><span style="width:18px;height:18px;border-radius:50%;background:' + (c.couleur||'#6366f1') + ';display:inline-block;"></span></td>'
+          + '<td><span class="badge ' + (c.actif?'badge-green':'badge-gray') + '">' + (c.actif?'Actif':'Inactif') + '</span></td>'
+          + '<td><button class="btn-sm btn-del-sm" onclick="deleteCentreAnalytique(\'' + c._id + '\')">🗑</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+    async function submitCentreAnalytique() {
+      clearModalError('ca');
+      var nom = document.getElementById('ca-nom').value.trim();
+      if (!nom) return modalError('ca', 'Le nom est requis.');
+      setModalLoading('ca-btn', true, 'Créer');
+      try {
+        var res = await fetch(API + '/centres-analytiques', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          nom, code: document.getElementById('ca-code').value.trim(),
+          budgetAnnuel: parseFloat(document.getElementById('ca-budget').value) || 0,
+          couleur: document.getElementById('ca-couleur').value,
+          description: document.getElementById('ca-desc').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-centre-analytique'); showToast('Centre créé', 'success'); loadCentresAnalytiques(); }
+        else modalError('ca', data.message || 'Erreur.');
+      } catch(e) { modalError('ca', 'Erreur réseau.'); }
+      setModalLoading('ca-btn', false, 'Créer');
+    }
+    async function deleteCentreAnalytique(id) {
+      if (!confirm('Supprimer ce centre analytique ?')) return;
+      var res = await fetch(API + '/centres-analytiques/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Supprimé', 'success'); loadCentresAnalytiques(); }
+    }
+
+    // ── Contrats RH ──
+    async function loadContrats() {
+      var res = await apiFetch('/rh/contrats');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('contrats-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun contrat enregistré</td></tr>'; return; }
+      var typeLabels = { cdi:'CDI', cdd:'CDD', apprentissage:'Apprentissage', stage:'Stage', interim:'Intérim', freelance:'Freelance' };
+      var statMap = { actif:'badge-green', expire:'badge-red', resilie:'badge-red', suspendu:'badge-yellow' };
+      tbody.innerHTML = list.map(function(c) {
+        var emp = c.employee ? (c.employee.prenom + ' ' + c.employee.nom) : '—';
+        var debut = c.dateDebut ? new Date(c.dateDebut).toLocaleDateString('fr') : '—';
+        var fin = c.dateFin ? new Date(c.dateFin).toLocaleDateString('fr') : 'Indéterminé';
+        return '<tr>'
+          + '<td style="font-weight:600;">' + emp + '</td>'
+          + '<td>' + (typeLabels[c.type]||c.type||'—') + '</td>'
+          + '<td>' + debut + '</td><td>' + fin + '</td>'
+          + '<td style="font-weight:700;">' + (c.salaireBase||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td><span class="badge ' + (statMap[c.statut]||'badge-gray') + '">' + (c.statut||'—') + '</span></td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    // ── Planning des absences ──
+    var _planningLeaves = [];
+    var _planningEmployes = [];
+    async function initPlanning() {
+      var now = new Date();
+      var moisSel = document.getElementById('planning-mois');
+      var anneeSel = document.getElementById('planning-annee');
+      if (moisSel) moisSel.value = now.getMonth();
+      if (anneeSel) {
+        if (!anneeSel.options.length) {
+          var y = now.getFullYear();
+          for (var i = y - 1; i <= y + 1; i++) anneeSel.innerHTML += '<option value="' + i + '" ' + (i===y?'selected':'') + '>' + i + '</option>';
+        }
+      }
+      var [resLeaves, resEmp] = await Promise.all([apiFetch('/rh/conges?statut=approuve'), apiFetch('/rh/employes')]);
+      _planningLeaves = (resLeaves && resLeaves.data) ? resLeaves.data : [];
+      _planningEmployes = (resEmp && resEmp.data) ? resEmp.data : [];
+      renderPlanning();
+    }
+    function renderPlanning() {
+      var moisSel = document.getElementById('planning-mois');
+      var anneeSel = document.getElementById('planning-annee');
+      var mois = moisSel ? parseInt(moisSel.value) : new Date().getMonth();
+      var annee = anneeSel ? parseInt(anneeSel.value) : new Date().getFullYear();
+      var grid = document.getElementById('planning-grid');
+      if (!grid) return;
+      var daysInMonth = new Date(annee, mois + 1, 0).getDate();
+      var typeColors = { conge_paye:'#4ade80', rtt:'#f59e0b', maladie:'#f87171', sans_solde:'#a78bfa', maternite:'#f472b6', paternite:'#60a5fa', autre:'#a5b4fc' };
+      var html = '<div style="display:grid;grid-template-columns:140px repeat(' + daysInMonth + ',24px);gap:1px;min-width:' + (140+daysInMonth*25) + 'px;">';
+      html += '<div style="font-size:11px;color:var(--text-dim);padding:4px 0;">Employé</div>';
+      for (var d = 1; d <= daysInMonth; d++) {
+        var isWE = [0,6].includes(new Date(annee, mois, d).getDay());
+        html += '<div style="text-align:center;font-size:10px;color:' + (isWE?'#6b7280':'var(--text-dim)') + ';padding:2px 0;">' + d + '</div>';
+      }
+      _planningEmployes.filter(function(e){ return e.statut !== 'inactif'; }).forEach(function(emp) {
+        html += '<div style="font-size:11px;padding:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:136px;" title="' + emp.prenom + ' ' + emp.nom + '">' + emp.prenom + ' ' + (emp.nom||'').charAt(0) + '.</div>';
+        for (var d = 1; d <= daysInMonth; d++) {
+          var dateD = new Date(annee, mois, d);
+          var leave = _planningLeaves.find(function(l) {
+            if (!l.employee || l.employee._id !== emp._id) return false;
+            var start = new Date(l.dateDebut); start.setHours(0,0,0,0);
+            var end = new Date(l.dateFin); end.setHours(23,59,59,999);
+            return dateD >= start && dateD <= end;
+          });
+          var isWE = [0,6].includes(dateD.getDay());
+          var bg = isWE ? 'rgba(255,255,255,.03)' : (leave ? (typeColors[leave.type]||'#a5b4fc') : 'rgba(255,255,255,.04)');
+          html += '<div style="height:22px;background:' + bg + ';border-radius:2px;" title="' + (leave?leave.type:'') + '"></div>';
+        }
+      });
+      html += '</div>';
+      grid.innerHTML = html;
+    }
+
+    // ── Support / Tickets ──
+    async function loadTickets() {
+      var res = await apiFetch('/tickets');
+      var list = (res && res.data) ? res.data : [];
+      var cols = { ouvert:[], en_cours:[], resolu:[], ferme:[] };
+      list.forEach(function(t) { if (cols[t.statut]) cols[t.statut].push(t); });
+      var prioColors = { basse:'#6b7280', normale:'#6366f1', haute:'#f59e0b', urgente:'#f87171' };
+      var catIcons = { technique:'⚙️', rh:'👥', comptabilite:'📊', autre:'💬' };
+      Object.keys(cols).forEach(function(statut) {
+        var el = document.getElementById('tickets-col-' + statut);
+        if (!el) return;
+        if (!cols[statut].length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:16px;">Aucun ticket</div>'; return; }
+        el.innerHTML = cols[statut].map(function(t) {
+          var nextStatuts = { ouvert:'en_cours', en_cours:'resolu', resolu:'ferme' };
+          var nextLabel = { ouvert:'▶ Prendre en charge', en_cours:'✓ Résoudre', resolu:'⬛ Fermer' };
+          var actionBtn = nextStatuts[t.statut] ? '<button class="btn-sm btn-success-sm" onclick="updateTicketStatut(\'' + t._id + '\',\'' + nextStatuts[t.statut] + '\')" style="font-size:11px;padding:3px 8px;margin-top:6px;">' + (nextLabel[t.statut]||'→') + '</button>' : '';
+          return '<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:12px;border-left:3px solid ' + (prioColors[t.priorite]||'#6b7280') + ';">'
+            + '<div style="font-size:12px;font-weight:600;">' + (catIcons[t.categorie]||'💬') + ' ' + (t.titre||'—') + '</div>'
+            + '<div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Par ' + (t.rapporteurNom||'—') + '</div>'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
+            + '<span style="font-size:11px;color:' + (prioColors[t.priorite]||'#6b7280') + ';font-weight:600;">' + (t.priorite||'') + '</span>'
+            + '<button class="btn-sm btn-del-sm" onclick="deleteTicket(\'' + t._id + '\')" style="font-size:11px;padding:2px 6px;">🗑</button>'
+            + '</div>' + actionBtn + '</div>';
+        }).join('');
+      });
+      var total = list.length;
+      var ouverts = cols.ouvert.length + cols.en_cours.length;
+      var kpis = document.getElementById('tickets-kpis');
+      if (kpis) kpis.innerHTML = [
+        { label:'Total', val: total, color:'#a5b4fc' },
+        { label:'En cours', val: ouverts, color:'#f59e0b' },
+        { label:'Résolus', val: cols.resolu.length, color:'#4ade80' },
+        { label:'Fermés', val: cols.ferme.length, color:'#6b7280' }
+      ].map(function(k){ return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:14px;text-align:center;"><div style="font-size:11px;color:var(--text-dim);">' + k.label + '</div><div style="font-size:22px;font-weight:800;color:' + k.color + ';">' + k.val + '</div></div>'; }).join('');
+    }
+    async function submitTicket() {
+      clearModalError('tkt');
+      var titre = document.getElementById('tkt-titre').value.trim();
+      if (!titre) return modalError('tkt', 'Le titre est requis.');
+      setModalLoading('tkt-btn', true, 'Créer le ticket');
+      try {
+        var res = await fetch(API + '/tickets', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          titre, categorie: document.getElementById('tkt-categorie').value,
+          priorite: document.getElementById('tkt-priorite').value,
+          description: document.getElementById('tkt-desc').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-ticket'); showToast('Ticket créé', 'success'); loadTickets(); }
+        else modalError('tkt', data.message || 'Erreur.');
+      } catch(e) { modalError('tkt', 'Erreur réseau.'); }
+      setModalLoading('tkt-btn', false, 'Créer le ticket');
+    }
+    async function updateTicketStatut(id, statut) {
+      var res = await fetch(API + '/tickets/' + id + '/statut', { method:'PUT', headers:apiHeaders(), body:JSON.stringify({ statut }) });
+      var data = await res.json();
+      if (data.success) { showToast('Ticket mis à jour', 'success'); loadTickets(); }
+    }
+    async function deleteTicket(id) {
+      if (!confirm('Supprimer ce ticket ?')) return;
+      var res = await fetch(API + '/tickets/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Ticket supprimé', 'success'); loadTickets(); }
     }
 
     // ── Avoirs ──

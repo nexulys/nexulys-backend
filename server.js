@@ -74,6 +74,9 @@ app.use('/api/bon-commandes', require('./routes/bonCommandes'));
 app.use('/api/agenda', require('./routes/agenda'));
 app.use('/api/rapprochement', require('./routes/rapprochement'));
 app.use('/api/equipe', require('./routes/equipe'));
+app.use('/api/budget', require('./routes/budget'));
+app.use('/api/tickets', require('./routes/tickets'));
+app.use('/api/centres-analytiques', require('./routes/centresAnalytiques'));
 if (process.env.SEED_SECRET) app.use('/api/seed', require('./routes/seed'));
 
 app.use('/api/health', require('./routes/health'));
