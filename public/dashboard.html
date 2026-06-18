@@ -1412,7 +1412,7 @@
           <div class="card-body" style="padding:0;">
             <div style="overflow-x:auto;">
               <table class="data-table">
-                <thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Délai livraison</th></tr></thead>
+                <thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Délai livraison</th><th></th></tr></thead>
                 <tbody id="fournisseurs-body">
                   <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
                 </tbody>
@@ -3626,8 +3626,15 @@
         return;
       }
       tbody.innerHTML = fournisseurs.map(function(f) {
-        return '<tr><td style="font-weight:600;">' + (f.nom||'—') + '</td><td style="color:var(--text-dim);">' + (f.email||'—') + '</td><td>' + (f.telephone||'—') + '</td><td><span class="badge badge-blue">' + (f.delaiLivraison||'?') + 'j</span></td></tr>';
+        return '<tr><td style="font-weight:600;">' + (f.nom||'—') + '</td><td style="color:var(--text-dim);">' + (f.email||'—') + '</td><td>' + (f.telephone||'—') + '</td><td><span class="badge badge-blue">' + (f.delaiLivraison||'?') + 'j</span></td><td><button class="btn-sm btn-del-sm" onclick="deleteFournisseur(\'' + f._id + '\')">🗑</button></td></tr>';
       }).join('');
+    }
+    async function deleteFournisseur(id) {
+      if (!confirm('Supprimer ce fournisseur ?')) return;
+      var res = await fetch(API + '/stocks/fournisseurs/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Fournisseur supprimé', 'success'); loadFournisseurs(); }
+      else showToast(data.message || 'Erreur', 'error');
     }
     async function submitFournisseur() {
       clearModalError('fo');

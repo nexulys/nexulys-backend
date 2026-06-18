@@ -10,5 +10,6 @@ router.route('/produits').get(c.getProducts).post(validateProduct, c.createProdu
 router.route('/produits/:id').get(c.getProduct).put(c.updateProduct).delete(c.deleteProduct);
 router.route('/mouvements').get(c.getMovements).post(c.addMovement);
 router.route('/fournisseurs').get(c.getSuppliers).post(c.createSupplier);
+router.delete('/fournisseurs/:id', c.deleteSupplier);
 
 module.exports = router;

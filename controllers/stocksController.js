@@ -96,6 +96,18 @@ exports.getSuppliers = async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
+exports.deleteSupplier = async (req, res) => {
+  try {
+    const supplier = await Supplier.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.company },
+      { actif: false },
+      { new: true }
+    );
+    if (!supplier) return res.status(404).json({ success: false, message: 'Fournisseur introuvable' });
+    res.json({ success: true, message: 'Fournisseur supprimé' });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
 exports.getLowStockAlerts = async (req, res) => {
   try {
     const products = await Product.find({ company: req.user.company, actif: true, alerteActive: true })
