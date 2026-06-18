@@ -38,38 +38,49 @@ exports.nextBillingOn5thAfter = nextBillingOn5thAfter;
 exports.createCustomer = async ({ email, nom, companyName }) => {
   const stripe = getStripe();
   if (!stripe) return { mock: true, id: `cus_mock_${Date.now()}` };
-  return stripe.customers.create({ email, name: `${nom} — ${companyName}`, metadata: { companyName } });
+  try {
+    return await stripe.customers.create({ email, name: `${nom} — ${companyName}`, metadata: { companyName } });
+  } catch (err) {
+    logger.error('Stripe createCustomer échoué', { error: err.message });
+    throw new Error('Connexion Stripe impossible. Vérifiez la clé API dans les variables d\'environnement Render.');
+  }
 };
 
 exports.createSubscription = async (customerId) => {
   const stripe = getStripe();
   if (!stripe) return { mock: true, id: `sub_mock_${Date.now()}`, status: 'active' };
-
-  const product = await stripe.products.create({ name: NOVEXA_PRO_PRICE.product_name });
-  const price = await stripe.prices.create({
-    product: product.id,
-    unit_amount: NOVEXA_PRO_PRICE.amount,
-    currency: NOVEXA_PRO_PRICE.currency,
-    recurring: { interval: NOVEXA_PRO_PRICE.interval }
-  });
-
-  // Ancrer la facturation au 5 du mois — premier prélèvement le prochain 5
-  const billingAnchor = Math.floor(nextBillingOn5th().getTime() / 1000);
-
-  return stripe.subscriptions.create({
-    customer: customerId,
-    items: [{ price: price.id }],
-    billing_cycle_anchor: billingAnchor,
-    proration_behavior: 'none',
-    payment_behavior: 'default_incomplete',
-    expand: ['latest_invoice.payment_intent']
-  });
+  try {
+    const product = await stripe.products.create({ name: NOVEXA_PRO_PRICE.product_name });
+    const price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: NOVEXA_PRO_PRICE.amount,
+      currency: NOVEXA_PRO_PRICE.currency,
+      recurring: { interval: NOVEXA_PRO_PRICE.interval }
+    });
+    const billingAnchor = Math.floor(nextBillingOn5th().getTime() / 1000);
+    return await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: price.id }],
+      billing_cycle_anchor: billingAnchor,
+      proration_behavior: 'none',
+      payment_behavior: 'default_incomplete',
+      expand: ['latest_invoice.payment_intent']
+    });
+  } catch (err) {
+    logger.error('Stripe createSubscription échoué', { error: err.message });
+    throw new Error('Connexion Stripe impossible. Vérifiez la clé API dans les variables d\'environnement Render.');
+  }
 };
 
 exports.cancelSubscription = async (stripeSubscriptionId) => {
   const stripe = getStripe();
   if (!stripe || !stripeSubscriptionId) return { mock: true, status: 'canceled' };
-  return stripe.subscriptions.cancel(stripeSubscriptionId);
+  try {
+    return await stripe.subscriptions.cancel(stripeSubscriptionId);
+  } catch (err) {
+    logger.error('Stripe cancelSubscription échoué', { error: err.message });
+    throw new Error('Annulation Stripe impossible. Réessayez ou contactez le support.');
+  }
 };
 
 exports.createPaymentIntent = async () => {
