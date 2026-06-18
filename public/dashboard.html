@@ -1328,6 +1328,7 @@
           <button class="rh-tab active" id="rh-tab-employes" onclick="switchRHTab('employes')">👥 Équipe</button>
           <button class="rh-tab" id="rh-tab-conges" onclick="switchRHTab('conges')">🏖 Congés</button>
           <button class="rh-tab" id="rh-tab-paie" onclick="switchRHTab('paie')">💰 Fiches de paie</button>
+          <button class="rh-tab" id="rh-tab-virements" onclick="switchRHTab('virements')">💸 Virements</button>
           <button class="rh-tab" id="rh-tab-notes" onclick="switchRHTab('notes')">💳 Notes de frais</button>
         </div>
 
@@ -1375,15 +1376,70 @@
               <div style="overflow-x:auto;">
                 <table class="data-table">
                   <thead><tr>
-                    <th>Employé</th><th>Période</th><th>Salaire brut</th><th>Salaire net</th><th>Statut</th>
+                    <th>Employé</th><th>Période</th><th>Salaire brut</th><th>Salaire net</th><th>Statut</th><th></th>
                   </tr></thead>
                   <tbody id="payslips-body">
-                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
+                    <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr>
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Panneau Virements de salaire -->
+        <div id="rh-panel-virements" style="display:none;">
+          <!-- Sélecteur de période -->
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Virements de salaire</div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <select id="vir-mois" class="modal-select" style="padding:8px 12px;font-size:13px;">
+                  <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+                  <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+                  <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+                  <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+                </select>
+                <input id="vir-annee" class="modal-input" type="number" style="width:90px;padding:8px 10px;" value="" />
+                <button class="btn-outline" onclick="loadVirementsReady()" style="padding:8px 16px;">Rechercher</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="overflow-x:auto;">
+                <table class="data-table">
+                  <thead><tr>
+                    <th style="width:36px;"><input type="checkbox" id="vir-select-all" onchange="toggleAllVirements(this.checked)" /></th>
+                    <th>Employé</th><th>IBAN</th><th>Période</th><th>Salaire net à virer</th><th>Statut fiche</th>
+                  </tr></thead>
+                  <tbody id="virements-ready-body">
+                    <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Sélectionnez une période puis cliquez sur Rechercher</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="vir-summary" style="display:none;padding:16px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;">
+                <span id="vir-summary-text" style="font-size:13px;color:var(--text-muted);"></span>
+                <button class="btn-primary" id="vir-btn" onclick="effectuerVirements()" style="padding:10px 24px;">💸 Lancer les virements</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historique des virements -->
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title">Historique des virements</div>
+              <button class="btn-outline" onclick="loadVirements()" style="padding:6px 14px;font-size:12px;">🔄 Actualiser</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead><tr><th>Période</th><th>Nb salariés</th><th>Montant total</th><th>Statut</th><th>Effectué le</th><th>Détail</th></tr></thead>
+                <tbody id="virements-history-body">
+                  <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun virement effectué</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- Panneau Notes de frais -->
         <div id="rh-panel-notes" style="display:none;">
           <div class="card">
@@ -1989,6 +2045,10 @@
         <label class="modal-label">Date d'embauche</label>
         <input class="modal-input" id="e-date" type="date" />
       </div>
+      <div class="modal-field">
+        <label class="modal-label">IBAN (pour les virements de salaire)</label>
+        <input class="modal-input" id="e-iban" placeholder="FR76 3000 6000 0112 3456 7890 189" style="font-family:monospace;letter-spacing:1px;" />
+      </div>
       <div class="modal-error" id="e-error"></div>
       <button class="modal-btn" id="e-btn" onclick="submitEmploye()">Ajouter l'employé</button>
     </div>
@@ -2265,6 +2325,10 @@
         <select class="modal-select" id="ee-statut">
           <option value="actif">Actif</option><option value="conge">En congé</option><option value="inactif">Inactif</option>
         </select>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">IBAN (pour les virements de salaire)</label>
+        <input class="modal-input" id="ee-iban" placeholder="FR76 3000 6000 0112 3456 7890 189" style="font-family:monospace;letter-spacing:1px;" />
       </div>
       <div class="modal-error" id="ee-error"></div>
       <button class="modal-btn" id="ee-btn" onclick="submitEditEmploye()">Sauvegarder</button>
@@ -2790,6 +2854,7 @@
       var dept = document.getElementById('e-dept').value.trim();
       var salaire = parseFloat(document.getElementById('e-salaire').value) || 0;
       var date = document.getElementById('e-date').value;
+      var iban = (document.getElementById('e-iban')?.value || '').trim().replace(/\s/g, '');
       if (!prenom || !nom) return modalError('e', 'Le prénom et le nom sont requis.');
       if (!email) return modalError('e', 'L\'email est requis.');
       if (!poste) return modalError('e', 'Le poste est requis.');
@@ -2800,7 +2865,7 @@
         var res = await fetch(API + '/rh/employes', {
           method: 'POST',
           headers: apiHeaders(),
-          body: JSON.stringify({ prenom, nom, email, poste, departement: dept, salaireBase: salaire, dateEmbauche: date })
+          body: JSON.stringify({ prenom, nom, email, poste, departement: dept, salaireBase: salaire, dateEmbauche: date, iban: iban || undefined })
         });
         var data = await res.json();
         if (data.success) {
@@ -4003,11 +4068,13 @@
       document.getElementById('ee-dept').value = e.dept || '';
       document.getElementById('ee-salaire').value = e.salaire || '';
       document.getElementById('ee-statut').value = e.statut || 'actif';
+      if (document.getElementById('ee-iban')) document.getElementById('ee-iban').value = e.iban || '';
       openModal('edit-employe');
     }
     async function submitEditEmploye() {
       clearModalError('ee');
       var id = document.getElementById('ee-id').value;
+      var iban = (document.getElementById('ee-iban')?.value || '').trim().replace(/\s/g, '');
       setModalLoading('ee-btn', true, 'Sauvegarder');
       try {
         var res = await fetch(API + '/rh/employes/' + id, { method:'PUT', headers:apiHeaders(), body:JSON.stringify({
@@ -4016,7 +4083,8 @@
           poste: document.getElementById('ee-poste').value.trim(),
           departement: document.getElementById('ee-dept').value.trim(),
           salaireBase: parseFloat(document.getElementById('ee-salaire').value) || 0,
-          statut: document.getElementById('ee-statut').value
+          statut: document.getElementById('ee-statut').value,
+          iban: iban || undefined
         }) });
         var data = await res.json();
         if (data.success) { closeModal('modal-edit-employe'); showToast('Employé mis à jour', 'success'); loadEmployes(); }
@@ -4119,7 +4187,7 @@
 
     function switchRHTab(tab) {
       currentRHTab = tab;
-      ['employes','conges','paie','notes'].forEach(function(t) {
+      ['employes','conges','paie','virements','notes'].forEach(function(t) {
         var panel = document.getElementById('rh-panel-' + t);
         var tabBtn = document.getElementById('rh-tab-' + t);
         var actions = document.getElementById('rh-actions-' + t);
@@ -4130,6 +4198,7 @@
       if (tab === 'employes') loadEmployes();
       else if (tab === 'conges') { loadConges(); loadEmployesForSelect('c-employe'); }
       else if (tab === 'paie') { loadPayslipsAll(); loadEmployesForSelect('p-employe', true); loadEmployesForSelect('paie-filter-employe', true, true); }
+      else if (tab === 'virements') { initVirementPeriode(); loadVirements(); }
       else if (tab === 'notes') loadNotesFrais();
     }
 
@@ -4150,7 +4219,7 @@
         var initials = ((e.prenom ? e.prenom[0] : '') + (e.nom ? e.nom[0] : '')).toUpperCase() || '?';
         var statut = e.statut || 'actif';
         var dateEmb = e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString('fr') : '—';
-        var eData = JSON.stringify({id:e._id,prenom:e.prenom,nom:e.nom,poste:e.poste||'',dept:e.departement||'',salaire:e.salaireBase||0,statut}).replace(/'/g,'&#39;');
+        var eData = JSON.stringify({id:e._id,prenom:e.prenom,nom:e.nom,poste:e.poste||'',dept:e.departement||'',salaire:e.salaireBase||0,statut,iban:e.iban||''}).replace(/'/g,'&#39;');
         return '<div class="emp-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div class="emp-avatar">' + initials + '</div><span class="badge ' + (statutBadge[statut] || 'badge-gray') + '">' + (statutLabel[statut] || statut) + '</span></div><div class="emp-name">' + e.prenom + ' ' + e.nom + '</div><div class="emp-role">' + (e.poste || '—') + '</div><div class="emp-meta"><div class="emp-meta-row"><span class="emp-meta-label">Département</span><span class="emp-meta-val">' + (e.departement || '—') + '</span></div><div class="emp-meta-row"><span class="emp-meta-label">Salaire</span><span class="emp-meta-val">' + (e.salaireBase || 0).toLocaleString('fr') + ' €</span></div><div class="emp-meta-row"><span class="emp-meta-label">Depuis</span><span class="emp-meta-val">' + dateEmb + '</span></div></div><div class="card-actions"><button class="action-btn action-btn-edit" onclick=\'openEditEmploye(' + eData + ')\'>✏️ Modifier</button><button class="action-btn action-btn-del" onclick="deleteEmploye(\'' + e._id + '\')">🗑 Désactiver</button></div></div>';
       }).join('');
     }
@@ -4240,7 +4309,131 @@
       tbody.innerHTML = res.data.map(function(p) {
         var empName = p.employee ? (typeof p.employee === 'object' ? p.employee.prenom + ' ' + p.employee.nom : '—') : '—';
         var statut = p.statut || 'brouillon';
-        return '<tr><td style="font-weight:600;">' + empName + '</td><td>' + (moisLabels[p.mois] || p.mois) + ' ' + (p.annee || '') + '</td><td style="font-weight:700;">' + (p.salaireBrut || 0).toLocaleString('fr') + ' €</td><td style="font-weight:700;color:var(--green);">' + (p.salaireNet || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statMap[statut] || 'badge-gray') + '">' + (statLabels[statut] || statut) + '</span></td></tr>';
+        var actionBtn = statut === 'brouillon'
+          ? '<button class="btn-sm" onclick="validerFiche(\'' + p._id + '\')" style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Valider</button>'
+          : (statut === 'valide' ? '<span style="font-size:12px;color:#34d399;">Prête au virement</span>' : '<span style="font-size:12px;color:#64748b;">Payée</span>');
+        return '<tr><td style="font-weight:600;">' + empName + '</td><td>' + (moisLabels[p.mois] || p.mois) + ' ' + (p.annee || '') + '</td><td style="font-weight:700;">' + (p.salaireBrut || 0).toLocaleString('fr') + ' €</td><td style="font-weight:700;color:var(--green);">' + (p.salaireNet || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statMap[statut] || 'badge-gray') + '">' + (statLabels[statut] || statut) + '</span></td><td>' + actionBtn + '</td></tr>';
+      }).join('');
+    }
+
+    async function validerFiche(id) {
+      var res = await fetch(API + '/rh/paie/' + id + '/valider', { method: 'PUT', headers: apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Fiche validée — prête au virement', 'success'); loadPayslipsAll(); }
+      else showToast(data.message || 'Erreur', 'error');
+    }
+
+    // ── Virements de salaire ──
+    var _virReadyData = [];
+
+    function initVirementPeriode() {
+      var moisEl = document.getElementById('vir-mois');
+      var anneeEl = document.getElementById('vir-annee');
+      if (!moisEl || !anneeEl) return;
+      var now = new Date();
+      if (!moisEl.value) moisEl.value = now.getMonth() + 1;
+      if (!anneeEl.value) anneeEl.value = now.getFullYear();
+    }
+
+    async function loadVirementsReady() {
+      var mois = document.getElementById('vir-mois')?.value;
+      var annee = document.getElementById('vir-annee')?.value;
+      var tbody = document.getElementById('virements-ready-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-dim);">Chargement...</td></tr>';
+      var res = await apiFetch('/rh/paie/virements/ready?mois=' + mois + '&annee=' + annee);
+      _virReadyData = (res && res.data) ? res.data : [];
+      var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      if (!_virReadyData.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune fiche validée pour cette période.<br><small style="color:#475569;">Générez et validez des fiches de paie depuis l\'onglet Fiches de paie.</small></td></tr>';
+        document.getElementById('vir-summary').style.display = 'none';
+        return;
+      }
+      tbody.innerHTML = _virReadyData.map(function(p) {
+        var empName = p.employee ? (p.employee.prenom + ' ' + p.employee.nom) : '—';
+        var iban = p.employee?.iban;
+        var ibanDisplay = iban
+          ? '<span style="font-family:monospace;font-size:12px;">' + iban.replace(/(.{4})/g, '$1 ').trim() + '</span>'
+          : '<span style="color:#f87171;font-size:12px;">⚠️ IBAN manquant</span>';
+        return '<tr>'
+          + '<td><input type="checkbox" class="vir-check" data-id="' + p._id + '" onchange="updateVirSummary()" ' + (iban ? 'checked' : '') + ' /></td>'
+          + '<td style="font-weight:600;">' + empName + '</td>'
+          + '<td>' + ibanDisplay + '</td>'
+          + '<td>' + (moisLabels[p.mois]||p.mois) + ' ' + p.annee + '</td>'
+          + '<td style="font-weight:700;color:#34d399;">' + (p.salaireNet||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td><span class="badge badge-blue">Validée</span></td>'
+          + '</tr>';
+      }).join('');
+      updateVirSummary();
+    }
+
+    function toggleAllVirements(checked) {
+      document.querySelectorAll('.vir-check').forEach(function(cb) { cb.checked = checked; });
+      updateVirSummary();
+    }
+
+    function updateVirSummary() {
+      var checked = Array.from(document.querySelectorAll('.vir-check:checked'));
+      var summary = document.getElementById('vir-summary');
+      var text = document.getElementById('vir-summary-text');
+      if (!summary || !text) return;
+      if (!checked.length) { summary.style.display = 'none'; return; }
+      var ids = checked.map(function(cb) { return cb.getAttribute('data-id'); });
+      var total = _virReadyData.filter(function(p) { return ids.includes(p._id); })
+        .reduce(function(s,p) { return s + (p.salaireNet||0); }, 0);
+      text.textContent = checked.length + ' salarié(s) sélectionné(s) — Total : ' + total.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €';
+      summary.style.display = 'flex';
+    }
+
+    async function effectuerVirements() {
+      var checked = Array.from(document.querySelectorAll('.vir-check:checked'));
+      if (!checked.length) { showToast('Aucune fiche sélectionnée', 'error'); return; }
+      var payslipIds = checked.map(function(cb) { return cb.getAttribute('data-id'); });
+      var mois = parseInt(document.getElementById('vir-mois')?.value);
+      var annee = parseInt(document.getElementById('vir-annee')?.value);
+      var btn = document.getElementById('vir-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Traitement...'; }
+      try {
+        var res = await fetch(API + '/rh/paie/virements', {
+          method: 'POST', headers: apiHeaders(),
+          body: JSON.stringify({ payslipIds, mois, annee })
+        });
+        var data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Virements effectués', 'success');
+          loadVirementsReady();
+          loadVirements();
+        } else {
+          showToast(data.message || 'Erreur', 'error');
+        }
+      } catch(e) { showToast('Erreur réseau', 'error'); }
+      if (btn) { btn.disabled = false; btn.textContent = '💸 Lancer les virements'; }
+    }
+
+    async function loadVirements() {
+      var res = await apiFetch('/rh/paie/virements');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('virements-history-body');
+      if (!tbody) return;
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun virement effectué</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(v) {
+        var statut = v.statut === 'effectue' ? '<span class="badge badge-green">Effectué</span>' : '<span class="badge badge-yellow">Partiel</span>';
+        var date = new Date(v.effectueLe).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        var lignesSansIban = (v.lignes||[]).filter(function(l){ return l.statut==='sans_iban'; });
+        var detail = lignesSansIban.length
+          ? '<span style="color:#f59e0b;font-size:12px;">⚠️ ' + lignesSansIban.length + ' sans IBAN</span>'
+          : '<span style="color:#34d399;font-size:12px;">✓ Complet</span>';
+        return '<tr>'
+          + '<td style="font-weight:600;">' + (v.periode||'—') + '</td>'
+          + '<td style="text-align:center;">' + (v.nbEmployes||0) + '</td>'
+          + '<td style="font-weight:700;color:#a5b4fc;">' + (v.montantTotal||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' €</td>'
+          + '<td>' + statut + '</td>'
+          + '<td style="color:var(--text-muted);font-size:12px;">' + date + '</td>'
+          + '<td>' + detail + '</td>'
+          + '</tr>';
       }).join('');
     }
 

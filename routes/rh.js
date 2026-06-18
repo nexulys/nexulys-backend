@@ -12,6 +12,10 @@ router.route('/conges').get(c.getLeaves).post(c.requestLeave);
 router.put('/conges/:id/statut', c.updateLeaveStatus);
 router.post('/paie/generer', c.generatePayslip);
 router.get('/paie/all', c.getAllPayslips);
+router.get('/paie/virements/ready', c.getVirementsReady);
+router.get('/paie/virements', c.getVirements);
+router.post('/paie/virements', c.effectuerVirements);
+router.put('/paie/:id/valider', c.validerFiche);
 router.get('/paie/:employeeId', c.getPayslips);
 
 module.exports = router;
