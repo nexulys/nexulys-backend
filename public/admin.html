@@ -328,9 +328,7 @@
   function doLogout() {
     sessionStorage.removeItem('novexa_admin_token');
     adminToken = null;
-    document.getElementById('admin-app').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('admin-password').value = '';
+    window.location.href = '/login.html';
   }
 
   function showApp() {
