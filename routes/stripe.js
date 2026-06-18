@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const express = require('express');
 const Subscription = require('../models/Subscription');
-const { constructWebhookEvent } = require('../services/stripeService');
+const { constructWebhookEvent, nextBillingOn5thAfter } = require('../services/stripeService');
 const logger = require('../utils/logger');
 
 // Raw body needed for Stripe signature verification
@@ -20,13 +20,20 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
   try {
     switch (event.type) {
-      case 'invoice.payment_succeeded':
+      case 'invoice.payment_succeeded': {
+        const inv = event.data.object;
+        const nextDate = nextBillingOn5thAfter(inv.created);
         await Subscription.findOneAndUpdate(
-          { stripeSubscriptionId: event.data.object.subscription },
-          { statut: 'actif', $push: { billingHistory: { date: new Date(), montant: event.data.object.amount_paid / 100, statut: 'payé' } } }
+          { stripeSubscriptionId: inv.subscription },
+          {
+            statut: 'actif',
+            nextBillingDate: nextDate,
+            $push: { billingHistory: { date: new Date(inv.created * 1000), montant: inv.amount_paid / 100, statut: 'payé' } }
+          }
         );
-        logger.info('Paiement Stripe reçu', { amount: event.data.object.amount_paid });
+        logger.info('Paiement Stripe reçu', { amount: inv.amount_paid, nextBilling: nextDate });
         break;
+      }
 
       case 'invoice.payment_failed':
         await Subscription.findOneAndUpdate(

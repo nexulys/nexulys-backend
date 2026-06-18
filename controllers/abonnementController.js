@@ -1,5 +1,10 @@
 const Subscription = require('../models/Subscription');
-const { createCustomer, createSubscription: createStripeSubscription, cancelSubscription: cancelStripeSubscription } = require('../services/stripeService');
+const {
+  createCustomer,
+  createSubscription: createStripeSubscription,
+  cancelSubscription: cancelStripeSubscription,
+  nextBillingOn5th
+} = require('../services/stripeService');
 
 exports.getPlans = async (req, res) => {
   res.json({
@@ -61,7 +66,7 @@ exports.activateSubscription = async (req, res) => {
       {
         statut: 'actif',
         startDate: new Date(),
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        nextBillingDate: nextBillingOn5th(),
         paymentMethod: methodePaiement,
         billingEmail: emailFacturation,
         stripeCustomerId: stripeCustomer.id,
