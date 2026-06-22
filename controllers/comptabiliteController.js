@@ -7,6 +7,7 @@ const Employee = require('../models/Employee');
 const { calculerTVA } = require('../utils/tvaCalculator');
 const { sendMail } = require('../utils/mailer');
 const { sendSlack } = require('../utils/slack');
+const { logAction } = require('../utils/auditLogger');
 
 exports.createInvoice = async (req, res) => {
   try {
@@ -22,6 +23,7 @@ exports.createInvoice = async (req, res) => {
       client, lignes, montantHT, tauxTVA, montantTVA, montantTTC,
       dateEcheance, notes, createdBy: req.user.id
     });
+    logAction(req, { action: 'CREATE_INVOICE', entity: 'Invoice', entityId: invoice._id, details: invoice.numero });
     res.status(201).json({ success: true, data: invoice });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -59,6 +61,7 @@ exports.updateInvoice = async (req, res) => {
       if (company?.slackWebhookUrl) {
         await sendSlack(company.slackWebhookUrl, `✅ Facture payée : ${invoice.numero} — ${invoice.client?.nom} — ${invoice.montantTTC.toFixed(2)} €`);
       }
+      logAction(req, { action: 'MARK_PAID_INVOICE', entity: 'Invoice', entityId: invoice._id, details: invoice.numero });
     }
     res.json({ success: true, data: invoice });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
@@ -67,6 +70,7 @@ exports.updateInvoice = async (req, res) => {
 exports.deleteInvoice = async (req, res) => {
   try {
     await Invoice.findOneAndDelete({ _id: req.params.id, company: req.user.company });
+    logAction(req, { action: 'DELETE_INVOICE', entity: 'Invoice', entityId: req.params.id, details: req.params.id });
     res.json({ success: true, message: 'Facture supprimée' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };

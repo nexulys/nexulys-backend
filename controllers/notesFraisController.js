@@ -1,6 +1,7 @@
 const NoteFrais = require('../models/NoteFrais');
 const Company = require('../models/Company');
 const { sendSlack } = require('../utils/slack');
+const { notifyExpenseSubmitted } = require('../utils/notifications');
 
 exports.getNotesFrais = async (req, res) => {
   try {
@@ -21,10 +22,7 @@ exports.createNoteFrais = async (req, res) => {
       employeNom: employeNom || 'Non précisé',
       createdBy: req.user.id
     });
-    const company = await Company.findById(req.user.company);
-    if (company?.slackWebhookUrl) {
-      await sendSlack(company.slackWebhookUrl, `💳 Nouvelle note de frais : *${titre}* — ${montant} € (${employeNom || 'Employé'})`);
-    }
+    notifyExpenseSubmitted(req.user.company, { employeeNom: note.employeNom, montant: note.montant, titre: note.titre });
     res.status(201).json({ success: true, data: note });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };

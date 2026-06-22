@@ -5,12 +5,15 @@ const Payslip = require('../models/Payslip');
 const Virement = require('../models/Virement');
 const AvanceSalaire = require('../models/AvanceSalaire');
 const { genererFichePaie } = require('../utils/payslipGenerator');
+const { notifyLeaveRequest, notifyAdvanceRequested } = require('../utils/notifications');
+const { logAction } = require('../utils/auditLogger');
 
 const MOIS_LABELS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
 exports.createEmployee = async (req, res) => {
   try {
     const employee = await Employee.create({ ...req.body, company: req.user.company });
+    logAction(req, { action: 'CREATE_EMPLOYEE', entity: 'Employee', entityId: employee._id, details: employee.nom });
     res.status(201).json({ success: true, data: employee });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -48,6 +51,7 @@ exports.deleteEmployee = async (req, res) => {
       { new: true }
     );
     if (!emp) return res.status(404).json({ success: false, message: 'Employé introuvable' });
+    logAction(req, { action: 'DEACTIVATE_EMPLOYEE', entity: 'Employee', entityId: req.params.id });
     res.json({ success: true, message: 'Employé désactivé' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -69,6 +73,20 @@ exports.getContracts = async (req, res) => {
 exports.requestLeave = async (req, res) => {
   try {
     const leave = await Leave.create({ ...req.body, company: req.user.company, statut: 'en_attente' });
+    // Récupérer le nom de l'employé si disponible
+    let employeeNom = leave.employeeNom || 'Employé';
+    if (!employeeNom || employeeNom === 'Employé') {
+      try {
+        const emp = await Employee.findById(leave.employee);
+        if (emp) employeeNom = `${emp.prenom} ${emp.nom}`.trim();
+      } catch (_) {}
+    }
+    notifyLeaveRequest(req.user.company, {
+      employeeNom,
+      dateDebut: leave.dateDebut,
+      dateFin: leave.dateFin,
+      type: leave.type
+    });
     res.status(201).json({ success: true, data: leave });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -94,6 +112,7 @@ exports.updateLeaveStatus = async (req, res) => {
       { statut, commentaireRH, approvedBy: req.user.id, approvedAt: new Date() },
       { new: true }
     ).populate('employee');
+    logAction(req, { action: 'UPDATE_LEAVE_STATUS', entity: 'Leave', entityId: req.params.id, details: req.body.statut });
     res.json({ success: true, data: leave });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -245,6 +264,7 @@ exports.createAvance = async (req, res) => {
       deduireDePaie: deduireDePaie !== undefined ? deduireDePaie : true,
       createdBy: req.user.id
     });
+    notifyAdvanceRequested(req.user.company, { employeeNom, montant, motif });
     res.status(201).json({ success: true, data: avance });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };

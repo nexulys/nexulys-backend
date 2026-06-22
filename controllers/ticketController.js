@@ -1,4 +1,5 @@
 const Ticket = require('../models/Ticket');
+const { notifyTicketOpened } = require('../utils/notifications');
 
 exports.getTickets = async (req, res) => {
   try {
@@ -26,6 +27,7 @@ exports.createTicket = async (req, res) => {
       createdBy: req.user.id,
       rapporteurNom
     });
+    notifyTicketOpened(req.user.company, { titre: ticket.titre, priorite: ticket.priorite, rapporteurNom: ticket.rapporteurNom });
     res.status(201).json({ success: true, data: ticket });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };

@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 const Supplier = require('../models/Supplier');
+const { notifyStockLow } = require('../utils/notifications');
 
 exports.createProduct = async (req, res) => {
   try {
@@ -61,6 +62,10 @@ exports.addMovement = async (req, res) => {
       quantiteAvant, quantiteApres: product.quantite,
       motif, reference, fournisseur, createdBy: req.user.id
     });
+
+    if (product.alerteActive === true && product.quantite <= product.seuilAlerte) {
+      notifyStockLow(req.user.company, { produitNom: product.nom, quantite: product.quantite, seuilAlerte: product.seuilAlerte });
+    }
 
     res.status(201).json({
       success: true, data: movement, produit: product,
