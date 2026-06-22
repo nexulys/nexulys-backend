@@ -921,6 +921,9 @@
       <button class="nav-item" onclick="switchSection('support')">
         <span class="icon">🎫</span><span class="label">Support</span>
       </button>
+      <button class="nav-item" onclick="switchSection('contratsClients')">
+        📋 Contrats clients
+      </button>
 
       <span class="nav-section-label" style="margin-top:8px;">Outils</span>
       <button class="nav-item" onclick="switchSection('ia')">
@@ -1016,6 +1019,24 @@
             <div class="kpi-value" id="kpi-stock">—</div>
             <div class="kpi-label">Alertes stock</div>
             <div class="kpi-sub" id="kpi-stock-sub">Chargement...</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <div class="kpi-icon" style="background:rgba(251,146,60,.15);color:#fb923c;">📅</div>
+              <span class="kpi-trend warn" id="kpi-conges-trend">RH</span>
+            </div>
+            <div class="kpi-value" id="kpi-conges">—</div>
+            <div class="kpi-label">Congés en attente</div>
+            <div class="kpi-sub" id="kpi-conges-sub">Chargement...</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <div class="kpi-icon" style="background:rgba(248,113,113,.15);color:#f87171;">🎫</div>
+              <span class="kpi-trend down" id="kpi-tickets-trend">Support</span>
+            </div>
+            <div class="kpi-value" id="kpi-tickets">—</div>
+            <div class="kpi-label">Tickets urgents</div>
+            <div class="kpi-sub" id="kpi-tickets-sub">Chargement...</div>
           </div>
         </div>
 
@@ -1326,6 +1347,7 @@
           <div id="rh-actions">
             <div id="rh-actions-employes" style="display:flex;gap:10px;">
               <button class="btn-outline" onclick="exportEmployesCSV()">📥 Export CSV</button>
+              <button class="btn-outline" onclick="openImportModal('employes')" style="margin-right:8px;">📥 Importer CSV</button>
               <button class="btn-primary" onclick="openModal('employe')">+ Ajouter employé</button>
             </div>
             <div id="rh-actions-conges" style="display:none;">
@@ -1542,6 +1564,7 @@
           </div>
           <div style="display:flex;gap:10px;">
             <button class="btn-outline" onclick="loadStocksSection()">🔄 Actualiser</button>
+            <button class="btn-outline" onclick="openImportModal('produits')" style="margin-right:8px;">📥 Importer CSV</button>
             <button class="btn-outline" onclick="openModal('stock')">+ Mouvement</button>
             <button class="btn-primary" onclick="openModal('nouveau-produit')">+ Nouveau produit</button>
           </div>
@@ -1806,6 +1829,7 @@
         <div class="section-topbar">
           <div><div class="section-label">CRM</div><div class="page-title">Pipeline Commercial</div></div>
           <div style="display:flex;gap:8px;">
+            <button class="btn-outline" onclick="openImportModal('clients')" style="margin-right:8px;">📥 Importer CSV</button>
             <button class="btn-primary" onclick="openModal('prospect')">+ Nouveau prospect</button>
           </div>
         </div>
@@ -2076,6 +2100,50 @@
         </div>
       </div>
 
+      <!-- ── SECTION: CONTRATS CLIENTS ── -->
+      <div id="section-contratsClients" class="section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div>
+            <div class="section-label">Commercial</div>
+            <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Contrats clients</h2>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-contrat-client')">+ Nouveau contrat</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" style="width:100%;">
+              <thead><tr><th>Réf.</th><th>Client</th><th>Titre</th><th>Type</th><th>Fin</th><th>Valeur</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody id="contrats-clients-body"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim);">Chargement...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Modal Contrat Client -->
+        <div id="modal-contrat-client" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-contrat-client')">
+          <div class="modal-box">
+            <div class="modal-header"><span class="modal-title">Nouveau contrat client</span><button class="modal-close" onclick="closeModal('modal-contrat-client')">×</button></div>
+            <div class="modal-body">
+              <div id="cc-error" class="modal-error" style="display:none;"></div>
+              <div class="modal-field"><label class="modal-label">Client (nom) *</label><input class="modal-input" id="cc-client-nom" placeholder="Nom du client ou entreprise" /></div>
+              <div class="modal-field"><label class="modal-label">Email client</label><input class="modal-input" id="cc-client-email" type="email" /></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="modal-field"><label class="modal-label">Titre du contrat *</label><input class="modal-input" id="cc-titre" /></div>
+                <div class="modal-field"><label class="modal-label">Type</label><select class="modal-select" id="cc-type"><option value="service">Service</option><option value="maintenance">Maintenance</option><option value="abonnement">Abonnement</option><option value="prestation">Prestation</option><option value="autre">Autre</option></select></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="modal-field"><label class="modal-label">Date début *</label><input class="modal-input" id="cc-debut" type="date" /></div>
+                <div class="modal-field"><label class="modal-label">Date fin</label><input class="modal-input" id="cc-fin" type="date" /></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="modal-field"><label class="modal-label">Valeur (€)</label><input class="modal-input" id="cc-valeur" type="number" min="0" placeholder="0" /></div>
+                <div class="modal-field"><label class="modal-label">Périodicité</label><select class="modal-select" id="cc-periodicite"><option value="unique">Unique</option><option value="mensuel">Mensuel</option><option value="trimestriel">Trimestriel</option><option value="annuel">Annuel</option></select></div>
+              </div>
+              <div class="modal-field"><label class="modal-label">Notes</label><textarea class="modal-input" id="cc-notes" rows="2"></textarea></div>
+            </div>
+            <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-contrat-client')">Annuler</button><button class="btn-primary" id="cc-btn" onclick="submitContratClient()">Créer le contrat</button></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── SECTION: PARAMÈTRES ── -->
       <div id="section-parametres" class="section">
         <div>
@@ -2270,6 +2338,29 @@
                 <button class="btn-primary" id="sub-activate-btn" onclick="activerAbonnement()" style="padding:12px 28px;font-size:15px;">✅ Activer l'abonnement</button>
               </div>
               <div id="sub-error" style="color:#f87171;font-size:13px;margin-top:8px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RGPD + Audit -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
+          <div class="card">
+            <div class="card-body">
+              <div class="settings-section-title">🛡️ RGPD — Vos droits</div>
+              <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Conformément au RGPD, vous pouvez exporter ou supprimer toutes vos données.</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <button class="btn-outline" onclick="exportRGPDData()" style="text-align:left;">📤 Exporter mes données (JSON)</button>
+                <button class="btn-outline" onclick="requestAccountDeletion()" style="text-align:left;border-color:rgba(248,113,113,.3);color:#f87171;">🗑 Demander la suppression du compte</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="settings-section-title">📋 Journal d'activité (Audit)</div>
+              <div id="audit-log-container" style="max-height:200px;overflow-y:auto;">
+                <div style="font-size:13px;color:var(--text-dim);">Chargement...</div>
+              </div>
+              <button class="btn-outline" style="margin-top:10px;width:100%;" onclick="loadAuditLog()">🔄 Actualiser</button>
             </div>
           </div>
         </div>
@@ -3160,7 +3251,8 @@
     const SECTION_TITLES = {
       dashboard: 'Dashboard', comptabilite: 'Comptabilité', rh: 'Ressources Humaines',
       stocks: 'Stocks', taches: 'Tâches', ia: 'IA Assistant', parametres: 'Paramètres',
-      agenda: 'Agenda', crm: 'CRM', projets: 'Projets', support: 'Support & Tickets'
+      agenda: 'Agenda', crm: 'CRM', projets: 'Projets', support: 'Support & Tickets',
+      contratsClients: 'Contrats clients'
     };
     const SECTION_LOADERS = {
       comptabilite: function() { loadAllInvoices(); loadDepenses(); },
@@ -3172,7 +3264,8 @@
       crm: loadCRM,
       projets: loadProjets,
       agenda: loadAgenda,
-      support: loadTickets
+      support: loadTickets,
+      contratsClients: loadContratsClients
     };
 
     function switchSection(name) {
@@ -3190,39 +3283,57 @@
 
     // ── KPI Cards ──
     async function loadKPIs() {
-      const [invoicesRes, employeesRes, stockAlertsRes, paidRes] = await Promise.all([
-        apiFetch('/comptabilite/factures?statut=envoyee'),
-        apiFetch('/rh/employes'),
-        apiFetch('/stocks/alertes'),
-        apiFetch('/comptabilite/factures?statut=payee')
-      ]);
-
-      // Chiffre d'affaires
-      const ca = (paidRes && paidRes.data ? paidRes.data : [])
-        .reduce(function(s, i) { return s + (i.montantTTC || 0); }, 0);
-      document.getElementById('kpi-ca').textContent = ca.toLocaleString('fr') + ' €';
-      document.getElementById('kpi-ca-sub').textContent = 'Factures payées';
-
-      // Factures en attente
-      const facturesCount = (invoicesRes && invoicesRes.data) ? invoicesRes.data.length : (invoicesRes && invoicesRes.count) || 0;
-      document.getElementById('kpi-factures').textContent = facturesCount;
-      document.getElementById('kpi-factures-sub').textContent = facturesCount === 0 ? 'Aucune en attente' : facturesCount + ' en attente de paiement';
-
-      // Employés
-      const empCount = (employeesRes && employeesRes.count != null) ? employeesRes.count
-        : (employeesRes && employeesRes.data) ? employeesRes.data.length : 0;
-      document.getElementById('kpi-employes').textContent = empCount;
-      document.getElementById('kpi-employes-sub').textContent = empCount + ' employés enregistrés';
-
-      // Stock alerts
-      const alertsCount = (stockAlertsRes && stockAlertsRes.count != null) ? stockAlertsRes.count
-        : (stockAlertsRes && stockAlertsRes.data) ? stockAlertsRes.data.length : 0;
-      document.getElementById('kpi-stock').textContent = alertsCount;
-      document.getElementById('kpi-stock-sub').textContent = alertsCount === 0 ? 'Tous les stocks OK' : alertsCount + ' produit(s) en alerte';
-      if (alertsCount === 0) {
-        document.getElementById('kpi-stock-trend').className = 'kpi-trend up';
-        document.getElementById('kpi-stock-trend').textContent = 'OK';
-      }
+      try {
+        var res = await apiFetch('/dashboard/executive');
+        if (res && res.success && res.data) {
+          var d = res.data;
+          var caMois = (d.ca && d.ca.mois) ? d.ca.mois : 0;
+          document.getElementById('kpi-ca').textContent = caMois.toLocaleString('fr') + ' €';
+          document.getElementById('kpi-ca-sub').textContent = 'CA ce mois';
+          if (d.ca && d.ca.variation !== null && d.ca.variation !== undefined) {
+            var varEl = document.getElementById('kpi-ca-trend');
+            if (varEl) { varEl.textContent = (d.ca.variation > 0 ? '+' : '') + d.ca.variation + '%'; varEl.className = 'kpi-trend ' + (d.ca.variation >= 0 ? 'up' : 'down'); }
+          }
+          var impayees = (d.factures && d.factures.impayees) ? d.factures.impayees : { count: 0, montant: 0 };
+          document.getElementById('kpi-factures').textContent = impayees.count;
+          document.getElementById('kpi-factures-sub').textContent = impayees.count === 0 ? 'Aucune en attente' : impayees.montant.toLocaleString('fr') + ' € en attente';
+          var nbEmp = (d.rh && d.rh.nbEmployes) ? d.rh.nbEmployes : 0;
+          document.getElementById('kpi-employes').textContent = nbEmp;
+          document.getElementById('kpi-employes-sub').textContent = nbEmp + ' employé(s) actif(s)';
+          var alertes = (d.stock && d.stock.alertes) ? d.stock.alertes : 0;
+          document.getElementById('kpi-stock').textContent = alertes;
+          document.getElementById('kpi-stock-sub').textContent = alertes === 0 ? 'Tous les stocks OK' : alertes + ' produit(s) en alerte';
+          // Nouveaux KPIs
+          var conges = (d.rh && d.rh.congesEnAttente) ? d.rh.congesEnAttente : 0;
+          var kpiConges = document.getElementById('kpi-conges');
+          if (kpiConges) { kpiConges.textContent = conges; document.getElementById('kpi-conges-sub').textContent = conges === 0 ? 'Aucun congé en attente' : conges + ' demande(s) à approuver'; }
+          var tickets = (d.support && d.support.urgents) ? d.support.urgents : 0;
+          var kpiTickets = document.getElementById('kpi-tickets');
+          if (kpiTickets) { kpiTickets.textContent = tickets; document.getElementById('kpi-tickets-sub').textContent = tickets === 0 ? 'Aucun ticket urgent' : tickets + ' ticket(s) urgent(s)'; }
+          return;
+        }
+      } catch(e) {}
+      // Fallback : ancienne méthode
+      try {
+        var [invoicesRes, employeesRes, stockAlertsRes, paidRes] = await Promise.all([
+          apiFetch('/comptabilite/factures?statut=envoyee'),
+          apiFetch('/rh/employes'),
+          apiFetch('/stocks/alertes'),
+          apiFetch('/comptabilite/factures?statut=payee')
+        ]);
+        var ca = (paidRes && paidRes.data ? paidRes.data : []).reduce(function(s,i){return s+(i.montantTTC||0);},0);
+        document.getElementById('kpi-ca').textContent = ca.toLocaleString('fr') + ' €';
+        document.getElementById('kpi-ca-sub').textContent = 'Factures payées';
+        var fc = (invoicesRes && invoicesRes.data) ? invoicesRes.data.length : 0;
+        document.getElementById('kpi-factures').textContent = fc;
+        document.getElementById('kpi-factures-sub').textContent = fc === 0 ? 'Aucune en attente' : fc + ' en attente de paiement';
+        var ec = (employeesRes && employeesRes.count != null) ? employeesRes.count : (employeesRes && employeesRes.data ? employeesRes.data.length : 0);
+        document.getElementById('kpi-employes').textContent = ec;
+        document.getElementById('kpi-employes-sub').textContent = ec + ' employés enregistrés';
+        var ac = (stockAlertsRes && stockAlertsRes.count != null) ? stockAlertsRes.count : (stockAlertsRes && stockAlertsRes.data ? stockAlertsRes.data.length : 0);
+        document.getElementById('kpi-stock').textContent = ac;
+        document.getElementById('kpi-stock-sub').textContent = ac === 0 ? 'Tous les stocks OK' : ac + ' produit(s) en alerte';
+      } catch(e2) {}
     }
 
     // ── Recent Invoices ──
@@ -3612,7 +3723,7 @@
           + '<td style="color:var(--text-dim);">' + tva + '</td>'
           + '<td><span class="badge ' + cls + '">' + label + '</span></td>'
           + '<td style="color:var(--text-dim);">' + date + '</td>'
-          + '<td>' + paidBtn + relanceBtn + '<button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
+          + '<td>' + paidBtn + relanceBtn + '<button class="btn-sm" onclick="downloadFacturePDF(\'' + inv._id + '\')" style="margin-right:4px;" title="Télécharger PDF">📥 PDF</button><button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
           + '</tr>';
       }).join('');
       if (pagDiv) {
@@ -4469,6 +4580,7 @@
       loadPortails();
       loadEquipe();
       loadAbonnement();
+      loadAuditLog();
     }
 
     async function loadAbonnement() {
@@ -4836,6 +4948,17 @@
       w.document.close();
     }
 
+    async function downloadFacturePDF(id) {
+      showToast('Génération du PDF...', 'info');
+      try {
+        var response = await fetch(API + '/pdf/facture/' + id, { headers: apiHeaders() });
+        if (!response.ok) { var d = await response.json(); showToast(d.message || 'Erreur PDF', 'error'); return; }
+        var blob = await response.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'facture.pdf'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      } catch(e) { showToast('Erreur téléchargement PDF', 'error'); }
+    }
+
     // ── CSV Export ──
     function downloadCSV(content, filename) {
       var blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
@@ -5017,7 +5140,7 @@
         var actionBtn = statut === 'brouillon'
           ? '<button class="btn-sm" onclick="validerFiche(\'' + p._id + '\')" style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Valider</button>'
           : (statut === 'valide' ? '<span style="font-size:12px;color:#34d399;">Prête au virement</span>' : '<span style="font-size:12px;color:#64748b;">Payée</span>');
-        var printBtn = '<button class="btn-sm" onclick="printPayslip(\'' + p._id + '\')" title="Imprimer" style="margin-left:4px;">🖨</button>';
+        var printBtn = '<button class="btn-sm" onclick="downloadPayslipPDF(\'' + p._id + '\')" title="Télécharger PDF" style="margin-left:4px;">📥 PDF</button><button class="btn-sm" onclick="printPayslip(\'' + p._id + '\')" title="Imprimer" style="margin-left:4px;">🖨</button>';
         return '<tr data-payslip-id="' + p._id + '"><td style="font-weight:600;">' + empName + '</td><td>' + (moisLabels[p.mois] || p.mois) + ' ' + (p.annee || '') + '</td><td style="font-weight:700;">' + (p.salaireBrut || 0).toLocaleString('fr') + ' €</td><td style="font-weight:700;color:var(--green);">' + (p.salaireNet || 0).toLocaleString('fr') + ' €</td><td><span class="badge ' + (statMap[statut] || 'badge-gray') + '">' + (statLabels[statut] || statut) + '</span></td><td>' + actionBtn + printBtn + '</td></tr>';
       }).join('');
     }
@@ -5634,6 +5757,17 @@
       var w = window.open('', '_blank');
       w.document.write(html);
       w.document.close();
+    }
+
+    async function downloadPayslipPDF(id) {
+      showToast('Génération du PDF...', 'info');
+      try {
+        var response = await fetch(API + '/pdf/fiche-paie/' + id, { headers: apiHeaders() });
+        if (!response.ok) { var d = await response.json(); showToast(d.message || 'Erreur PDF', 'error'); return; }
+        var blob = await response.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'fiche_de_paie.pdf'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      } catch(e) { showToast('Erreur téléchargement PDF', 'error'); }
     }
 
     // ── OCR dépense via IA ──
@@ -6471,6 +6605,8 @@
       loadChart();
       loadNotifications();
 
+      checkOnboarding();
+
       // Keepalive ping every 14 min to prevent Render free tier sleep
       setInterval(function() {
         fetch('https://nexulys-backend-1.onrender.com/api/health/live').catch(function() {});
@@ -6481,6 +6617,243 @@
         navigator.serviceWorker.register('/sw.js').catch(function() {});
       }
     });
+    // ── Contrats Clients ──
+    async function loadContratsClients() {
+      var res = await apiFetch('/contrats-clients');
+      var list = (res && res.data) ? res.data : [];
+      var tbody = document.getElementById('contrats-clients-body');
+      if (!tbody) return;
+      var statutMap = { actif:'badge-green', expire:'badge-red', resilie:'badge-gray', en_negociation:'badge-yellow', renouvellement_prevu:'badge-blue' };
+      var statutLabel = { actif:'Actif', expire:'Expiré', resilie:'Résilié', en_negociation:'En négociation', renouvellement_prevu:'Renouvellement' };
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim);">Aucun contrat client</td></tr>'; return; }
+      tbody.innerHTML = list.map(function(c) {
+        var fin = c.dateFin ? new Date(c.dateFin).toLocaleDateString('fr') : '—';
+        var alerte = '';
+        if (c.dateFin && c.statut === 'actif') {
+          var jours = Math.ceil((new Date(c.dateFin) - new Date()) / 86400000);
+          if (jours <= 30 && jours > 0) alerte = ' <span style="color:#f59e0b;font-size:11px;">⚠️ ' + jours + 'j</span>';
+          else if (jours <= 0) alerte = ' <span style="color:#f87171;font-size:11px;">⚠️ Expiré</span>';
+        }
+        return '<tr>'
+          + '<td style="font-weight:600;color:#a5b4fc;">' + (c.reference || '—') + '</td>'
+          + '<td>' + (c.client && c.client.nom ? c.client.nom : '—') + '</td>'
+          + '<td>' + (c.titre || '—') + '</td>'
+          + '<td style="color:var(--text-muted);">' + (c.type || '—') + '</td>'
+          + '<td>' + fin + alerte + '</td>'
+          + '<td style="font-weight:700;">' + (c.valeur || 0).toLocaleString('fr') + ' €</td>'
+          + '<td><span class="badge ' + (statutMap[c.statut] || 'badge-gray') + '">' + (statutLabel[c.statut] || c.statut) + '</span></td>'
+          + '<td><button class="btn-sm btn-del-sm" onclick="deleteContratClient(\'' + c._id + '\')">🗑</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    async function submitContratClient() {
+      var nom = document.getElementById('cc-client-nom').value.trim();
+      var titre = document.getElementById('cc-titre').value.trim();
+      var debut = document.getElementById('cc-debut').value;
+      if (!nom || !titre || !debut) { document.getElementById('cc-error').textContent = 'Client, titre et date de début requis.'; document.getElementById('cc-error').style.display=''; return; }
+      setModalLoading('cc-btn', true, 'Créer le contrat');
+      try {
+        var res = await fetch(API + '/contrats-clients', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
+          client: { nom: nom, email: document.getElementById('cc-client-email').value.trim() },
+          titre: titre,
+          type: document.getElementById('cc-type').value,
+          dateDebut: debut,
+          dateFin: document.getElementById('cc-fin').value || undefined,
+          valeur: parseFloat(document.getElementById('cc-valeur').value) || 0,
+          periodicite: document.getElementById('cc-periodicite').value,
+          notes: document.getElementById('cc-notes').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.success) { closeModal('modal-contrat-client'); showToast('Contrat créé', 'success'); loadContratsClients(); }
+        else { document.getElementById('cc-error').textContent = data.message || 'Erreur.'; document.getElementById('cc-error').style.display=''; }
+      } catch(e) { document.getElementById('cc-error').textContent = 'Erreur réseau.'; document.getElementById('cc-error').style.display=''; }
+      setModalLoading('cc-btn', false, 'Créer le contrat');
+    }
+
+    async function deleteContratClient(id) {
+      if (!confirm('Supprimer ce contrat ?')) return;
+      var res = await fetch(API + '/contrats-clients/' + id, { method:'DELETE', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) { showToast('Contrat supprimé', 'success'); loadContratsClients(); }
+      else showToast(data.message || 'Erreur', 'error');
+    }
+
+    // ── Import CSV ──
+    var CSV_TEMPLATES = {
+      clients: { label: 'Clients / Prospects', headers: 'nom,email,telephone,entreprise', exemple: 'Dupont SA,contact@dupont.fr,0600000000,Dupont SA' },
+      produits: { label: 'Produits', headers: 'nom,reference,categorie,prixUnitaire,quantite,seuilAlerte,unite', exemple: 'Ordinateur,REF-001,materiel,800,10,2,unité' },
+      employes: { label: 'Employés', headers: 'nom,prenom,email,poste,departement,salaireBase,dateEmbauche', exemple: 'Dupont,Jean,jean@societe.fr,Développeur,IT,3000,2024-01-15' }
+    };
+
+    function openImportModal(type) {
+      document.getElementById('import-type-select').value = type || 'clients';
+      document.getElementById('import-result').style.display = 'none';
+      document.getElementById('import-error').style.display = 'none';
+      document.getElementById('import-file').value = '';
+      updateImportTemplate();
+      openModal('modal-import-csv');
+    }
+
+    function updateImportTemplate() {
+      var type = document.getElementById('import-type-select').value;
+      var t = CSV_TEMPLATES[type];
+      if (!t) return;
+      document.getElementById('import-template-info').innerHTML = '<b>Format attendu (1ère ligne = en-tête) :</b><br><code style="font-family:monospace;">' + t.headers + '</code><br><br><b>Exemple :</b><br><code style="font-family:monospace;">' + t.exemple + '</code>';
+    }
+
+    function exportCSVTemplate() {
+      var type = document.getElementById('import-type-select').value;
+      var t = CSV_TEMPLATES[type];
+      if (!t) return;
+      var blob = new Blob([t.headers + '\n' + t.exemple], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'modele_' + type + '.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    async function submitImport() {
+      var type = document.getElementById('import-type-select').value;
+      var file = document.getElementById('import-file').files[0];
+      if (!file) { document.getElementById('import-error').textContent = 'Veuillez sélectionner un fichier CSV.'; document.getElementById('import-error').style.display = ''; return; }
+      document.getElementById('import-error').style.display = 'none';
+      document.getElementById('import-result').style.display = 'none';
+      setModalLoading('import-btn', true, 'Importer');
+      try {
+        var formData = new FormData();
+        formData.append('file', file);
+        var res = await fetch(API + '/import/' + type, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+        var data = await res.json();
+        if (data.success) {
+          var resultEl = document.getElementById('import-result');
+          resultEl.style.display = '';
+          resultEl.style.background = data.data && data.data.errors && data.data.errors.length > 0 ? 'rgba(245,158,11,.12)' : 'rgba(74,222,128,.12)';
+          resultEl.style.color = data.data && data.data.errors && data.data.errors.length > 0 ? '#fbbf24' : '#4ade80';
+          resultEl.textContent = data.message;
+        } else { document.getElementById('import-error').textContent = data.message || 'Erreur import.'; document.getElementById('import-error').style.display = ''; }
+      } catch(e) { document.getElementById('import-error').textContent = 'Erreur réseau.'; document.getElementById('import-error').style.display = ''; }
+      setModalLoading('import-btn', false, 'Importer');
+    }
+
+    // ── RGPD & Audit Log ──
+    async function exportRGPDData() {
+      showToast('Préparation de l\'export...', 'info');
+      try {
+        var response = await fetch(API + '/auth/rgpd/export', { headers: apiHeaders() });
+        if (!response.ok) { showToast('Erreur export RGPD', 'error'); return; }
+        var blob = await response.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'mes_donnees_novexa.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast('Export téléchargé', 'success');
+      } catch(e) { showToast('Erreur réseau', 'error'); }
+    }
+
+    async function requestAccountDeletion() {
+      var motif = prompt('Motif de la demande de suppression (optionnel) :');
+      if (motif === null) return;
+      if (!confirm('Êtes-vous sûr ? Votre demande sera traitée sous 30 jours.')) return;
+      var res = await fetch(API + '/auth/rgpd/supprimer', { method:'POST', headers:apiHeaders(), body:JSON.stringify({ motif: motif }) });
+      var data = await res.json();
+      if (data.success) showToast(data.message || 'Demande enregistrée', 'success');
+      else showToast(data.message || 'Erreur', 'error');
+    }
+
+    async function loadAuditLog() {
+      var res = await apiFetch('/audit?limit=20');
+      var logs = (res && res.data) ? res.data : [];
+      var container = document.getElementById('audit-log-container');
+      if (!container) return;
+      if (!logs.length) { container.innerHTML = '<div style="font-size:13px;color:var(--text-dim);">Aucune activité enregistrée</div>'; return; }
+      container.innerHTML = logs.map(function(l) {
+        var date = new Date(l.createdAt).toLocaleDateString('fr') + ' ' + new Date(l.createdAt).toLocaleTimeString('fr', {hour:'2-digit',minute:'2-digit'});
+        return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;">'
+          + '<div><span style="color:#a5b4fc;font-weight:600;">' + (l.userNom || 'Système') + '</span> — ' + (l.details || l.action) + '</div>'
+          + '<div style="color:var(--text-dim);white-space:nowrap;margin-left:8px;">' + date + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    // ── Onboarding ──
+    function checkOnboarding() {
+      if (!localStorage.getItem('novexa_onboarded')) {
+        document.getElementById('modal-onboarding').style.display = 'flex';
+      }
+    }
+
+    function goOnboardingStep(section) {
+      dismissOnboarding();
+      switchSection(section);
+    }
+
+    function dismissOnboarding() {
+      localStorage.setItem('novexa_onboarded', '1');
+      document.getElementById('modal-onboarding').style.display = 'none';
+    }
   </script>
+
+    <!-- Modal Import CSV -->
+    <div id="modal-import-csv" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-import-csv')">
+      <div class="modal-box" style="max-width:480px;">
+        <div class="modal-header"><span class="modal-title">📥 Importer depuis CSV</span><button class="modal-close" onclick="closeModal('modal-import-csv')">×</button></div>
+        <div class="modal-body">
+          <div id="import-error" class="modal-error" style="display:none;"></div>
+          <div class="modal-field">
+            <label class="modal-label">Type de données</label>
+            <select class="modal-select" id="import-type-select" onchange="updateImportTemplate()">
+              <option value="clients">Clients / Prospects</option>
+              <option value="produits">Produits / Stock</option>
+              <option value="employes">Employés</option>
+            </select>
+          </div>
+          <div id="import-template-info" style="margin:12px 0;padding:12px;background:rgba(99,102,241,.08);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.6;"></div>
+          <div class="modal-field">
+            <label class="modal-label">Fichier CSV</label>
+            <input type="file" id="import-file" accept=".csv,text/csv" style="width:100%;padding:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:13px;" />
+          </div>
+          <div id="import-result" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:13px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('modal-import-csv')">Fermer</button>
+          <button class="btn-outline" onclick="exportCSVTemplate()" style="margin-right:auto;">⬇ Modèle CSV</button>
+          <button class="btn-primary" id="import-btn" onclick="submitImport()">Importer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Onboarding -->
+    <div id="modal-onboarding" class="modal-overlay" style="z-index:2000;display:none;">
+      <div class="modal-box" style="max-width:540px;">
+        <div style="text-align:center;padding:8px 0 20px;">
+          <div style="font-size:48px;margin-bottom:12px;">🚀</div>
+          <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;background:var(--gradient-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Bienvenue sur Novexa !</div>
+          <div style="font-size:14px;color:var(--text-muted);margin-top:8px;">Quelques étapes pour démarrer votre pilotage d'entreprise</div>
+        </div>
+        <div id="onboarding-steps" style="display:flex;flex-direction:column;gap:12px;margin:8px 0 20px;">
+          <div class="onboarding-step" onclick="goOnboardingStep('parametres')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;cursor:pointer;transition:all .2s;">
+            <div style="font-size:28px;">🏢</div>
+            <div><div style="font-weight:700;font-size:14px;">1. Configurez votre entreprise</div><div style="font-size:12px;color:var(--text-muted);">SIRET, adresse, Slack, seuils d'approbation</div></div>
+            <div style="margin-left:auto;font-size:18px;color:var(--text-dim);">→</div>
+          </div>
+          <div class="onboarding-step" onclick="goOnboardingStep('rh')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;cursor:pointer;transition:all .2s;">
+            <div style="font-size:28px;">👥</div>
+            <div><div style="font-weight:700;font-size:14px;">2. Ajoutez votre équipe</div><div style="font-size:12px;color:var(--text-muted);">Importez vos employés ou ajoutez-les un par un</div></div>
+            <div style="margin-left:auto;font-size:18px;color:var(--text-dim);">→</div>
+          </div>
+          <div class="onboarding-step" onclick="goOnboardingStep('comptabilite')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;cursor:pointer;transition:all .2s;">
+            <div style="font-size:28px;">📄</div>
+            <div><div style="font-weight:700;font-size:14px;">3. Créez votre première facture</div><div style="font-size:12px;color:var(--text-muted);">Ou importez vos clients existants via CSV</div></div>
+            <div style="margin-left:auto;font-size:18px;color:var(--text-dim);">→</div>
+          </div>
+          <div class="onboarding-step" onclick="goOnboardingStep('stocks')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;cursor:pointer;transition:all .2s;">
+            <div style="font-size:28px;">📦</div>
+            <div><div style="font-weight:700;font-size:14px;">4. Gérez vos stocks</div><div style="font-size:12px;color:var(--text-muted);">Ajoutez vos produits et configurez les alertes</div></div>
+            <div style="margin-left:auto;font-size:18px;color:var(--text-dim);">→</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <button class="btn-primary" onclick="dismissOnboarding()" style="padding:12px 32px;">Commencer →</button>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:10px;">Vous pouvez retrouver ce guide dans Paramètres</div>
+        </div>
+      </div>
+    </div>
 </body>
 </html>
