@@ -141,3 +141,50 @@ exports.resetPassword = async (req, res) => {
     res.json({ success: true, message: 'Mot de passe réinitialisé avec succès.' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
+
+// RGPD — Export de toutes les données personnelles
+exports.exportMyData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const companyId = req.user.company;
+    const Invoice = require('../models/Invoice');
+    const Employee = require('../models/Employee');
+
+    const [user, company, invoices, employees] = await Promise.all([
+      User.findById(userId).select('-password -resetPasswordToken'),
+      Company.findById(companyId),
+      Invoice.find({ company: companyId }).limit(100),
+      Employee.find({ company: companyId }).select('-numeroSecu -iban').limit(100)
+    ]);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="mes_donnees_novexa_${new Date().toISOString().split('T')[0]}.json"`);
+    res.json({
+      exportDate: new Date().toISOString(),
+      user,
+      company,
+      invoices: { count: invoices.length, data: invoices },
+      employees: { count: employees.length, data: employees },
+      note: 'Export RGPD partiel — contactez support@novexa.fr pour un export complet'
+    });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+// RGPD — Demande de suppression du compte
+exports.requestAccountDeletion = async (req, res) => {
+  try {
+    const { motif } = req.body;
+    const logger = require('../utils/logger');
+
+    logger.warn('Demande de suppression de compte', { userId: req.user.id, company: req.user.company, motif });
+
+    // Notifier l'admin Novexa
+    await sendMail({
+      to: process.env.ADMIN_EMAIL || 'admin@novexa.fr',
+      subject: `[RGPD] Demande suppression compte — ${req.user.email}`,
+      html: `<p>L'utilisateur <b>${req.user.email}</b> (company: ${req.user.company}) demande la suppression de son compte.</p><p>Motif : ${motif || 'Non précisé'}</p><p>Traiter sous 30 jours (obligation RGPD).</p>`
+    });
+
+    res.json({ success: true, message: 'Votre demande de suppression a été enregistrée. Elle sera traitée dans un délai de 30 jours conformément au RGPD.' });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};

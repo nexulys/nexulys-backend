@@ -80,6 +80,11 @@ app.use('/api/centres-analytiques', require('./routes/centresAnalytiques'));
 if (process.env.SEED_SECRET) app.use('/api/seed', require('./routes/seed'));
 
 app.use('/api/health', require('./routes/health'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/pdf', require('./routes/pdf'));
+app.use('/api/import', require('./routes/import'));
+app.use('/api/contrats-clients', require('./routes/contratsClients'));
+app.use('/api/audit', require('./routes/audit'));
 
 // 404 handler
 app.use((req, res) => {
