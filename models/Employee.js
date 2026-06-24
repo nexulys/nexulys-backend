@@ -20,7 +20,8 @@ const employeeSchema = new mongoose.Schema({
     enum: ['actif', 'inactif', 'conge', 'suspendu'],
     default: 'actif'
   },
-  manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }
+  manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+  tauxImpot: { type: Number, default: 0 }  // taux PAS prélèvement à la source (0 = taux neutre)
 }, { timestamps: true });
 
 module.exports = mongoose.model('Employee', employeeSchema);
