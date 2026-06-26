@@ -1,8 +1,19 @@
 require('dotenv').config();
+
+// ── Vérifications critiques au démarrage ──
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET non défini. Arrêt du serveur.');
+  process.exit(1);
+}
+if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS) {
+  console.warn('WARNING: ALLOWED_ORIGINS non défini en production — le CORS bloquera les requêtes frontend.');
+}
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const { apiLimiter, authLimiter, publicLimiter, paymentLimiter, aiLimiter, aiSlowDown } = require('./middleware/rateLimiter');
 const logger = require('./utils/logger');
@@ -13,9 +24,20 @@ const app = express();
 
 connectDB();
 
-// ── Sécurité HTTP headers ──
+// ── Sécurité HTTP headers + CSP ──
 app.use(helmet({
-  contentSecurityPolicy: false, // désactivé : le dashboard charge Chart.js et Google Fonts depuis des CDN
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "https://nexulys-backend-1.onrender.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    }
+  },
   crossOriginEmbedderPolicy: false
 }));
 
@@ -28,9 +50,26 @@ app.use(cors({
   credentials: true
 }));
 
+// ── Cookie parser ──
+app.use(cookieParser());
+
 // ── Body parsing avec limite stricte (anti payload flood) ──
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ── Sanitisation NoSQL — supprime les opérateurs MongoDB ($) des inputs ──
+app.use((req, res, next) => {
+  const sanitize = (obj) => {
+    if (typeof obj !== 'object' || obj === null) return;
+    for (const key of Object.keys(obj)) {
+      if (key.startsWith('$') || key.includes('.')) { delete obj[key]; }
+      else if (typeof obj[key] === 'object') sanitize(obj[key]);
+    }
+  };
+  if (req.body) sanitize(req.body);
+  if (req.query) sanitize(req.query);
+  next();
+});
 
 // ── Timeout global 30s — coupe les connexions lentes/infinies ──
 app.use((req, res, next) => {
@@ -40,7 +79,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(morgan('dev', { stream: { write: msg => logger.http(msg.trim()) } }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', { stream: { write: msg => logger.http(msg.trim()) } }));
 app.use(express.static('public'));
 
 // ── Rate limiting global ──

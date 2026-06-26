@@ -11,7 +11,7 @@ exports.validateRegister = [
   body('nom').trim().notEmpty().withMessage('Le nom est requis'),
   body('prenom').trim().notEmpty().withMessage('Le prénom est requis'),
   body('email').isEmail().normalizeEmail().withMessage('Email invalide'),
-  body('password').isLength({ min: 6 }).withMessage('Mot de passe minimum 6 caractères'),
+  body('password').isLength({ min: 8 }).withMessage('Mot de passe minimum 8 caractères'),
   body('nomEntreprise').trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
   handleValidation
 ];

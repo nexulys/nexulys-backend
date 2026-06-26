@@ -10,9 +10,12 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilt
   else cb(new Error('Seuls les fichiers CSV sont acceptés'));
 }});
 
+const CSV_MAX_ROWS = 5000;
+
 const parseCSV = (buffer) => {
   const lines = buffer.toString('utf-8').split('\n').filter(l => l.trim());
   if (lines.length < 2) throw new Error('Le fichier CSV est vide ou ne contient que l\'en-tête');
+  if (lines.length - 1 > CSV_MAX_ROWS) throw new Error(`Le fichier CSV dépasse la limite de ${CSV_MAX_ROWS} lignes.`);
   const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
   return lines.slice(1).map(line => {
     const vals = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));

@@ -3187,21 +3187,17 @@
 
   <script>
     // ── Auth guard ──
-    const token = localStorage.getItem('novexa_token');
-    if (!token) window.location.href = '/login.html';
+    if (!localStorage.getItem('novexa_user')) window.location.href = '/login.html';
     const user = JSON.parse(localStorage.getItem('novexa_user') || '{}');
 
     const API = 'https://nexulys-backend-1.onrender.com/api';
 
-    // ── API helper ──
-    const apiHeaders = () => ({
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.getItem('novexa_token')
-    });
+    // ── API helper — cookie httpOnly gère l'auth, credentials:include l'envoie ──
+    const apiHeaders = () => ({ 'Content-Type': 'application/json' });
 
     async function apiFetch(path) {
       try {
-        const res = await fetch(API + path, { headers: apiHeaders() });
+        const res = await fetch(API + path, { headers: apiHeaders(), credentials: 'include' });
         if (res.status === 401) {
           localStorage.clear();
           window.location.href = '/login.html';
@@ -3228,7 +3224,8 @@
     }
 
     // ── Logout ──
-    function logout() {
+    async function logout() {
+      try { await fetch(API + '/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
       localStorage.clear();
       window.location.href = '/login.html';
     }
@@ -6715,7 +6712,7 @@
       try {
         var formData = new FormData();
         formData.append('file', file);
-        var res = await fetch(API + '/import/' + type, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+        var res = await fetch(API + '/import/' + type, { method: 'POST', credentials: 'include', body: formData });
         var data = await res.json();
         if (data.success) {
           var resultEl = document.getElementById('import-result');

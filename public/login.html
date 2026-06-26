@@ -546,11 +546,11 @@
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem('novexa_token', data.data.token);
         localStorage.setItem('novexa_user', JSON.stringify(data.data.utilisateur));
         window.location.href = '/dashboard.html';
       } else {
@@ -578,11 +578,11 @@
       const res = await fetch(`${API}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(formData)
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem('novexa_token', data.data.token);
         localStorage.setItem('novexa_user', JSON.stringify(data.data.utilisateur));
         showSuccess(data.message || 'Compte créé avec succès ! Redirection...');
         setTimeout(() => { window.location.href = '/dashboard.html'; }, 1500);
@@ -710,8 +710,7 @@
 
     // ── Redirect if already logged in ──
     (function() {
-      const token = localStorage.getItem('novexa_token');
-      if (token) window.location.href = '/dashboard.html';
+      if (localStorage.getItem('novexa_user')) window.location.href = '/dashboard.html';
       // Check for reset token in URL
       const params = new URLSearchParams(window.location.search);
       const resetToken = params.get('reset');

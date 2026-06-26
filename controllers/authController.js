@@ -5,7 +5,16 @@ const Subscription = require('../models/Subscription');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../utils/mailer');
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET || 'novexa_secret', { expiresIn: '30d' });
+const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+const setTokenCookie = (res, token) => {
+  res.cookie('novexa_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+};
 
 exports.register = async (req, res) => {
   try {
@@ -28,11 +37,13 @@ exports.register = async (req, res) => {
       html: `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px"><h2 style="color:#6366f1">Bienvenue ${prenom} sur Novexa !</h2><p>Votre compte Novexa Pro est créé avec succès. Profitez de <strong>14 jours d'essai gratuit</strong>.</p><p>Connectez-vous maintenant et commencez à gérer votre entreprise intelligemment.</p><hr style="border-color:#eee;margin:24px 0"/><small style="color:#999">Novexa by Nexulys — La plateforme de gestion d'entreprise intelligente</small></div>`
     }).catch(() => {});
 
+    const token = generateToken(user._id);
+    setTokenCookie(res, token);
     res.status(201).json({
       success: true,
       message: 'Compte Novexa créé — essai gratuit 14 jours',
       data: {
-        token: generateToken(user._id),
+        token,
         utilisateur: { id: user._id, nom, prenom, email, role: user.role },
         entreprise: { id: company._id, nom: nomEntreprise },
         abonnement: {
@@ -52,10 +63,12 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password').populate('company');
     if (!user || !(await user.comparePassword(password)))
       return res.status(401).json({ success: false, message: 'Identifiants invalides' });
+    const token = generateToken(user._id);
+    setTokenCookie(res, token);
     res.json({
       success: true,
       data: {
-        token: generateToken(user._id),
+        token,
         utilisateur: { id: user._id, nom: user.nom, prenom: user.prenom, email, role: user.role },
         entreprise: user.company
       }
@@ -140,6 +153,15 @@ exports.resetPassword = async (req, res) => {
     await user.save();
     res.json({ success: true, message: 'Mot de passe réinitialisé avec succès.' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.logout = (req, res) => {
+  res.clearCookie('novexa_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  });
+  res.json({ success: true, message: 'Déconnecté.' });
 };
 
 // RGPD — Export de toutes les données personnelles
