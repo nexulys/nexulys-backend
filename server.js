@@ -54,7 +54,12 @@ app.use(cors({
 app.use(cookieParser());
 
 // ── Body parsing avec limite stricte (anti payload flood) ──
-app.use(express.json({ limit: '1mb' }));
+// IMPORTANT : le webhook Stripe a besoin du corps brut pour vérifier la signature.
+// On l'exclut du parsing JSON global (sinon la signature échoue systématiquement).
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/stripe/webhook') return next();
+  express.json({ limit: '1mb' })(req, res, next);
+});
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ── Sanitisation NoSQL — supprime les opérateurs MongoDB ($) des inputs ──
