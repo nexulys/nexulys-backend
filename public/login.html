@@ -551,6 +551,7 @@
       });
       const data = await res.json();
       if (data.success) {
+        localStorage.setItem('novexa_token', data.data.token);
         localStorage.setItem('novexa_user', JSON.stringify(data.data.utilisateur));
         window.location.href = '/dashboard.html';
       } else {
@@ -583,6 +584,7 @@
       });
       const data = await res.json();
       if (data.success) {
+        localStorage.setItem('novexa_token', data.data.token);
         localStorage.setItem('novexa_user', JSON.stringify(data.data.utilisateur));
         showSuccess(data.message || 'Compte créé avec succès ! Redirection...');
         setTimeout(() => { window.location.href = '/dashboard.html'; }, 1500);
@@ -710,7 +712,7 @@
 
     // ── Redirect if already logged in ──
     (function() {
-      if (localStorage.getItem('novexa_user')) window.location.href = '/dashboard.html';
+      if (localStorage.getItem('novexa_token')) window.location.href = '/dashboard.html';
       // Check for reset token in URL
       const params = new URLSearchParams(window.location.search);
       const resetToken = params.get('reset');

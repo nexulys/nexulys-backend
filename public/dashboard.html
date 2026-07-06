@@ -3187,13 +3187,19 @@
 
   <script>
     // ── Auth guard ──
-    if (!localStorage.getItem('novexa_user')) window.location.href = '/login.html';
+    // Frontend et backend sont sur des domaines différents (workers.dev / onrender.com),
+    // les cookies tiers sont bloqués par les navigateurs → on authentifie via le token
+    // dans l'en-tête Authorization (le backend accepte cookie OU Bearer).
+    if (!localStorage.getItem('novexa_token')) window.location.href = '/login.html';
     const user = JSON.parse(localStorage.getItem('novexa_user') || '{}');
 
     const API = 'https://nexulys-backend-1.onrender.com/api';
 
-    // ── API helper — cookie httpOnly gère l'auth, credentials:include l'envoie ──
-    const apiHeaders = () => ({ 'Content-Type': 'application/json' });
+    // ── API helper ──
+    const apiHeaders = () => ({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('novexa_token') || '')
+    });
 
     async function apiFetch(path) {
       try {
@@ -6712,7 +6718,7 @@
       try {
         var formData = new FormData();
         formData.append('file', file);
-        var res = await fetch(API + '/import/' + type, { method: 'POST', credentials: 'include', body: formData });
+        var res = await fetch(API + '/import/' + type, { method: 'POST', credentials: 'include', headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('novexa_token') || '') }, body: formData });
         var data = await res.json();
         if (data.success) {
           var resultEl = document.getElementById('import-result');
