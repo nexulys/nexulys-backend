@@ -109,246 +109,242 @@ const generatePayslipPDF = (payslip, employee, company) => {
     doc.on('end', () => resolve(Buffer.concat(buffers)));
     doc.on('error', reject);
 
-    const MOIS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const C = { primary: '#1e40af', gray: '#6B7280', lightgray: '#9CA3AF', black: '#111827', bg: '#F8FAFC', green: '#065F46', red: '#991B1B', border: '#E5E7EB' };
-    const W = 515; // largeur utile
-    const L = 40;  // marge gauche
+    const L = 40, W = 515, R = L + W;
+    const PMSS = 3864; // Plafond Mensuel Sécurité Sociale 2024
+    const C = {
+      black: '#111111', gray: '#555555', light: '#888888',
+      head: '#1F2937', headBg: '#EAEEF3', grid: '#C3CAD3',
+      blue: '#DCE9F6', brut: '#EDF1F6', net: '#D9E6F5', totalBg: '#F1F3F6'
+    };
 
-    const fmt = (n) => (n || 0).toFixed(2).replace('.', ',');
-    const fmtTaux = (n) => n ? n.toFixed(2).replace('.', ',') + ' %' : '';
+    // Format nombre « 2 778,98 » ; renvoie '' si undefined/null
+    const num = (n) => {
+      if (n === null || n === undefined || n === '') return '';
+      const v = Number(n); if (isNaN(v)) return '';
+      const s = Math.abs(v).toFixed(2);
+      const [i, d] = s.split('.');
+      return (v < 0 ? '-' : '') + i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + d;
+    };
+    // Taux à 4 décimales ; '' si 0
+    const taux = (n) => (!n || Number(n) === 0) ? '' : Number(n).toFixed(4);
+
+    // Colonnes : { x, w } — alignées à droite
+    const col = {
+      base:   { x: L + 200, w: 44 },
+      taux:   { x: L + 244, w: 44 },
+      deduit: { x: L + 288, w: 46 },
+      payer:  { x: L + 334, w: 50 },
+      pbase:  { x: L + 384, w: 46 },
+      ptaux:  { x: L + 430, w: 40 },
+      pmont:  { x: L + 470, w: 45 } // bord droit = R
+    };
+    const libX = L + 3, libW = 194;
 
     let y = 40;
 
     // ══════════════════════════════════════════════════════════════════════
-    // EN-TÊTE : Employeur à gauche, Employé à droite
+    // EN-TÊTE — Employeur (gauche) · Titre + Salarié (droite)
     // ══════════════════════════════════════════════════════════════════════
+    let ey = y;
+    doc.fontSize(10).font('Helvetica-Bold').fillColor(C.black)
+       .text((company?.nom || 'Employeur').toUpperCase(), L, ey, { width: 250 });
+    ey += 14;
+    doc.fontSize(7.5).font('Helvetica').fillColor(C.gray);
+    const eLine = (t) => { if (t) { doc.text(t, L, ey, { width: 250, lineBreak: false }); ey += 9.5; } };
+    eLine(company?.adresse);
+    eLine([company?.codePostal, company?.ville].filter(Boolean).join(' '));
+    ey += 3;
+    eLine(`Siret : ${company?.siret || '—'}      Code Naf : ${company?.codeApe || '—'}`);
+    eLine(`Urssaf : ${company?.urssaf || '—'}`);
+    if (employee?.matricule) eLine(`Matricule : ${employee.matricule}`);
+    if (employee?.numeroSecu) eLine(`N° SS : ${employee.numeroSecu}`);
+    if (employee?.iban) eLine(`Iban / Bic : ${employee.iban}`);
+    eLine(`Emploi : ${employee?.poste || '—'}`);
+    eLine(`Statut professionnel : ${employee?.statut || 'Employé'}`);
+    if (employee?.dateEmbauche) eLine(`Entrée : ${new Date(employee.dateEmbauche).toLocaleDateString('fr-FR')}`);
+    eLine(`Convention collective : ${company?.conventionCollective || '—'}`);
 
-    // Box employeur
-    doc.rect(L, y, 240, 100).fill('#EEF2FF');
-    doc.fontSize(11).fillColor(C.primary).font('Helvetica-Bold')
-       .text(company?.nom || 'Employeur', L + 8, y + 8, { width: 224 });
-    doc.fontSize(8).fillColor(C.gray).font('Helvetica');
-    if (company?.adresse) doc.text(company.adresse, L + 8, doc.y, { width: 224 });
-    if (company?.codePostal && company?.ville) doc.text(`${company.codePostal} ${company.ville}`, L + 8, doc.y, { width: 224 });
-    if (company?.siret) doc.text(`SIRET : ${company.siret}`, L + 8, doc.y + 2, { width: 224 });
-    if (company?.codeApe) doc.text(`Code APE : ${company.codeApe}`, L + 8, doc.y, { width: 224 });
-    if (company?.urssaf) doc.text(`N° URSSAF : ${company.urssaf}`, L + 8, doc.y, { width: 224 });
+    // Titre + période (haut droite)
+    doc.fontSize(15).font('Helvetica-Bold').fillColor(C.black)
+       .text('BULLETIN DE SALAIRE', L + 265, y, { width: R - (L + 265), align: 'right' });
+    const per = `${String(payslip.mois || '').padStart(2, '0')}/${payslip.annee || ''}`;
+    doc.fontSize(8.5).font('Helvetica').fillColor(C.gray)
+       .text(`Période : ${per}`, L + 265, y + 22, { width: R - (L + 265), align: 'right' });
 
-    // Box employé
-    doc.rect(L + 255, y, 260, 100).fill('#EEF2FF');
-    doc.fontSize(11).fillColor(C.primary).font('Helvetica-Bold')
-       .text(`${employee?.prenom || ''} ${employee?.nom || ''}`.trim(), L + 263, y + 8, { width: 244 });
-    doc.fontSize(8).fillColor(C.gray).font('Helvetica');
-    if (employee?.poste) doc.text(`Emploi : ${employee.poste}`, L + 263, doc.y, { width: 244 });
-    if (employee?.departement) doc.text(`Service : ${employee.departement}`, L + 263, doc.y, { width: 244 });
-    if (employee?.dateEmbauche) doc.text(`Entrée le : ${new Date(employee.dateEmbauche).toLocaleDateString('fr-FR')}`, L + 263, doc.y + 2, { width: 244 });
-    if (employee?.numeroSecu) doc.text(`N° SS : ${employee.numeroSecu}`, L + 263, doc.y, { width: 244 });
-    if (employee?.statut) doc.text(`Contrat : ${employee.statut.toUpperCase()}`, L + 263, doc.y, { width: 244 });
+    // Encadré salarié (bleu clair)
+    const bX = L + 275, bY = y + 44, bW = R - bX, bH = 58;
+    doc.rect(bX, bY, bW, bH).fill(C.blue);
+    doc.fillColor(C.black).font('Helvetica-Bold').fontSize(10)
+       .text(`${employee?.civilite ? employee.civilite + ' ' : ''}${employee?.prenom || ''} ${employee?.nom || ''}`.trim(), bX + 12, bY + 12, { width: bW - 20 });
+    let sy = bY + 28;
+    doc.font('Helvetica').fontSize(8).fillColor(C.gray);
+    if (employee?.adresse) { doc.text(employee.adresse, bX + 12, sy, { width: bW - 20, lineBreak: false }); sy += 11; }
+    const villeSal = [employee?.codePostal, employee?.ville].filter(Boolean).join(' ');
+    if (villeSal) doc.text(villeSal, bX + 12, sy, { width: bW - 20, lineBreak: false });
 
-    y += 110;
-
-    // ══════════════════════════════════════════════════════════════════════
-    // TITRE + PÉRIODE
-    // ══════════════════════════════════════════════════════════════════════
-    doc.rect(L, y, W, 28).fill(C.primary);
-    doc.fontSize(13).fillColor('white').font('Helvetica-Bold')
-       .text('BULLETIN DE PAIE', L + 8, y + 8);
-    const periodeStr = payslip.periodeDebut
-      ? `Période du ${payslip.periodeDebut} au ${payslip.periodeFin}`
-      : `${MOIS[payslip.mois] || ''} ${payslip.annee}`;
-    doc.fontSize(10).fillColor('white').font('Helvetica')
-       .text(periodeStr, L + 8, y + 10, { align: 'right', width: W - 16 });
-    y += 36;
-
-    // Convention collective + mentions
-    doc.fontSize(7.5).fillColor(C.lightgray).font('Helvetica');
-    const conv = company?.conventionCollective || 'Convention collective applicable';
-    doc.text(`Convention collective : ${conv}`, L, y);
-    if (payslip.numeroBulletin) {
-      doc.text(`Bulletin N° ${payslip.numeroBulletin}`, L, y, { align: 'right', width: W });
-    }
-    y += 14;
+    y = Math.max(ey, bY + bH) + 12;
 
     // ══════════════════════════════════════════════════════════════════════
-    // BLOC RÉMUNÉRATION
+    // EN-TÊTE DU TABLEAU
     // ══════════════════════════════════════════════════════════════════════
-    doc.rect(L, y, W, 16).fill('#DBEAFE');
-    doc.fontSize(8.5).fillColor(C.primary).font('Helvetica-Bold')
-       .text('RÉMUNÉRATION BRUTE', L + 4, y + 4);
-    y += 18;
+    const tableTop = y;
+    const hH = 26;
+    doc.rect(L, y, W, hH).fill(C.headBg);
+    doc.fillColor(C.head).font('Helvetica-Bold').fontSize(7.5);
+    doc.text('Éléments de paie', libX, y + 9, { width: libW });
+    doc.text('Base', col.base.x, y + 9, { width: col.base.w, align: 'right' });
+    doc.text('Taux', col.taux.x, y + 9, { width: col.taux.w, align: 'right' });
+    doc.text('À déduire', col.deduit.x, y + 9, { width: col.deduit.w, align: 'right' });
+    doc.text('À payer', col.payer.x, y + 9, { width: col.payer.w, align: 'right' });
+    doc.fontSize(7).text('Charges patronales', col.pbase.x - 2, y + 3, { width: R - col.pbase.x + 2, align: 'center' });
+    doc.fontSize(6.3).fillColor(C.gray);
+    doc.text('Base', col.pbase.x, y + 15, { width: col.pbase.w, align: 'right' });
+    doc.text('Taux', col.ptaux.x, y + 15, { width: col.ptaux.w, align: 'right' });
+    doc.text('Montant', col.pmont.x, y + 15, { width: col.pmont.w, align: 'right' });
+    y += hH;
 
-    const heures = payslip.heuresBase || 151.67;
-    const tauxH = payslip.tauxHoraire || (payslip.salaireBase / 151.67);
+    // ── Helpers de lignes ──
+    const RH = 11.5;
+    const drawRow = (o) => {
+      if (o.fill) doc.rect(L, y, W, RH).fill(o.fill);
+      doc.font(o.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(o.size || 6.8).fillColor(C.black);
+      doc.text(o.lib || '', libX + (o.indent || 0), y + 3, { width: libW - (o.indent || 0), lineBreak: false });
+      const cell = (key, val, isTaux) => {
+        if (val === undefined || val === null || val === '') return;
+        const t = isTaux ? taux(val) : num(val);
+        if (t === '') return;
+        doc.text(t, col[key].x, y + 3, { width: col[key].w, align: 'right' });
+      };
+      cell('base', o.base); cell('taux', o.tx, true); cell('deduit', o.deduit);
+      cell('payer', o.payer); cell('pbase', o.pbase); cell('ptaux', o.ptaux, true); cell('pmont', o.pmont);
+      y += RH;
+    };
+    const sectionLabel = (t) => {
+      doc.font('Helvetica-Bold').fontSize(6.8).fillColor(C.gray);
+      doc.text(t, libX, y + 3, { width: libW });
+      y += RH;
+    };
 
-    const lignesRem = [
-      { libelle: `Salaire de base (${heures.toFixed(2)} h × ${fmt(tauxH)} €)`, montant: payslip.salaireBase }
-    ];
-    if (payslip.heuresSupplementaires > 0) {
-      lignesRem.push({ libelle: `Heures supplémentaires (${payslip.heuresSupplementaires} h majorées 25%)`, montant: payslip.montantHeuresSup });
-    }
-    if (payslip.primes > 0) {
-      lignesRem.push({ libelle: 'Prime(s)', montant: payslip.primes });
-    }
-    if (payslip.autresElements && payslip.autresElements.length > 0) {
-      payslip.autresElements.forEach(e => lignesRem.push({ libelle: e.libelle, montant: e.montant }));
-    }
-
-    lignesRem.forEach((l, i) => {
-      if (i % 2 === 0) doc.rect(L, y, W, 16).fill('#F9FAFB');
-      doc.fontSize(8.5).fillColor(C.black).font('Helvetica');
-      doc.text(l.libelle, L + 4, y + 4, { width: W - 80 });
-      doc.text(fmt(l.montant) + ' €', L, y + 4, { align: 'right', width: W - 4 });
-      y += 16;
-    });
-
-    // Total brut
-    doc.rect(L, y, W, 18).fill(C.primary);
-    doc.fontSize(9).fillColor('white').font('Helvetica-Bold')
-       .text('SALAIRE BRUT', L + 4, y + 5);
-    doc.text(fmt(payslip.salaireBrut) + ' €', L, y + 5, { align: 'right', width: W - 4 });
-    y += 24;
-
-    // ══════════════════════════════════════════════════════════════════════
-    // TABLEAU DES COTISATIONS
-    // ══════════════════════════════════════════════════════════════════════
-    doc.rect(L, y, W, 16).fill(C.primary);
-    doc.fontSize(7.5).fillColor('white').font('Helvetica-Bold');
-    doc.text('COTISATIONS ET CONTRIBUTIONS SOCIALES', L + 4, y + 4, { width: W * 0.40 });
-    doc.text('Base', L + W * 0.40, y + 4, { width: W * 0.13, align: 'right' });
-    doc.text('Taux sal.', L + W * 0.53, y + 4, { width: W * 0.10, align: 'right' });
-    doc.text('Montant sal.', L + W * 0.63, y + 4, { width: W * 0.14, align: 'right' });
-    doc.text('Taux pat.', L + W * 0.77, y + 4, { width: W * 0.10, align: 'right' });
-    doc.text('Montant pat.', L + W * 0.87, y + 4, { width: W * 0.13, align: 'right' });
-    y += 18;
-
-    const lignes = payslip.lignesCotisations && payslip.lignesCotisations.length > 0
-      ? payslip.lignesCotisations
-      : [];
-
-    let currentCategorie = null;
-    let rowIdx = 0;
-
-    lignes.forEach((l) => {
-      // En-tête de catégorie
-      if (l.categorie !== currentCategorie) {
-        currentCategorie = l.categorie;
-        doc.rect(L, y, W, 14).fill('#EEF2FF');
-        doc.fontSize(7.5).fillColor(C.primary).font('Helvetica-Bold')
-           .text(l.categorie.toUpperCase(), L + 4, y + 3);
-        y += 14;
-        rowIdx = 0;
-      }
-
-      if (rowIdx % 2 === 0) doc.rect(L, y, W, 14).fill('white');
-      else doc.rect(L, y, W, 14).fill('#F9FAFB');
-
-      doc.fontSize(7.5).fillColor(C.black).font('Helvetica');
-      doc.text(l.libelle, L + 4, y + 3, { width: W * 0.40 - 4, ellipsis: true });
-      doc.text(fmt(l.base) + ' €', L + W * 0.40, y + 3, { width: W * 0.13, align: 'right' });
-      doc.text(l.tauxSalarial ? l.tauxSalarial.toFixed(2) + ' %' : '', L + W * 0.53, y + 3, { width: W * 0.10, align: 'right' });
-      if (l.montantSalarial > 0) {
-        doc.fillColor(C.red).text('- ' + fmt(l.montantSalarial) + ' €', L + W * 0.63, y + 3, { width: W * 0.14, align: 'right' });
-        doc.fillColor(C.black);
-      } else {
-        doc.text('', L + W * 0.63, y + 3, { width: W * 0.14, align: 'right' });
-      }
-      doc.text(l.tauxPatronal ? l.tauxPatronal.toFixed(2) + ' %' : '', L + W * 0.77, y + 3, { width: W * 0.10, align: 'right' });
-      doc.fillColor(C.gray).text(l.montantPatronal ? fmt(l.montantPatronal) + ' €' : '', L + W * 0.87, y + 3, { width: W * 0.13, align: 'right' });
-      doc.fillColor(C.black);
-      y += 14;
-      rowIdx++;
-    });
-
-    // Ligne total cotisations
     const totalSal = payslip.cotisationsSalariales?.total || 0;
     const totalPat = payslip.cotisationsPatronales?.total || 0;
-    doc.rect(L, y, W, 16).fill('#DBEAFE');
-    doc.fontSize(8).fillColor(C.primary).font('Helvetica-Bold');
-    doc.text('TOTAL COTISATIONS', L + 4, y + 4);
-    doc.fillColor(C.red).text('- ' + fmt(totalSal) + ' €', L + W * 0.63, y + 4, { width: W * 0.14, align: 'right' });
-    doc.fillColor(C.gray).text(fmt(totalPat) + ' €', L + W * 0.87, y + 4, { width: W * 0.13, align: 'right' });
-    y += 22;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // RÉCAPITULATIF NET
-    // ══════════════════════════════════════════════════════════════════════
+    // ── Rémunération ──
+    drawRow({ lib: 'Salaire de base', base: payslip.heuresBase || 151.67, tx: payslip.tauxHoraire, payer: payslip.salaireBase });
+    if (payslip.heuresSupplementaires > 0)
+      drawRow({ lib: 'Heures supplémentaires 25%', base: payslip.heuresSupplementaires, tx: payslip.heuresSupplementaires ? (payslip.montantHeuresSup / payslip.heuresSupplementaires) : undefined, payer: payslip.montantHeuresSup });
+    if (payslip.primes > 0) drawRow({ lib: "Prime d'ancienneté / prime", payer: payslip.primes });
+    (payslip.elementsBrut || []).forEach(e => drawRow({ lib: e.libelle, base: e.base, tx: e.taux, payer: e.montant }));
+    drawRow({ lib: 'Salaire brut', payer: payslip.salaireBrut, bold: true, fill: C.brut });
 
+    // ── Cotisations par catégorie ──
+    let cur = null;
+    (payslip.lignesCotisations || []).forEach((l) => {
+      if (l.categorie !== cur) { cur = l.categorie; sectionLabel(cur); }
+      drawRow({
+        lib: l.libelle,
+        base: l.montantSalarial ? l.base : undefined,
+        tx: l.tauxSalarial || undefined,
+        deduit: l.montantSalarial || undefined,
+        pbase: l.montantPatronal ? l.base : undefined,
+        ptaux: l.tauxPatronal || undefined,
+        pmont: l.montantPatronal || undefined,
+        indent: 6
+      });
+    });
+
+    // ── Total cotisations ──
+    drawRow({ lib: 'Total des cotisations et contributions', deduit: totalSal, pmont: totalPat, bold: true, fill: C.totalBg });
+
+    // ── Autres éléments (avantages, forfaits, titres restaurant…) ──
+    (payslip.autresElements || []).forEach(e => {
+      const montant = Number(e.montant) || 0;
+      drawRow({
+        lib: e.libelle,
+        base: e.base, tx: e.taux,
+        deduit: montant < 0 ? Math.abs(montant) : undefined,
+        payer: montant >= 0 ? montant : undefined
+      });
+    });
+
+    // ── Net ──
     const netAvant = payslip.netAvantImpot || payslip.salaireNet || 0;
     const montantPAS = payslip.montantPAS || 0;
     const netAPayer = payslip.netAPayer || netAvant;
     const netImposable = payslip.netImposable || netAvant;
-    const tauxPAS = payslip.tauxImpot ? (payslip.tauxImpot * 100).toFixed(1) : '0';
 
-    // Net avant impôt
-    doc.rect(L, y, W, 16).fill('#F3F4F6');
-    doc.fontSize(8.5).fillColor(C.black).font('Helvetica');
-    doc.text('Net avant impôt sur le revenu', L + 4, y + 4);
-    doc.font('Helvetica-Bold').text(fmt(netAvant) + ' €', L, y + 4, { align: 'right', width: W - 4 });
-    y += 18;
-
-    // Prélèvement à la source
-    doc.rect(L, y, W, 16).fill('#FEF3C7');
-    doc.fontSize(8.5).fillColor('#92400E').font('Helvetica');
-    doc.text(`Prélèvement à la source (PAS ${tauxPAS} %)`, L + 4, y + 4);
-    doc.font('Helvetica-Bold').text('- ' + fmt(montantPAS) + ' €', L, y + 4, { align: 'right', width: W - 4 });
-    y += 18;
-
-    // Net à payer
-    doc.rect(L, y, W, 24).fill(C.primary);
-    doc.fontSize(13).fillColor('white').font('Helvetica-Bold')
-       .text('NET À PAYER AU SALARIÉ', L + 8, y + 6);
-    doc.text(fmt(netAPayer) + ' €', L, y + 6, { align: 'right', width: W - 8 });
-    y += 30;
-
-    // Net imposable (ligne informationnelle)
-    doc.fontSize(7.5).fillColor(C.gray).font('Helvetica')
-       .text(`Salaire net imposable (à reporter sur déclaration de revenus) : ${fmt(netImposable)} €`, L, y, { width: W });
-    y += 16;
-
-    // ══════════════════════════════════════════════════════════════════════
-    // CONGÉS PAYÉS
-    // ══════════════════════════════════════════════════════════════════════
-    doc.rect(L, y, W, 16).fill('#DBEAFE');
-    doc.fontSize(8).fillColor(C.primary).font('Helvetica-Bold')
-       .text('CONGÉS PAYÉS', L + 4, y + 4);
-    y += 18;
-
-    const cp = payslip.congesPayes || {};
-    const cpCols = [
-      { label: 'Solde début période', val: (cp.soldeEnDebut || 0).toFixed(1) + ' j' },
-      { label: 'Acquis ce mois', val: (cp.acquis || 2.5).toFixed(1) + ' j' },
-      { label: 'Pris ce mois', val: (cp.pris || 0).toFixed(1) + ' j' },
-      { label: 'Solde à fin période', val: (cp.solde || 0).toFixed(1) + ' j' }
-    ];
-
-    doc.rect(L, y, W, 30).fill('#F8FAFC');
-    cpCols.forEach((c, i) => {
-      const cx = L + (W / 4) * i;
-      doc.fontSize(7).fillColor(C.lightgray).font('Helvetica').text(c.label, cx + 4, y + 4, { width: W / 4 - 8 });
-      doc.fontSize(10).fillColor(C.primary).font('Helvetica-Bold').text(c.val, cx + 4, y + 14, { width: W / 4 - 8 });
+    drawRow({ lib: 'Net à payer avant impôt sur le revenu', payer: netAvant, bold: true, fill: C.brut, size: 7.5 });
+    drawRow({
+      lib: `Impôt sur le revenu prélevé à la source - PAS${payslip.tauxImpot ? ` (taux ${(payslip.tauxImpot * 100).toFixed(1)} %)` : ''}`,
+      base: netImposable,
+      tx: payslip.tauxImpot ? payslip.tauxImpot * 100 : undefined,
+      deduit: montantPAS
     });
-    y += 38;
+    drawRow({ lib: 'Net payé', payer: netAPayer, bold: true, fill: C.net, size: 8 });
+
+    const tableBottom = y;
+
+    // ── Grille du tableau (bordures + séparateurs verticaux) ──
+    doc.lineWidth(0.4).strokeColor(C.grid);
+    [L, col.base.x, col.taux.x, col.deduit.x, col.payer.x, col.pbase.x, col.ptaux.x, col.pmont.x, R]
+      .forEach(x => doc.moveTo(x, tableTop).lineTo(x, tableBottom).stroke());
+    doc.lineWidth(0.6).rect(L, tableTop, W, tableBottom - tableTop).stroke();
+
+    y = tableBottom + 14;
 
     // ══════════════════════════════════════════════════════════════════════
-    // MODE DE PAIEMENT
+    // RÉCAPITULATIF Mensuel / Annuel
     // ══════════════════════════════════════════════════════════════════════
-    if (employee?.iban) {
-      doc.fontSize(8).fillColor(C.gray).font('Helvetica')
-         .text(`Mode de règlement : Virement bancaire — IBAN : ${employee.iban}`, L, y);
-      y += 14;
-    }
+    const recapCols = ['', 'Heures', 'H. suppl.', 'Brut', 'Plafond S.S.', 'Net imposable', 'Ch. patronales', 'Coût global', 'Total versé', 'Allègements'];
+    const rc = W / recapCols.length;
+    const recapTop = y;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // PIED DE PAGE — mentions légales
-    // ══════════════════════════════════════════════════════════════════════
+    doc.rect(L, y, W, 15).fill(C.headBg);
+    doc.fillColor(C.head).font('Helvetica-Bold').fontSize(5.8);
+    recapCols.forEach((h, i) => doc.text(h, L + i * rc + 2, y + 5, { width: rc - 4, align: i === 0 ? 'left' : 'right' }));
+    y += 15;
+
+    const chPat = totalPat;
+    const brut = payslip.salaireBrut || 0;
+    const cout = brut + chPat;
+    const h0 = payslip.heuresBase || 151.67;
+    const hs = payslip.heuresSupplementaires || 0;
+    const m = payslip.mois || 1; // cumul année = valeur × n° du mois
+    const mensuel = ['Mensuel', h0.toFixed(2), hs ? hs.toFixed(2) : '', brut, PMSS, netImposable, chPat, cout, netAPayer, 0];
+    const annuel = ['Annuel', (h0 * m).toFixed(2), hs ? (hs * m).toFixed(2) : '', brut * m, PMSS * m, netImposable * m, chPat * m, cout * m, netAPayer * m, 0];
+
+    [mensuel, annuel].forEach((row, ri) => {
+      if (ri === 1) doc.rect(L, y, W, 13).fill('#F9FAFB');
+      doc.font(ri === 0 ? 'Helvetica-Bold' : 'Helvetica').fontSize(6).fillColor(C.black);
+      row.forEach((v, i) => {
+        const t = i === 0 ? v : (i === 1 || i === 2 ? v : num(v));
+        doc.text(t, L + i * rc + 2, y + 3.5, { width: rc - 4, align: i === 0 ? 'left' : 'right' });
+      });
+      y += 13;
+    });
+
+    // Grille récap
+    doc.lineWidth(0.4).strokeColor(C.grid);
+    for (let i = 1; i < recapCols.length; i++) doc.moveTo(L + i * rc, recapTop).lineTo(L + i * rc, y).stroke();
+    doc.lineWidth(0.6).rect(L, recapTop, W, y - recapTop).stroke();
+
+    y += 12;
+
+    // ── Congés payés (ligne compacte) ──
+    const cp = payslip.congesPayes || {};
+    doc.font('Helvetica').fontSize(7).fillColor(C.gray).text(
+      `Congés payés — Solde début : ${(cp.soldeEnDebut || 0).toFixed(1)} j    |    Acquis : ${(cp.acquis || 2.5).toFixed(1)} j    |    Pris : ${(cp.pris || 0).toFixed(1)} j    |    Solde fin : ${(cp.solde || 0).toFixed(1)} j`,
+      L, y, { width: W }
+    );
+    y += 14;
+
+    // ── Pied de page légal ──
     const pageH = doc.page.height;
-    doc.moveTo(L, pageH - 50).lineTo(L + W, pageH - 50).strokeColor(C.border).lineWidth(0.5).stroke();
-    doc.fontSize(6.5).fillColor(C.lightgray).font('Helvetica');
-    doc.text(
-      'Ce bulletin de paie est à conserver sans limitation de durée (Art. L3243-4 du Code du travail). ' +
-      'En cas de rupture de contrat, ce bulletin vous sera remis avec votre solde de tout compte. ' +
-      `Document émis le ${new Date().toLocaleDateString('fr-FR')} — ${company?.nom || 'Novexa'}`,
-      L, pageH - 42, { width: W, align: 'center' }
+    doc.moveTo(L, pageH - 46).lineTo(R, pageH - 46).strokeColor(C.grid).lineWidth(0.5).stroke();
+    doc.fontSize(6.3).fillColor(C.light).font('Helvetica').text(
+      'Bulletin de paie à conserver sans limitation de durée (Art. L3243-4 du Code du travail). ' +
+      'En cas de rupture du contrat, ce bulletin est remis avec le solde de tout compte. ' +
+      `Document généré le ${new Date().toLocaleDateString('fr-FR')} — ${company?.nom || 'Novexa by Nexulys'}.`,
+      L, pageH - 40, { width: W, align: 'center' }
     );
 
     doc.end();
