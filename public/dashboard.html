@@ -2490,6 +2490,11 @@
         <label class="modal-label">IBAN (pour les virements de salaire)</label>
         <input class="modal-input" id="e-iban" placeholder="FR76 3000 6000 0112 3456 7890 189" style="font-family:monospace;letter-spacing:1px;" />
       </div>
+      <div class="modal-field">
+        <label class="modal-label">Taux de prélèvement à la source (PAS) en %</label>
+        <input class="modal-input" id="e-pas" type="number" step="0.1" min="0" max="43" value="0" placeholder="0" />
+        <small style="color:var(--text-dim);">Taux transmis par l'administration fiscale. Laisser 0 pour le taux neutre.</small>
+      </div>
       <div class="modal-error" id="e-error"></div>
       <button class="modal-btn" id="e-btn" onclick="submitEmploye()">Ajouter l'employé</button>
     </div>
@@ -2787,6 +2792,10 @@
       <div class="modal-field">
         <label class="modal-label">IBAN (pour les virements de salaire)</label>
         <input class="modal-input" id="ee-iban" placeholder="FR76 3000 6000 0112 3456 7890 189" style="font-family:monospace;letter-spacing:1px;" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Taux de prélèvement à la source (PAS) en %</label>
+        <input class="modal-input" id="ee-pas" type="number" step="0.1" min="0" max="43" value="0" placeholder="0" />
       </div>
       <div class="modal-error" id="ee-error"></div>
       <button class="modal-btn" id="ee-btn" onclick="submitEditEmploye()">Sauvegarder</button>
@@ -3592,6 +3601,7 @@
       var salaire = parseFloat(document.getElementById('e-salaire').value) || 0;
       var date = document.getElementById('e-date').value;
       var iban = (document.getElementById('e-iban')?.value || '').trim().replace(/\s/g, '');
+      var pas = parseFloat(document.getElementById('e-pas')?.value) || 0;
       if (!prenom || !nom) return modalError('e', 'Le prénom et le nom sont requis.');
       if (!email) return modalError('e', 'L\'email est requis.');
       if (!poste) return modalError('e', 'Le poste est requis.');
@@ -3602,7 +3612,7 @@
         var res = await fetch(API + '/rh/employes', {
           method: 'POST',
           headers: apiHeaders(),
-          body: JSON.stringify({ prenom, nom, email, poste, departement: dept, salaireBase: salaire, dateEmbauche: date, iban: iban || undefined })
+          body: JSON.stringify({ prenom, nom, email, poste, departement: dept, salaireBase: salaire, dateEmbauche: date, iban: iban || undefined, tauxImpot: pas / 100 })
         });
         var data = await res.json();
         if (data.success) {
@@ -4893,6 +4903,7 @@
       document.getElementById('ee-salaire').value = e.salaire || '';
       document.getElementById('ee-statut').value = e.statut || 'actif';
       if (document.getElementById('ee-iban')) document.getElementById('ee-iban').value = e.iban || '';
+      if (document.getElementById('ee-pas')) document.getElementById('ee-pas').value = ((e.tauxImpot || 0) * 100).toFixed(1).replace(/\.0$/, '');
       openModal('edit-employe');
     }
     async function submitEditEmploye() {
@@ -4908,7 +4919,8 @@
           departement: document.getElementById('ee-dept').value.trim(),
           salaireBase: parseFloat(document.getElementById('ee-salaire').value) || 0,
           statut: document.getElementById('ee-statut').value,
-          iban: iban || undefined
+          iban: iban || undefined,
+          tauxImpot: (parseFloat(document.getElementById('ee-pas')?.value) || 0) / 100
         }) });
         var data = await res.json();
         if (data.success) { closeModal('modal-edit-employe'); showToast('Employé mis à jour', 'success'); loadEmployes(); }
@@ -5057,7 +5069,7 @@
         var initials = ((e.prenom ? e.prenom[0] : '') + (e.nom ? e.nom[0] : '')).toUpperCase() || '?';
         var statut = e.statut || 'actif';
         var dateEmb = e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString('fr') : '—';
-        var eData = JSON.stringify({id:e._id,prenom:e.prenom,nom:e.nom,poste:e.poste||'',dept:e.departement||'',salaire:e.salaireBase||0,statut,iban:e.iban||''}).replace(/'/g,'&#39;');
+        var eData = JSON.stringify({id:e._id,prenom:e.prenom,nom:e.nom,poste:e.poste||'',dept:e.departement||'',salaire:e.salaireBase||0,statut,iban:e.iban||'',tauxImpot:e.tauxImpot||0}).replace(/'/g,'&#39;');
         return '<div class="emp-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div class="emp-avatar">' + initials + '</div><span class="badge ' + (statutBadge[statut] || 'badge-gray') + '">' + (statutLabel[statut] || statut) + '</span></div><div class="emp-name">' + e.prenom + ' ' + e.nom + '</div><div class="emp-role">' + (e.poste || '—') + '</div><div class="emp-meta"><div class="emp-meta-row"><span class="emp-meta-label">Département</span><span class="emp-meta-val">' + (e.departement || '—') + '</span></div><div class="emp-meta-row"><span class="emp-meta-label">Salaire</span><span class="emp-meta-val">' + (e.salaireBase || 0).toLocaleString('fr') + ' €</span></div><div class="emp-meta-row"><span class="emp-meta-label">Depuis</span><span class="emp-meta-val">' + dateEmb + '</span></div></div><div class="card-actions"><button class="action-btn action-btn-edit" onclick=\'openEditEmploye(' + eData + ')\'>✏️ Modifier</button><button class="action-btn action-btn-del" onclick="deleteEmploye(\'' + e._id + '\')">🗑 Désactiver</button></div></div>';
       }).join('');
     }
