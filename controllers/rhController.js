@@ -119,10 +119,13 @@ exports.updateLeaveStatus = async (req, res) => {
 
 exports.generatePayslip = async (req, res) => {
   try {
-    const { employeeId, mois, annee, heuresSup = 0, primes = 0 } = req.body;
+    const { employeeId, mois, annee, heuresSup = 0, primes = 0, autresElements = [] } = req.body;
     const employee = await Employee.findOne({ _id: employeeId, company: req.user.company });
     if (!employee) return res.status(404).json({ success: false, message: 'Employé introuvable' });
-    const ficheData = genererFichePaie(employee.salaireBase, heuresSup, null, primes);
+    const ficheData = genererFichePaie(
+      employee.salaireBase, heuresSup, null, primes, employee.tauxImpot || 0,
+      { autresElements: Array.isArray(autresElements) ? autresElements : [] }
+    );
     const payslip = await Payslip.create({
       ...ficheData, mois, annee,
       company: req.user.company, employee: employeeId, createdBy: req.user.id

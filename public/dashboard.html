@@ -2678,6 +2678,19 @@
         <div class="modal-field"><label class="modal-label">Heures sup.</label><input class="modal-input" type="number" id="p-heures" value="0" min="0" /></div>
         <div class="modal-field"><label class="modal-label">Primes (€)</label><input class="modal-input" type="number" id="p-primes" value="0" min="0" /></div>
       </div>
+
+      <div class="modal-field">
+        <label class="modal-label">Autres éléments (titres-restaurant, transport, télétravail…)</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <button type="button" class="badge badge-blue" style="cursor:pointer;border:none;" onclick="addPaieElement('Forfait mobilité / transport 50%', 0)">+ Transport</button>
+          <button type="button" class="badge badge-blue" style="cursor:pointer;border:none;" onclick="addPaieElement('Titres-restaurant (part salarié)', 0)">+ Titres-resto</button>
+          <button type="button" class="badge badge-blue" style="cursor:pointer;border:none;" onclick="addPaieElement('Forfait télétravail', 0)">+ Télétravail</button>
+          <button type="button" class="badge badge-gray" style="cursor:pointer;border:none;" onclick="addPaieElement('', 0)">+ Ligne libre</button>
+        </div>
+        <div id="p-elements"></div>
+        <small style="color:var(--text-dim);">Montant positif = ajouté au net (remboursement/forfait). Montant négatif = déduit du net (part salarié).</small>
+      </div>
+
       <div class="modal-error" id="p-error"></div>
       <button class="modal-btn" id="p-btn" onclick="submitPaie()">Générer la fiche</button>
     </div>
@@ -5263,6 +5276,30 @@
       }).join('');
     }
 
+    // ── Autres éléments de paie (dynamique) ──
+    function addPaieElement(libelle, montant) {
+      var container = document.getElementById('p-elements');
+      var row = document.createElement('div');
+      row.className = 'paie-element-row';
+      row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;';
+      row.innerHTML =
+        '<input class="modal-input p-el-lib" type="text" placeholder="Libellé" value="' + (libelle || '').replace(/"/g, '&quot;') + '" style="flex:1;" />' +
+        '<input class="modal-input p-el-mnt" type="number" step="0.01" placeholder="€" value="' + (montant || '') + '" style="width:90px;" />' +
+        '<button type="button" onclick="this.parentNode.remove()" style="background:rgba(239,68,68,.15);color:#f87171;border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;">✕</button>';
+      container.appendChild(row);
+    }
+
+    function collectPaieElements() {
+      var rows = document.querySelectorAll('#p-elements .paie-element-row');
+      var out = [];
+      rows.forEach(function(r) {
+        var lib = r.querySelector('.p-el-lib').value.trim();
+        var mnt = parseFloat(r.querySelector('.p-el-mnt').value);
+        if (lib && !isNaN(mnt)) out.push({ libelle: lib, montant: mnt });
+      });
+      return out;
+    }
+
     async function submitPaie() {
       clearModalError('p');
       var employeeId = document.getElementById('p-employe').value;
@@ -5275,11 +5312,15 @@
         var res = await fetch(API + '/rh/paie/generer', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
           employeeId, mois, annee,
           heuresSup: parseFloat(document.getElementById('p-heures').value) || 0,
-          primes: parseFloat(document.getElementById('p-primes').value) || 0
+          primes: parseFloat(document.getElementById('p-primes').value) || 0,
+          autresElements: collectPaieElements()
         }) });
         var data = await res.json();
         if (data.success) {
           closeModal('modal-paie');
+          document.getElementById('p-elements').innerHTML = '';
+          document.getElementById('p-heures').value = '0';
+          document.getElementById('p-primes').value = '0';
           showToast('Fiche de paie générée — Net: ' + (data.data.salaireNet || 0).toLocaleString('fr') + ' €', 'success');
           loadPayslipsAll();
         } else modalError('p', data.message || 'Erreur.');

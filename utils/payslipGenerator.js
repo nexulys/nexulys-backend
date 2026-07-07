@@ -118,7 +118,18 @@ const genererFichePaie = (salaireBase, heuresSup = 0, tauxHeureSup = null, prime
   const netImposable = r(salaireBrut - cotisationsDed);
 
   const montantPAS = r(netImposable * (tauxImpot || 0));
-  const netAPayer = r(netAvantImpot - montantPAS);
+
+  // Autres éléments (titres-restaurant, transport, télétravail, avantages…)
+  // montant > 0 = ajouté au net ; montant < 0 = déduit du net (part salarié).
+  // Non soumis à cotisations ni à l'impôt (remboursements de frais / forfaits).
+  const autresElements = Array.isArray(opts.autresElements)
+    ? opts.autresElements
+        .filter(e => e && e.libelle && !isNaN(Number(e.montant)))
+        .map(e => ({ libelle: String(e.libelle).slice(0, 80), montant: r(Number(e.montant)) }))
+    : [];
+  const totalAutres = r(autresElements.reduce((s, e) => s + e.montant, 0));
+
+  const netAPayer = r(netAvantImpot - montantPAS + totalAutres);
 
   // Congés payés : 2.5 jours acquis par mois
   const congesAcquisMois = 2.5;
@@ -156,6 +167,9 @@ const genererFichePaie = (salaireBase, heuresSup = 0, tauxHeureSup = null, prime
     montantHeuresSup,
     primes,
     salaireBrut,
+
+    // Autres éléments (remboursements / forfaits / avantages)
+    autresElements,
 
     // Cotisations détaillées
     lignesCotisations,
