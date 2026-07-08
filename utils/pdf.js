@@ -109,6 +109,38 @@ const generatePayslipPDF = (payslip, employee, company) => {
     doc.on('end', () => resolve(Buffer.concat(buffers)));
     doc.on('error', reject);
 
+    // Fiche Mongoose → objet simple
+    const p = (payslip && typeof payslip.toObject === 'function') ? payslip.toObject() : { ...payslip };
+
+    // Rétro-compatibilité : si le détail des cotisations est absent (fiche générée
+    // avec l'ancien format), on le reconstruit à partir du salaire de base afin que
+    // le bulletin affiche TOUJOURS le détail complet des cotisations et contributions.
+    if (!p.lignesCotisations || p.lignesCotisations.length === 0) {
+      try {
+        const { genererFichePaie } = require('./payslipGenerator');
+        const recalc = genererFichePaie(
+          p.salaireBase || 0,
+          p.heuresSupplementaires || 0,
+          null,
+          p.primes || 0,
+          p.tauxImpot || 0,
+          {
+            autresElements: p.autresElements || [],
+            congesDebut: p.congesPayes?.soldeEnDebut || 0,
+            congesPris: p.congesPayes?.pris || 0
+          }
+        );
+        payslip = Object.assign({}, recalc, {
+          mois: p.mois, annee: p.annee, numeroBulletin: p.numeroBulletin,
+          periodeDebut: p.periodeDebut, periodeFin: p.periodeFin, statut: p.statut
+        });
+      } catch (e) {
+        payslip = p; // en cas d'échec, on garde la fiche telle quelle
+      }
+    } else {
+      payslip = p;
+    }
+
     const L = 40, W = 515, R = L + W;
     const PMSS = 3864; // Plafond Mensuel Sécurité Sociale 2024
     const C = {
