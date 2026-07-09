@@ -4,37 +4,64 @@ const Employee = require('../models/Employee');
 const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 const Task = require('../models/Task');
+const logger = require('../utils/logger');
 
-const getAIClient = async () => {
+// Message clair (jamais l'erreur brute du fournisseur) quand l'IA est indisponible
+const AI_UNAVAILABLE =
+  "🤖 L'assistant IA est momentanément indisponible. Le fournisseur d'IA a refusé la requête " +
+  "(clé API restreinte, quota épuisé ou compte suspendu). Vérifiez votre clé API dans les variables " +
+  "d'environnement, ou réessayez plus tard.";
+
+// Construit la liste des fournisseurs disponibles, par ordre de priorité (Groq puis OpenAI)
+const buildProviders = async () => {
   const { default: OpenAI } = await import('openai');
+  const providers = [];
   if (process.env.GROQ_API_KEY) {
-    return {
+    providers.push({
+      name: 'Groq',
       client: new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' }),
       model: 'llama-3.1-8b-instant',
       visionModel: 'meta-llama/llama-4-scout-17b-16e-instruct'
-    };
+    });
   }
   if (process.env.OPENAI_API_KEY) {
-    return {
+    providers.push({
+      name: 'OpenAI',
       client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
       model: 'gpt-4o-mini',
       visionModel: 'gpt-4o'
-    };
+    });
   }
-  return null;
+  return providers;
+};
+
+// Compat : renvoie le premier fournisseur disponible (utilisé par la vision/OCR)
+const getAIClient = async () => {
+  const providers = await buildProviders();
+  return providers[0] || null;
 };
 
 const aiChat = async (systemPrompt, userMessage, maxTokens = 900) => {
-  const ai = await getAIClient();
-  if (!ai) {
+  const providers = await buildProviders();
+  if (!providers.length) {
     return `[Mode démo — configurez GROQ_API_KEY (gratuit) ou OPENAI_API_KEY pour activer l'IA]\n\nSimulation basée sur: ${userMessage.substring(0, 100)}...`;
   }
-  const resp = await ai.client.chat.completions.create({
-    model: ai.model,
-    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
-    max_tokens: maxTokens
-  });
-  return resp.choices[0].message.content;
+  let lastErr;
+  for (const p of providers) {
+    try {
+      const resp = await p.client.chat.completions.create({
+        model: p.model,
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+        max_tokens: maxTokens
+      });
+      return resp.choices[0].message.content;
+    } catch (err) {
+      lastErr = err;
+      logger.warn(`Fournisseur IA ${p.name} en échec — bascule`, { error: err.message });
+    }
+  }
+  logger.error('Tous les fournisseurs IA ont échoué', { error: lastErr?.message });
+  return AI_UNAVAILABLE;
 };
 
 const tryParseJSON = (str, fallback) => {
@@ -302,7 +329,10 @@ exports.ocrJustificatif = async (req, res) => {
     const raw = resp.choices[0].message.content;
     const parsed = tryParseJSON(raw, { description: raw, categorie: 'autre', fiabilite: 0 });
     res.json({ success: true, data: parsed });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) {
+    logger.warn('OCR justificatif — fournisseur IA en échec', { error: err.message });
+    res.json({ success: true, data: { titre: '', montant: 0, categorie: 'autre', date: new Date().toISOString().slice(0, 10), fiabilite: 0, note: "Lecture automatique indisponible (fournisseur d'IA restreint). Saisissez les informations manuellement." } });
+  }
 };
 
 exports.resumerEntretien = async (req, res) => {
