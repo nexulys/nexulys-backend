@@ -2101,7 +2101,7 @@
             <div class="section-label">Commercial</div>
             <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Contrats clients</h2>
           </div>
-          <button class="btn-primary" onclick="openModal('modal-contrat-client')">+ Nouveau contrat</button>
+          <button class="btn-primary" onclick="openModal('contrat-client')">+ Nouveau contrat</button>
         </div>
         <div class="card">
           <div class="card-body" style="padding:0;">
@@ -5525,7 +5525,7 @@
           var cards = prospects.filter(function(p) { return p.statut === col.statut; });
           return '<div style="background:rgba(255,255,255,.02);border-radius:10px;padding:12px;">'
             + '<div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px;">' + (statLabels[col.statut]||col.statut) + ' <span style="color:var(--text-muted);">(' + col.count + ')</span></div>'
-            + cards.map(function(p) { return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;" onclick="updateProspectStatut(\'' + p._id + '\')">'
+            + cards.map(function(p) { return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;" title="Cliquer pour faire avancer le prospect" onclick="updateProspectStatut(\'' + p._id + '\',\'' + p.statut + '\')">'
               + '<div style="font-size:13px;font-weight:600;margin-bottom:2px;">' + p.nom + '</div>'
               + '<div style="font-size:11px;color:var(--text-dim);">' + (p.entreprise||'') + '</div>'
               + (p.valeurEstimee ? '<div style="font-size:12px;color:#a5b4fc;margin-top:4px;font-weight:600;">' + p.valeurEstimee.toLocaleString('fr') + ' €</div>' : '')
@@ -5575,6 +5575,13 @@
       var res = await fetch(API + '/crm/' + id, { method:'PUT', headers:apiHeaders(), body:JSON.stringify({ statut }) });
       var data = await res.json();
       if (data.success) { showToast('Statut mis à jour', 'success'); loadCRM(); }
+    }
+    // Clic sur une carte prospect → avance au stade suivant du pipeline
+    async function updateProspectStatut(id, current) {
+      var ordre = ['prospect', 'contact', 'negociation', 'gagne'];
+      var i = ordre.indexOf(current);
+      var next = (i >= 0 && i < ordre.length - 1) ? ordre[i + 1] : 'prospect';
+      await updateProspectStatutDirect(id, next);
     }
     async function deleteProspect(id) {
       if (!confirm('Supprimer ce prospect ?')) return;
@@ -6742,7 +6749,7 @@
       document.getElementById('import-error').style.display = 'none';
       document.getElementById('import-file').value = '';
       updateImportTemplate();
-      openModal('modal-import-csv');
+      openModal('import-csv');
     }
 
     function updateImportTemplate() {
