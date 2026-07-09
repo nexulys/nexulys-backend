@@ -35,8 +35,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Security audit (production deps)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Unit tests
         run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_secret_ci_only
+
+      - name: Integration tests (MongoDB service)
+        run: npm run test:integration
         env:
           NODE_ENV: test
           MONGODB_URI: mongodb://localhost:27017/novexa_test

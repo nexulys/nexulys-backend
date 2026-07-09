@@ -22,7 +22,8 @@ initSentry();
 
 const app = express();
 
-connectDB();
+// En test, la connexion est gérée par le harnais (mongodb-memory-server)
+if (process.env.NODE_ENV !== 'test') connectDB();
 
 // ── Sécurité HTTP headers + CSP ──
 app.use(helmet({
@@ -63,18 +64,8 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ── Sanitisation NoSQL — supprime les opérateurs MongoDB ($) des inputs ──
-app.use((req, res, next) => {
-  const sanitize = (obj) => {
-    if (typeof obj !== 'object' || obj === null) return;
-    for (const key of Object.keys(obj)) {
-      if (key.startsWith('$') || key.includes('.')) { delete obj[key]; }
-      else if (typeof obj[key] === 'object') sanitize(obj[key]);
-    }
-  };
-  if (req.body) sanitize(req.body);
-  if (req.query) sanitize(req.query);
-  next();
-});
+const { sanitizeMiddleware } = require('./utils/sanitize');
+app.use(sanitizeMiddleware);
 
 // ── Timeout global 30s — coupe les connexions lentes/infinies ──
 app.use((req, res, next) => {
@@ -145,10 +136,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  logger.info(`Novexa by Nexulys démarré sur le port ${PORT}`);
-  logger.info(`Docs API: http://localhost:${PORT}/api/docs`);
-});
+// En test, on n'ouvre pas de port réseau (supertest utilise l'objet app directement)
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    logger.info(`Novexa by Nexulys démarré sur le port ${PORT}`);
+    logger.info(`Docs API: http://localhost:${PORT}/api/docs`);
+  });
+}
 
 module.exports = app;
