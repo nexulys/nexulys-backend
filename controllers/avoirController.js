@@ -1,4 +1,5 @@
 const Avoir = require('../models/Avoir');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getAvoirs = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ exports.getAvoirs = async (req, res) => {
     if (statut) filter.statut = statut;
     const avoirs = await Avoir.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, data: avoirs, count: avoirs.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createAvoir = async (req, res) => {
@@ -42,7 +43,7 @@ exports.createAvoir = async (req, res) => {
       createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: avoir });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateAvoir = async (req, res) => {
@@ -64,7 +65,7 @@ exports.updateAvoir = async (req, res) => {
     );
     if (!avoir) return res.status(404).json({ success: false, message: 'Avoir introuvable' });
     res.json({ success: true, data: avoir });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteAvoir = async (req, res) => {
@@ -72,5 +73,5 @@ exports.deleteAvoir = async (req, res) => {
     const avoir = await Avoir.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!avoir) return res.status(404).json({ success: false, message: 'Avoir introuvable' });
     res.json({ success: true, message: 'Avoir supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

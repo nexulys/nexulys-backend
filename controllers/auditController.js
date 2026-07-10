@@ -1,4 +1,5 @@
 const AuditLog = require('../models/AuditLog');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getAuditLogs = async (req, res) => {
   try {
@@ -11,5 +12,5 @@ exports.getAuditLogs = async (req, res) => {
       AuditLog.countDocuments(filter)
     ]);
     res.json({ success: true, data: logs, pagination: { page: +page, limit: +limit, total } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

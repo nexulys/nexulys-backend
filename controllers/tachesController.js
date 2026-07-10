@@ -1,12 +1,13 @@
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const Automation = require('../models/Automation');
+const { sendError } = require('../utils/errorResponse');
 
 exports.createTask = async (req, res) => {
   try {
     const task = await Task.create({ ...req.body, company: req.user.company, createdBy: req.user.id });
     res.status(201).json({ success: true, data: task });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getTasks = async (req, res) => {
@@ -22,7 +23,7 @@ exports.getTasks = async (req, res) => {
       .populate('projet', 'nom')
       .sort({ deadline: 1 });
     res.json({ success: true, data: tasks, count: tasks.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getTask = async (req, res) => {
@@ -32,7 +33,7 @@ exports.getTask = async (req, res) => {
       .populate('projet');
     if (!task) return res.status(404).json({ success: false, message: 'Tâche introuvable' });
     res.json({ success: true, data: task });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateTask = async (req, res) => {
@@ -42,21 +43,21 @@ exports.updateTask = async (req, res) => {
     ).populate('assignee', 'nom prenom email');
     if (!task) return res.status(404).json({ success: false, message: 'Tâche introuvable' });
     res.json({ success: true, data: task });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteTask = async (req, res) => {
   try {
     await Task.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     res.json({ success: true, message: 'Tâche supprimée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createProject = async (req, res) => {
   try {
     const project = await Project.create({ ...req.body, company: req.user.company, createdBy: req.user.id });
     res.status(201).json({ success: true, data: project });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getProjects = async (req, res) => {
@@ -75,21 +76,21 @@ exports.getProjects = async (req, res) => {
       };
     }));
     res.json({ success: true, data: withStats });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createAutomation = async (req, res) => {
   try {
     const automation = await Automation.create({ ...req.body, company: req.user.company, createdBy: req.user.id });
     res.status(201).json({ success: true, data: automation });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getAutomations = async (req, res) => {
   try {
     const automations = await Automation.find({ company: req.user.company });
     res.json({ success: true, data: automations, count: automations.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.toggleAutomation = async (req, res) => {
@@ -99,5 +100,5 @@ exports.toggleAutomation = async (req, res) => {
     auto.actif = !auto.actif;
     await auto.save();
     res.json({ success: true, data: auto, message: `Automatisation ${auto.actif ? 'activée' : 'désactivée'}` });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

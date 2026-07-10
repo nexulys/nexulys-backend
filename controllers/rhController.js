@@ -7,6 +7,7 @@ const AvanceSalaire = require('../models/AvanceSalaire');
 const { genererFichePaie } = require('../utils/payslipGenerator');
 const { notifyLeaveRequest, notifyAdvanceRequested } = require('../utils/notifications');
 const { logAction } = require('../utils/auditLogger');
+const { sendError } = require('../utils/errorResponse');
 
 const MOIS_LABELS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
@@ -15,14 +16,14 @@ exports.createEmployee = async (req, res) => {
     const employee = await Employee.create({ ...req.body, company: req.user.company });
     logAction(req, { action: 'CREATE_EMPLOYEE', entity: 'Employee', entityId: employee._id, details: employee.nom });
     res.status(201).json({ success: true, data: employee });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getEmployees = async (req, res) => {
   try {
     const employees = await Employee.find({ company: req.user.company }).sort({ nom: 1 });
     res.json({ success: true, data: employees, count: employees.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getEmployee = async (req, res) => {
@@ -30,7 +31,7 @@ exports.getEmployee = async (req, res) => {
     const emp = await Employee.findOne({ _id: req.params.id, company: req.user.company });
     if (!emp) return res.status(404).json({ success: false, message: 'Employé introuvable' });
     res.json({ success: true, data: emp });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateEmployee = async (req, res) => {
@@ -40,7 +41,7 @@ exports.updateEmployee = async (req, res) => {
     );
     if (!emp) return res.status(404).json({ success: false, message: 'Employé introuvable' });
     res.json({ success: true, data: emp });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteEmployee = async (req, res) => {
@@ -53,21 +54,21 @@ exports.deleteEmployee = async (req, res) => {
     if (!emp) return res.status(404).json({ success: false, message: 'Employé introuvable' });
     logAction(req, { action: 'DEACTIVATE_EMPLOYEE', entity: 'Employee', entityId: req.params.id });
     res.json({ success: true, message: 'Employé désactivé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createContract = async (req, res) => {
   try {
     const contract = await Contract.create({ ...req.body, company: req.user.company, createdBy: req.user.id });
     res.status(201).json({ success: true, data: contract });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getContracts = async (req, res) => {
   try {
     const contracts = await Contract.find({ company: req.user.company }).populate('employee');
     res.json({ success: true, data: contracts });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.requestLeave = async (req, res) => {
@@ -88,7 +89,7 @@ exports.requestLeave = async (req, res) => {
       type: leave.type
     });
     res.status(201).json({ success: true, data: leave });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getLeaves = async (req, res) => {
@@ -99,7 +100,7 @@ exports.getLeaves = async (req, res) => {
     if (employee) filter.employee = employee;
     const leaves = await Leave.find(filter).populate('employee').sort({ createdAt: -1 });
     res.json({ success: true, data: leaves });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateLeaveStatus = async (req, res) => {
@@ -114,7 +115,7 @@ exports.updateLeaveStatus = async (req, res) => {
     ).populate('employee');
     logAction(req, { action: 'UPDATE_LEAVE_STATUS', entity: 'Leave', entityId: req.params.id, details: req.body.statut });
     res.json({ success: true, data: leave });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.generatePayslip = async (req, res) => {
@@ -131,7 +132,7 @@ exports.generatePayslip = async (req, res) => {
       company: req.user.company, employee: employeeId, createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: payslip });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getPayslips = async (req, res) => {
@@ -139,7 +140,7 @@ exports.getPayslips = async (req, res) => {
     const payslips = await Payslip.find({ company: req.user.company, employee: req.params.employeeId })
       .sort({ annee: -1, mois: -1 });
     res.json({ success: true, data: payslips });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getAllPayslips = async (req, res) => {
@@ -151,7 +152,7 @@ exports.getAllPayslips = async (req, res) => {
       .sort({ annee: -1, mois: -1 })
       .limit(50);
     res.json({ success: true, data: payslips });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.validerFiche = async (req, res) => {
@@ -163,7 +164,7 @@ exports.validerFiche = async (req, res) => {
     ).populate('employee', 'prenom nom');
     if (!p) return res.status(404).json({ success: false, message: 'Fiche introuvable ou déjà validée' });
     res.json({ success: true, data: p });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getVirementsReady = async (req, res) => {
@@ -176,7 +177,7 @@ exports.getVirementsReady = async (req, res) => {
       .populate('employee', 'prenom nom iban email')
       .sort({ annee: -1, mois: -1 });
     res.json({ success: true, data: payslips });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.effectuerVirements = async (req, res) => {
@@ -226,7 +227,7 @@ exports.effectuerVirements = async (req, res) => {
       success: true, data: virement,
       message: `${payslips.length} virement(s) effectué(s) — Total : ${montantTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getVirements = async (req, res) => {
@@ -234,7 +235,7 @@ exports.getVirements = async (req, res) => {
     const virements = await Virement.find({ company: req.user.company })
       .sort({ effectueLe: -1 }).limit(30);
     res.json({ success: true, data: virements });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Avances sur salaire ──
@@ -248,7 +249,7 @@ exports.getAvances = async (req, res) => {
       .populate('employee', 'prenom nom')
       .sort({ createdAt: -1 });
     res.json({ success: true, data: avances, count: avances.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createAvance = async (req, res) => {
@@ -269,7 +270,7 @@ exports.createAvance = async (req, res) => {
     });
     notifyAdvanceRequested(req.user.company, { employeeNom, montant, motif });
     res.status(201).json({ success: true, data: avance });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.approuverAvance = async (req, res) => {
@@ -281,7 +282,7 @@ exports.approuverAvance = async (req, res) => {
     );
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, data: avance, message: 'Avance approuvée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rejeterAvance = async (req, res) => {
@@ -293,7 +294,7 @@ exports.rejeterAvance = async (req, res) => {
     );
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, data: avance, message: 'Avance rejetée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rembourserAvance = async (req, res) => {
@@ -305,7 +306,7 @@ exports.rembourserAvance = async (req, res) => {
     );
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, data: avance, message: 'Avance marquée comme remboursée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteAvance = async (req, res) => {
@@ -313,5 +314,5 @@ exports.deleteAvance = async (req, res) => {
     const avance = await AvanceSalaire.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, message: 'Avance supprimée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

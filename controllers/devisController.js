@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const Devis = require('../models/Devis');
 const Invoice = require('../models/Invoice');
 const { sendMail } = require('../utils/mailer');
+const { sendError } = require('../utils/errorResponse');
 
 const DEVISES = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
 
@@ -17,7 +18,7 @@ exports.getDevis = async (req, res) => {
     if (req.query.statut) filter.statut = req.query.statut;
     const devis = await Devis.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, data: devis, count: devis.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createDevis = async (req, res) => {
@@ -35,7 +36,7 @@ exports.createDevis = async (req, res) => {
       createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: devis });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateDevis = async (req, res) => {
@@ -48,7 +49,7 @@ exports.updateDevis = async (req, res) => {
     const devis = await Devis.findOneAndUpdate({ _id: req.params.id, company: req.user.company }, updates, { new: true });
     if (!devis) return res.status(404).json({ success: false, message: 'Devis introuvable' });
     res.json({ success: true, data: devis });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteDevis = async (req, res) => {
@@ -56,7 +57,7 @@ exports.deleteDevis = async (req, res) => {
     const devis = await Devis.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!devis) return res.status(404).json({ success: false, message: 'Devis introuvable' });
     res.json({ success: true, message: 'Devis supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.envoyerDevis = async (req, res) => {
@@ -76,7 +77,7 @@ exports.envoyerDevis = async (req, res) => {
       html: `<h2>Devis ${devis.numero}</h2><p>Bonjour ${devis.client.nom},</p><p>Vous trouverez ci-joint votre devis d'un montant de <strong>${devis.montantTTC.toFixed(2)} ${symbole} TTC</strong>.</p><p><a href="${url}" style="background:#6366f1;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Consulter et signer le devis</a></p><p style="color:#999;font-size:12px;">Lien valide jusqu'au ${new Date(devis.dateValidite).toLocaleDateString('fr-FR')}</p>`
     });
     res.json({ success: true, data: { url }, message: 'Devis envoyé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.convertirEnFacture = async (req, res) => {
@@ -103,7 +104,7 @@ exports.convertirEnFacture = async (req, res) => {
     devis.statut = 'accepte';
     await devis.save();
     res.json({ success: true, data: invoice, message: 'Facture créée depuis le devis' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Routes publiques ──
@@ -116,7 +117,7 @@ exports.viewDevis = async (req, res) => {
       return res.status(410).json({ success: false, message: 'Devis expiré' });
     }
     res.json({ success: true, data: devis });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.signerDevis = async (req, res) => {
@@ -129,5 +130,5 @@ exports.signerDevis = async (req, res) => {
     devis.statut = 'accepte';
     await devis.save();
     res.json({ success: true, message: 'Devis signé avec succès' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

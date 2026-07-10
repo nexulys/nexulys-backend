@@ -3,6 +3,7 @@ const Invoice = require('../models/Invoice');
 const Product = require('../models/Product');
 const Employee = require('../models/Employee');
 const logger = require('../utils/logger');
+const { sendError } = require('../utils/errorResponse');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
@@ -50,7 +51,7 @@ exports.importClients = async (req, res) => {
       } catch (err) { results.errors.push({ row, error: err.message }); }
     }
     res.json({ success: true, message: `${results.success} clients importés, ${results.errors.length} erreurs`, data: results });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.importProduits = async (req, res) => {
@@ -76,7 +77,7 @@ exports.importProduits = async (req, res) => {
       } catch (err) { results.errors.push({ row, error: err.message }); }
     }
     res.json({ success: true, message: `${results.success} produits importés, ${results.errors.length} erreurs`, data: results });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.importEmployes = async (req, res) => {
@@ -102,7 +103,7 @@ exports.importEmployes = async (req, res) => {
       } catch (err) { results.errors.push({ row, error: err.message }); }
     }
     res.json({ success: true, message: `${results.success} employés importés, ${results.errors.length} erreurs`, data: results });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // Export CSV générique
@@ -132,5 +133,5 @@ exports.exportCSV = async (req, res) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="export_${type}_${new Date().toISOString().split('T')[0]}.csv"`);
     res.send('﻿' + csv); // BOM pour Excel
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

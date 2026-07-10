@@ -2,12 +2,13 @@ const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 const Supplier = require('../models/Supplier');
 const { notifyStockLow } = require('../utils/notifications');
+const { sendError } = require('../utils/errorResponse');
 
 exports.createProduct = async (req, res) => {
   try {
     const product = await Product.create({ ...req.body, company: req.user.company });
     res.status(201).json({ success: true, data: product });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getProducts = async (req, res) => {
@@ -17,7 +18,7 @@ exports.getProducts = async (req, res) => {
     if (stockBas === 'true') filter.alerteActive = true;
     const products = await Product.find(filter).populate('fournisseur', 'nom email telephone');
     res.json({ success: true, data: products, count: products.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getProduct = async (req, res) => {
@@ -25,7 +26,7 @@ exports.getProduct = async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id, company: req.user.company }).populate('fournisseur');
     if (!product) return res.status(404).json({ success: false, message: 'Produit introuvable' });
     res.json({ success: true, data: product });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateProduct = async (req, res) => {
@@ -35,14 +36,14 @@ exports.updateProduct = async (req, res) => {
     Object.assign(product, req.body);
     await product.save(); // déclenche le hook pre('save') → recalcule alerteActive
     res.json({ success: true, data: product });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteProduct = async (req, res) => {
   try {
     await Product.findOneAndUpdate({ _id: req.params.id, company: req.user.company }, { actif: false });
     res.json({ success: true, message: 'Produit désactivé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.addMovement = async (req, res) => {
@@ -73,7 +74,7 @@ exports.addMovement = async (req, res) => {
         ? { active: true, message: `Stock bas: ${product.nom} (${product.quantite} ${product.unite})` }
         : { active: false }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getMovements = async (req, res) => {
@@ -84,21 +85,21 @@ exports.getMovements = async (req, res) => {
     if (type) filter.type = type;
     const movements = await StockMovement.find(filter).populate('product', 'nom sku').sort({ createdAt: -1 }).limit(100);
     res.json({ success: true, data: movements });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createSupplier = async (req, res) => {
   try {
     const supplier = await Supplier.create({ ...req.body, company: req.user.company });
     res.status(201).json({ success: true, data: supplier });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getSuppliers = async (req, res) => {
   try {
     const suppliers = await Supplier.find({ company: req.user.company, actif: true });
     res.json({ success: true, data: suppliers, count: suppliers.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteSupplier = async (req, res) => {
@@ -110,7 +111,7 @@ exports.deleteSupplier = async (req, res) => {
     );
     if (!supplier) return res.status(404).json({ success: false, message: 'Fournisseur introuvable' });
     res.json({ success: true, message: 'Fournisseur supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getLowStockAlerts = async (req, res) => {
@@ -124,5 +125,5 @@ exports.getLowStockAlerts = async (req, res) => {
       fournisseur: p.fournisseur
     }));
     res.json({ success: true, data: alertes, count: alertes.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

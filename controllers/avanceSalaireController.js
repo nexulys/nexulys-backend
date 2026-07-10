@@ -1,5 +1,6 @@
 const AvanceSalaire = require('../models/AvanceSalaire');
 const Employee = require('../models/Employee');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getAvances = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ exports.getAvances = async (req, res) => {
       .populate('employee', 'prenom nom')
       .sort({ createdAt: -1 });
     res.json({ success: true, data: avances, count: avances.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createAvance = async (req, res) => {
@@ -34,7 +35,7 @@ exports.createAvance = async (req, res) => {
       createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: avance });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.approuverAvance = async (req, res) => {
@@ -46,7 +47,7 @@ exports.approuverAvance = async (req, res) => {
     );
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, data: avance, message: 'Avance approuvée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rejeterAvance = async (req, res) => {
@@ -58,7 +59,7 @@ exports.rejeterAvance = async (req, res) => {
     );
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, data: avance, message: 'Avance rejetée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rembourserAvance = async (req, res) => {
@@ -70,7 +71,7 @@ exports.rembourserAvance = async (req, res) => {
     );
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, data: avance, message: 'Avance marquée comme remboursée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteAvance = async (req, res) => {
@@ -78,5 +79,5 @@ exports.deleteAvance = async (req, res) => {
     const avance = await AvanceSalaire.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!avance) return res.status(404).json({ success: false, message: 'Avance introuvable' });
     res.json({ success: true, message: 'Avance supprimée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

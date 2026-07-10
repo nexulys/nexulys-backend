@@ -2,6 +2,7 @@ const NoteFrais = require('../models/NoteFrais');
 const Company = require('../models/Company');
 const { sendSlack } = require('../utils/slack');
 const { notifyExpenseSubmitted } = require('../utils/notifications');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getNotesFrais = async (req, res) => {
   try {
@@ -9,7 +10,7 @@ exports.getNotesFrais = async (req, res) => {
     if (req.query.statut) filter.statut = req.query.statut;
     const notes = await NoteFrais.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, data: notes, count: notes.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createNoteFrais = async (req, res) => {
@@ -24,7 +25,7 @@ exports.createNoteFrais = async (req, res) => {
     });
     notifyExpenseSubmitted(req.user.company, { employeeNom: note.employeNom, montant: note.montant, titre: note.titre });
     res.status(201).json({ success: true, data: note });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.approuverNoteFrais = async (req, res) => {
@@ -40,7 +41,7 @@ exports.approuverNoteFrais = async (req, res) => {
       await sendSlack(company.slackWebhookUrl, `✅ Note de frais approuvée : *${note.titre}* — ${note.montant} €`);
     }
     res.json({ success: true, data: note });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rejeterNoteFrais = async (req, res) => {
@@ -52,7 +53,7 @@ exports.rejeterNoteFrais = async (req, res) => {
     );
     if (!note) return res.status(404).json({ success: false, message: 'Note introuvable' });
     res.json({ success: true, data: note });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rembourserNoteFrais = async (req, res) => {
@@ -64,12 +65,12 @@ exports.rembourserNoteFrais = async (req, res) => {
     );
     if (!note) return res.status(404).json({ success: false, message: 'Note introuvable' });
     res.json({ success: true, data: note });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteNoteFrais = async (req, res) => {
   try {
     await NoteFrais.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     res.json({ success: true, message: 'Note supprimée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

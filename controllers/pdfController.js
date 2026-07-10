@@ -3,6 +3,7 @@ const Payslip = require('../models/Payslip');
 const Employee = require('../models/Employee');
 const Company = require('../models/Company');
 const { generateInvoicePDF, generatePayslipPDF } = require('../utils/pdf');
+const { sendError } = require('../utils/errorResponse');
 
 exports.downloadInvoicePDF = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ exports.downloadInvoicePDF = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Facture_${invoice.numero}.pdf"`);
     res.send(pdfBuffer);
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.downloadPayslipPDF = async (req, res) => {
@@ -29,5 +30,5 @@ exports.downloadPayslipPDF = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${nomFichier}"`);
     res.send(pdfBuffer);
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

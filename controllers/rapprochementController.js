@@ -1,4 +1,5 @@
 const RapprochementBancaire = require('../models/RapprochementBancaire');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getRapprochements = async (req, res) => {
   try {
@@ -10,7 +11,7 @@ exports.getRapprochements = async (req, res) => {
       return obj;
     });
     res.json({ success: true, data, count: data.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createReleve = async (req, res) => {
@@ -32,7 +33,7 @@ exports.createReleve = async (req, res) => {
       createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: releve });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rapprochierTransaction = async (req, res) => {
@@ -53,7 +54,7 @@ exports.rapprochierTransaction = async (req, res) => {
 
     await releve.save();
     res.json({ success: true, data: releve, message: 'Transaction rapprochée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteReleve = async (req, res) => {
@@ -61,7 +62,7 @@ exports.deleteReleve = async (req, res) => {
     const releve = await RapprochementBancaire.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!releve) return res.status(404).json({ success: false, message: 'Relevé introuvable' });
     res.json({ success: true, message: 'Relevé supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.validerReleve = async (req, res) => {
@@ -73,5 +74,5 @@ exports.validerReleve = async (req, res) => {
     );
     if (!releve) return res.status(404).json({ success: false, message: 'Relevé introuvable' });
     res.json({ success: true, data: releve, message: 'Relevé validé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

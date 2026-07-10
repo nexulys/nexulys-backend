@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getEquipe = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ exports.getEquipe = async (req, res) => {
       .select('-password -resetPasswordToken -resetPasswordExpires')
       .sort({ createdAt: -1 });
     res.json({ success: true, data: membres, count: membres.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.inviterMembre = async (req, res) => {
@@ -32,7 +33,7 @@ exports.inviterMembre = async (req, res) => {
     const result = membre.toObject();
     delete result.password;
     res.status(201).json({ success: true, data: result });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateMembre = async (req, res) => {
@@ -50,7 +51,7 @@ exports.updateMembre = async (req, res) => {
 
     if (!membre) return res.status(404).json({ success: false, message: 'Membre introuvable' });
     res.json({ success: true, data: membre });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.supprimerMembre = async (req, res) => {
@@ -61,5 +62,5 @@ exports.supprimerMembre = async (req, res) => {
     const membre = await User.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!membre) return res.status(404).json({ success: false, message: 'Membre introuvable' });
     res.json({ success: true, message: 'Membre supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

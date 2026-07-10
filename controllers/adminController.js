@@ -5,6 +5,7 @@ const Subscription = require('../models/Subscription');
 const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
 const Employee = require('../models/Employee');
+const { sendError } = require('../utils/errorResponse');
 
 exports.login = async (req, res) => {
   const { password } = req.body;
@@ -75,7 +76,7 @@ exports.getOverview = async (req, res) => {
         paymentsEchoues: totalEchoue
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getClients = async (req, res) => {
@@ -115,7 +116,7 @@ exports.getClients = async (req, res) => {
 
     const mrr = rows.reduce((s, r) => s + (r.subscription ? r.subscription.mrr : 0), 0);
     res.json({ success: true, data: rows, total: rows.length, mrr });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getMRRChart = async (req, res) => {
@@ -144,7 +145,7 @@ exports.getMRRChart = async (req, res) => {
     });
 
     res.json({ success: true, data: months });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getPayments = async (req, res) => {
@@ -165,5 +166,5 @@ exports.getPayments = async (req, res) => {
     });
     payments.sort((a, b) => new Date(b.date) - new Date(a.date));
     res.json({ success: true, data: payments, total: payments.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

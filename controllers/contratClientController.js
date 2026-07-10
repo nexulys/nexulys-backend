@@ -1,4 +1,5 @@
 const ContratClient = require('../models/ContratClient');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getContrats = async (req, res) => {
   try {
@@ -16,14 +17,14 @@ exports.getContrats = async (req, res) => {
     });
 
     res.json({ success: true, data: contrats, count: contrats.length, expirantBientot: expirantBientot.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createContrat = async (req, res) => {
   try {
     const contrat = await ContratClient.create({ ...req.body, company: req.user.company, createdBy: req.user.id });
     res.status(201).json({ success: true, data: contrat });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateContrat = async (req, res) => {
@@ -33,14 +34,14 @@ exports.updateContrat = async (req, res) => {
     );
     if (!contrat) return res.status(404).json({ success: false, message: 'Contrat introuvable' });
     res.json({ success: true, data: contrat });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteContrat = async (req, res) => {
   try {
     await ContratClient.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     res.json({ success: true, message: 'Contrat supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getContratsExpirants = async (req, res) => {
@@ -53,5 +54,5 @@ exports.getContratsExpirants = async (req, res) => {
       dateFin: { $gte: now, $lte: dans30Jours }
     }).sort({ dateFin: 1 });
     res.json({ success: true, data: contrats, count: contrats.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

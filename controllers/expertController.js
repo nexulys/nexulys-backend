@@ -4,6 +4,7 @@ const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
 const Employee = require('../models/Employee');
 const Company = require('../models/Company');
+const { sendError } = require('../utils/errorResponse');
 
 exports.createAccess = async (req, res) => {
   try {
@@ -15,7 +16,7 @@ exports.createAccess = async (req, res) => {
     });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
     res.status(201).json({ success: true, data: { ...access.toObject(), url: `${appUrl}/comptable.html?token=${token}` } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.listAccess = async (req, res) => {
@@ -24,14 +25,14 @@ exports.listAccess = async (req, res) => {
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
     const data = list.map(a => ({ ...a.toObject(), url: `${appUrl}/comptable.html?token=${a.token}` }));
     res.json({ success: true, data });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.revokeAccess = async (req, res) => {
   try {
     await ExpertAccess.findOneAndUpdate({ _id: req.params.id, company: req.user.company }, { actif: false });
     res.json({ success: true, message: 'Accès révoqué' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.viewAccess = async (req, res) => {
@@ -70,5 +71,5 @@ exports.viewAccess = async (req, res) => {
         expiresAt: access.expiresAt
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

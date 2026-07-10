@@ -1,5 +1,6 @@
 const Ticket = require('../models/Ticket');
 const { notifyTicketOpened } = require('../utils/notifications');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getTickets = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ exports.getTickets = async (req, res) => {
     if (req.query.statut) filter.statut = req.query.statut;
     const tickets = await Ticket.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, data: tickets });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createTicket = async (req, res) => {
@@ -29,7 +30,7 @@ exports.createTicket = async (req, res) => {
     });
     notifyTicketOpened(req.user.company, { titre: ticket.titre, priorite: ticket.priorite, rapporteurNom: ticket.rapporteurNom });
     res.status(201).json({ success: true, data: ticket });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateTicketStatut = async (req, res) => {
@@ -44,12 +45,12 @@ exports.updateTicketStatut = async (req, res) => {
     );
     if (!ticket) return res.status(404).json({ success: false, message: 'Ticket introuvable' });
     res.json({ success: true, data: ticket });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteTicket = async (req, res) => {
   try {
     await Ticket.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     res.json({ success: true, message: 'Ticket supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

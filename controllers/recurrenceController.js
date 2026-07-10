@@ -3,6 +3,7 @@ const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 const { calculerTVA } = require('../utils/tvaCalculator');
 const { sendSlack } = require('../utils/slack');
+const { sendError } = require('../utils/errorResponse');
 
 const freqToMonths = { mensuel: 1, trimestriel: 3, semestriel: 6, annuel: 12 };
 
@@ -10,7 +11,7 @@ exports.getRecurrences = async (req, res) => {
   try {
     const list = await RecurringInvoice.find({ company: req.user.company }).sort({ prochainEnvoi: 1 });
     res.json({ success: true, data: list });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createRecurrence = async (req, res) => {
@@ -21,7 +22,7 @@ exports.createRecurrence = async (req, res) => {
       company: req.user.company, clientNom, clientEmail, lignes, notes, frequence, prochainEnvoi: prochainEnvoi || new Date(), createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: rec });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateRecurrence = async (req, res) => {
@@ -31,14 +32,14 @@ exports.updateRecurrence = async (req, res) => {
     );
     if (!rec) return res.status(404).json({ success: false, message: 'Récurrence introuvable' });
     res.json({ success: true, data: rec });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteRecurrence = async (req, res) => {
   try {
     await RecurringInvoice.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     res.json({ success: true, message: 'Récurrence supprimée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.genererDues = async (req, res) => {
@@ -78,5 +79,5 @@ exports.genererDues = async (req, res) => {
     }
 
     res.json({ success: true, data: { generated: generated.length, factures: generated } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

@@ -6,6 +6,7 @@ const Ticket = require('../models/Ticket');
 const Product = require('../models/Product');
 const Payslip = require('../models/Payslip');
 const Prospect = require('../models/Prospect');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getExecutiveKPIs = async (req, res) => {
   try {
@@ -83,5 +84,5 @@ exports.getExecutiveKPIs = async (req, res) => {
         generatedAt: now
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

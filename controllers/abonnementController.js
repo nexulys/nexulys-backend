@@ -1,4 +1,5 @@
 const Subscription = require('../models/Subscription');
+const { sendError } = require('../utils/errorResponse');
 const {
   createCustomer,
   createSubscription: createStripeSubscription,
@@ -46,7 +47,7 @@ exports.getSubscription = async (req, res) => {
     const sub = await Subscription.findOne({ company: req.user.company });
     if (!sub) return res.status(404).json({ success: false, message: 'Abonnement introuvable' });
     res.json({ success: true, data: sub });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.activateSubscription = async (req, res) => {
@@ -79,7 +80,7 @@ exports.activateSubscription = async (req, res) => {
       message: 'Abonnement Novexa Pro activé — 2 500 € / mois',
       data: sub
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.cancelSubscription = async (req, res) => {
@@ -94,7 +95,7 @@ exports.cancelSubscription = async (req, res) => {
       { new: true }
     );
     res.json({ success: true, message: 'Abonnement annulé', data: updatedSub });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getBillingHistory = async (req, res) => {
@@ -102,5 +103,5 @@ exports.getBillingHistory = async (req, res) => {
     const sub = await Subscription.findOne({ company: req.user.company });
     if (!sub) return res.status(404).json({ success: false, message: 'Abonnement introuvable' });
     res.json({ success: true, data: { abonnement: sub, historique: sub.billingHistory || [] } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

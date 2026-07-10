@@ -4,6 +4,7 @@ const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../utils/mailer');
+const { sendError } = require('../utils/errorResponse');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
@@ -54,7 +55,7 @@ exports.register = async (req, res) => {
         }
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.login = async (req, res) => {
@@ -73,7 +74,7 @@ exports.login = async (req, res) => {
         entreprise: user.company
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.me = async (req, res) => {
@@ -86,7 +87,7 @@ exports.updateProfile = async (req, res) => {
     const { nom, prenom, email } = req.body;
     const user = await User.findByIdAndUpdate(req.user.id, { nom, prenom, email }, { new: true });
     res.json({ success: true, data: user });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.onboarding = async (req, res) => {
@@ -98,7 +99,7 @@ exports.onboarding = async (req, res) => {
       { new: true, upsert: true }
     );
     res.json({ success: true, message: 'Entreprise mise à jour', data: company });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.inviteUser = async (req, res) => {
@@ -108,7 +109,7 @@ exports.inviteUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email déjà utilisé' });
     const user = await User.create({ nom, prenom, email, password, role: role || 'employee', company: req.user.company });
     res.status(201).json({ success: true, message: 'Utilisateur invité', data: { id: user._id, nom, prenom, email, role: user.role } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.forgotPassword = async (req, res) => {
@@ -134,7 +135,7 @@ exports.forgotPassword = async (req, res) => {
     });
 
     res.json(genericMsg);
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.resetPassword = async (req, res) => {
@@ -152,7 +153,7 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
     res.json({ success: true, message: 'Mot de passe réinitialisé avec succès.' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.logout = (req, res) => {
@@ -189,7 +190,7 @@ exports.exportMyData = async (req, res) => {
       employees: { count: employees.length, data: employees },
       note: 'Export RGPD partiel — contactez support@novexa.fr pour un export complet'
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // RGPD — Demande de suppression du compte
@@ -208,5 +209,5 @@ exports.requestAccountDeletion = async (req, res) => {
     });
 
     res.json({ success: true, message: 'Votre demande de suppression a été enregistrée. Elle sera traitée dans un délai de 30 jours conformément au RGPD.' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

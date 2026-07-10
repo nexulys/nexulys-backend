@@ -5,6 +5,7 @@ const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 const Task = require('../models/Task');
 const logger = require('../utils/logger');
+const { sendError } = require('../utils/errorResponse');
 
 // Message clair (jamais l'erreur brute du fournisseur) quand l'IA est indisponible
 const AI_UNAVAILABLE =
@@ -106,7 +107,7 @@ exports.analyzeExpenses = async (req, res) => {
     const prompt = `Analyse ces dépenses d'entreprise et suggère des économies concrètes:\nPar catégorie: ${JSON.stringify(parCategorie)}\nTotal: ${totalMontant}€`;
     const analyse = await aiChat('Tu es un expert comptable et conseiller financier pour PME françaises.', prompt);
     res.json({ success: true, data: { analyse, parCategorie, totalMontant } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.hrAssistant = async (req, res) => {
@@ -119,7 +120,7 @@ exports.hrAssistant = async (req, res) => {
       question
     );
     res.json({ success: true, data: { question, reponse } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.predictReorder = async (req, res) => {
@@ -149,7 +150,7 @@ exports.predictReorder = async (req, res) => {
       `Préds les besoins de réapprovisionnement pour 30 jours:\n${JSON.stringify(aReapprovisionner, null, 2)}`
     );
     res.json({ success: true, data: { predictions, produitsAnalyses: aReapprovisionner } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.autoAssignTask = async (req, res) => {
@@ -176,7 +177,7 @@ exports.autoAssignTask = async (req, res) => {
       `Tâche: "${tache.titre}" (priorité: ${tache.priorite})\nÉquipe:\n${JSON.stringify(equipe, null, 2)}\nQui assigner et pourquoi?`
     );
     res.json({ success: true, data: { tache: tache.titre, suggestion, equipe } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.dashboardInsights = async (req, res) => {
@@ -202,7 +203,7 @@ exports.dashboardInsights = async (req, res) => {
       `Métriques entreprise: Factures en attente: ${metriques.facturesEnAttente}, Dépenses totales: ${metriques.totalDepenses}€, Employés actifs: ${metriques.nbEmployes}, Alertes stock bas: ${metriques.alertesStock}, Tâches en retard: ${metriques.tachesEnRetard}`
     );
     res.json({ success: true, data: { insights, metriques } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── COMPTABILITÉ IA ────────────────────────────────────────────
@@ -249,7 +250,7 @@ exports.detectAnomalies = async (req, res) => {
 
     const parsed = tryParseJSON(raw, { anomalies: doublons.map(d => ({ type: 'doublon', severite: 'haute', description: d, recommandation: 'Vérifier et supprimer le doublon' })), resume: raw });
     res.json({ success: true, data: parsed });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.previsionTresorerie = async (req, res) => {
@@ -279,7 +280,7 @@ exports.previsionTresorerie = async (req, res) => {
 
     const parsed = tryParseJSON(raw, { previsions: [], tendance: raw, alerte: null });
     res.json({ success: true, data: { historique, previsions: parsed.previsions || [], tendance: parsed.tendance, alerte: parsed.alerte } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.analyserFacture = async (req, res) => {
@@ -295,7 +296,7 @@ exports.analyserFacture = async (req, res) => {
 
     const parsed = tryParseJSON(raw, { description: raw, categorie: 'autre', anomalies: [], fiabilite: 0 });
     res.json({ success: true, data: parsed });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── RH IA ────────────────────────────────────────────────────
@@ -313,7 +314,7 @@ exports.scorerCV = async (req, res) => {
 
     const parsed = tryParseJSON(raw, { score: 0, niveau: 'moyen', points_forts: [], points_faibles: [], competences: [], recommandation: 'entretien', resume: raw, questions_entretien: [] });
     res.json({ success: true, data: parsed });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.genererOffre = async (req, res) => {
@@ -328,7 +329,7 @@ exports.genererOffre = async (req, res) => {
     );
 
     res.json({ success: true, data: { offre, titre, contrat, lieu } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.ocrJustificatif = async (req, res) => {
@@ -376,5 +377,5 @@ exports.resumerEntretien = async (req, res) => {
       motivation: 3, recommandation: 'deuxieme_entretien', justification: '', prochaines_etapes: []
     });
     res.json({ success: true, data: parsed });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

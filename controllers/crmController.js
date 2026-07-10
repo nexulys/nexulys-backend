@@ -1,6 +1,7 @@
 const Prospect = require('../models/Prospect');
 const { sendSlack } = require('../utils/slack');
 const Company = require('../models/Company');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getProspects = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ exports.getProspects = async (req, res) => {
       valeur: prospects.filter(p => p.statut === statut).reduce((s, p) => s + p.valeurEstimee, 0)
     }));
     res.json({ success: true, data: prospects, pipeline, count: prospects.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createProspect = async (req, res) => {
@@ -25,7 +26,7 @@ exports.createProspect = async (req, res) => {
       await sendSlack(company.slackWebhookUrl, `🎯 Nouveau prospect CRM : *${prospect.nom}* (${prospect.entreprise || '—'}) — ${prospect.valeurEstimee || 0} €`);
     }
     res.status(201).json({ success: true, data: prospect });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateProspect = async (req, res) => {
@@ -43,7 +44,7 @@ exports.updateProspect = async (req, res) => {
       }
     }
     res.json({ success: true, data: prospect });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteProspect = async (req, res) => {
@@ -51,7 +52,7 @@ exports.deleteProspect = async (req, res) => {
     const prospect = await Prospect.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!prospect) return res.status(404).json({ success: false, message: 'Prospect introuvable' });
     res.json({ success: true, message: 'Prospect supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getKPIs = async (req, res) => {
@@ -63,5 +64,5 @@ exports.getKPIs = async (req, res) => {
     const tauxConversion = total > 0 ? Math.round(gagnes.length / total * 100) : 0;
     const valeurPipeline = enCours.reduce((s, p) => s + p.valeurEstimee * p.probabilite / 100, 0);
     res.json({ success: true, data: { total, gagnes: gagnes.length, tauxConversion, valeurPipeline: Math.round(valeurPipeline), enCours: enCours.length } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

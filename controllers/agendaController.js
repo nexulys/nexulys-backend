@@ -1,4 +1,5 @@
 const Agenda = require('../models/Agenda');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getEvenements = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ exports.getEvenements = async (req, res) => {
     }
     const evenements = await Agenda.find(filter).sort({ dateDebut: 1 });
     res.json({ success: true, data: evenements, count: evenements.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createEvenement = async (req, res) => {
@@ -22,7 +23,7 @@ exports.createEvenement = async (req, res) => {
       createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: evenement });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateEvenement = async (req, res) => {
@@ -34,7 +35,7 @@ exports.updateEvenement = async (req, res) => {
     );
     if (!evenement) return res.status(404).json({ success: false, message: 'Événement introuvable' });
     res.json({ success: true, data: evenement });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteEvenement = async (req, res) => {
@@ -42,7 +43,7 @@ exports.deleteEvenement = async (req, res) => {
     const evenement = await Agenda.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!evenement) return res.status(404).json({ success: false, message: 'Événement introuvable' });
     res.json({ success: true, message: 'Événement supprimé' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getEcheancesFiscales = async (req, res) => {
@@ -124,5 +125,5 @@ exports.getEcheancesFiscales = async (req, res) => {
     echeances.sort((a, b) => a.date - b.date);
 
     res.json({ success: true, data: echeances, count: echeances.length, annee });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

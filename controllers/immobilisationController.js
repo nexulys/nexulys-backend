@@ -1,4 +1,5 @@
 const Immobilisation = require('../models/Immobilisation');
+const { sendError } = require('../utils/errorResponse');
 
 function computeAmortissement(immo) {
   const { valeurAcquisition, valeurResiduelle, dureeAmortissement, dateAcquisition } = immo;
@@ -29,7 +30,7 @@ exports.getImmobilisations = async (req, res) => {
       ...computeAmortissement(immo)
     }));
     res.json({ success: true, data, count: data.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createImmobilisation = async (req, res) => {
@@ -40,7 +41,7 @@ exports.createImmobilisation = async (req, res) => {
       createdBy: req.user.id
     });
     res.status(201).json({ success: true, data: { ...immo.toObject(), ...computeAmortissement(immo) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateImmobilisation = async (req, res) => {
@@ -52,7 +53,7 @@ exports.updateImmobilisation = async (req, res) => {
     );
     if (!immo) return res.status(404).json({ success: false, message: 'Immobilisation introuvable' });
     res.json({ success: true, data: { ...immo.toObject(), ...computeAmortissement(immo) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteImmobilisation = async (req, res) => {
@@ -65,7 +66,7 @@ exports.deleteImmobilisation = async (req, res) => {
     );
     if (!immo) return res.status(404).json({ success: false, message: 'Immobilisation introuvable' });
     res.json({ success: true, message: 'Immobilisation mise au rebut' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getAmortissements = async (req, res) => {
@@ -94,5 +95,5 @@ exports.getAmortissements = async (req, res) => {
     }
 
     res.json({ success: true, data: { immobilisation: immo, tableau } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

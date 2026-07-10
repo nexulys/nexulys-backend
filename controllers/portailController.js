@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const ClientPortal = require('../models/ClientPortal');
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
+const { sendError } = require('../utils/errorResponse');
 
 exports.createPortal = async (req, res) => {
   try {
@@ -12,7 +13,7 @@ exports.createPortal = async (req, res) => {
     const portal = await ClientPortal.create({ company: req.user.company, clientNom, clientEmail, token, expiresAt });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
     res.status(201).json({ success: true, data: { ...portal.toObject(), url: `${appUrl}/portail.html?token=${token}` } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.listPortals = async (req, res) => {
@@ -21,7 +22,7 @@ exports.listPortals = async (req, res) => {
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
     const data = list.map(p => ({ ...p.toObject(), url: `${appUrl}/portail.html?token=${p.token}` }));
     res.json({ success: true, data });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.viewPortal = async (req, res) => {
@@ -45,7 +46,7 @@ exports.viewPortal = async (req, res) => {
         expiresAt: portal.expiresAt
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.payerFacture = async (req, res) => {
@@ -81,5 +82,5 @@ exports.payerFacture = async (req, res) => {
     });
 
     res.json({ success: true, data: { url: session.url } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

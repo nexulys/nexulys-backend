@@ -8,6 +8,7 @@ const { calculerTVA } = require('../utils/tvaCalculator');
 const { sendMail } = require('../utils/mailer');
 const { sendSlack } = require('../utils/slack');
 const { logAction } = require('../utils/auditLogger');
+const { sendError } = require('../utils/errorResponse');
 
 exports.createInvoice = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ exports.createInvoice = async (req, res) => {
     });
     logAction(req, { action: 'CREATE_INVOICE', entity: 'Invoice', entityId: invoice._id, details: invoice.numero });
     res.status(201).json({ success: true, data: invoice });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getInvoices = async (req, res) => {
@@ -38,7 +39,7 @@ exports.getInvoices = async (req, res) => {
       Invoice.countDocuments(filter)
     ]);
     res.json({ success: true, data: invoices, pagination: { page: +page, limit: +limit, total } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getInvoice = async (req, res) => {
@@ -46,7 +47,7 @@ exports.getInvoice = async (req, res) => {
     const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
     if (!invoice) return res.status(404).json({ success: false, message: 'Facture introuvable' });
     res.json({ success: true, data: invoice });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateInvoice = async (req, res) => {
@@ -64,7 +65,7 @@ exports.updateInvoice = async (req, res) => {
       logAction(req, { action: 'MARK_PAID_INVOICE', entity: 'Invoice', entityId: invoice._id, details: invoice.numero });
     }
     res.json({ success: true, data: invoice });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.deleteInvoice = async (req, res) => {
@@ -72,14 +73,14 @@ exports.deleteInvoice = async (req, res) => {
     await Invoice.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     logAction(req, { action: 'DELETE_INVOICE', entity: 'Invoice', entityId: req.params.id, details: req.params.id });
     res.json({ success: true, message: 'Facture supprimée' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.createExpense = async (req, res) => {
   try {
     const expense = await Expense.create({ ...req.body, company: req.user.company, createdBy: req.user.id });
     res.status(201).json({ success: true, data: expense });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getExpenses = async (req, res) => {
@@ -95,7 +96,7 @@ exports.getExpenses = async (req, res) => {
     const expenses = await Expense.find(filter).sort({ date: -1 });
     const totalMontant = expenses.reduce((s, e) => s + e.montant, 0);
     res.json({ success: true, data: expenses, totalMontant });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getBilanComptable = async (req, res) => {
@@ -142,7 +143,7 @@ exports.getBilanComptable = async (req, res) => {
         }
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getCompteResultat = async (req, res) => {
@@ -201,7 +202,7 @@ exports.getCompteResultat = async (req, res) => {
         }
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getBilan = async (req, res) => {
@@ -254,7 +255,7 @@ exports.getBilan = async (req, res) => {
         mensuel
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.relancerFacture = async (req, res) => {
@@ -298,7 +299,7 @@ exports.relancerFacture = async (req, res) => {
     }
 
     res.json({ success: true, message: clientEmail ? `Relance envoyée à ${clientEmail}` : 'Relance enregistrée (pas d\'email client)', data: { type, joursRetard } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getScoresClients = async (req, res) => {
@@ -326,7 +327,7 @@ exports.getScoresClients = async (req, res) => {
     }).sort((a, b) => a.score - b.score);
 
     res.json({ success: true, data: scores });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.approuverDepense = async (req, res) => {
@@ -343,7 +344,7 @@ exports.approuverDepense = async (req, res) => {
       await sendSlack(company.slackWebhookUrl, `✅ Dépense approuvée : ${exp.titre} — ${exp.montant.toFixed(2)} €`);
     }
     res.json({ success: true, data: exp });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.rejeterDepense = async (req, res) => {
@@ -360,7 +361,7 @@ exports.rejeterDepense = async (req, res) => {
       await sendSlack(company.slackWebhookUrl, `❌ Dépense rejetée : ${exp.titre} — ${exp.montant.toFixed(2)} €`);
     }
     res.json({ success: true, data: exp });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateSettings = async (req, res) => {
@@ -371,14 +372,14 @@ exports.updateSettings = async (req, res) => {
     if (approvalThreshold !== undefined) update.approvalThreshold = +approvalThreshold;
     const company = await Company.findByIdAndUpdate(req.user.company, update, { new: true });
     res.json({ success: true, data: company });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getSettings = async (req, res) => {
   try {
     const company = await Company.findById(req.user.company).select('slackWebhookUrl approvalThreshold nom siret adresse email telephone');
     res.json({ success: true, data: company });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Export FEC (Fichier d'Écritures Comptables) ──
@@ -421,7 +422,7 @@ exports.exportFEC = async (req, res) => {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(content);
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Déclaration TVA CA3 ──
@@ -452,7 +453,7 @@ exports.getDeclarationTVA = async (req, res) => {
         nbFactures: invoices.length
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Cash flow prévisionnel ──
@@ -534,7 +535,7 @@ exports.getCashflow = async (req, res) => {
     const soldeActuel = Math.round((totalEntrees - totalSorties) * 100) / 100;
 
     res.json({ success: true, data: { historique, previsions, soldeActuel } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Calcul IS (Impôt sur les Sociétés) ──
@@ -590,7 +591,7 @@ exports.getCalculIS = async (req, res) => {
         acomptes
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.getDSN = async (req, res) => {
@@ -620,7 +621,7 @@ exports.getDSN = async (req, res) => {
         payslips: payslipsDuMois
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 // ── Alertes proactives IA ──
@@ -664,5 +665,5 @@ exports.getAlertesProactives = async (req, res) => {
     } catch {}
 
     res.json({ success: true, data: alertes, count: alertes.length });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };

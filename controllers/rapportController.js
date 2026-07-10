@@ -5,6 +5,7 @@ const Task = require('../models/Task');
 const Product = require('../models/Product');
 const Company = require('../models/Company');
 const { sendMail } = require('../utils/mailer');
+const { sendError } = require('../utils/errorResponse');
 
 exports.getRapportMensuel = async (req, res) => {
   try {
@@ -55,7 +56,7 @@ exports.getRapportMensuel = async (req, res) => {
         chargesParCat
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
 
 exports.envoyerRapportEmail = async (req, res) => {
@@ -109,5 +110,5 @@ exports.envoyerRapportEmail = async (req, res) => {
 
     await sendMail({ to: dest, subject: `Rapport mensuel Novexa — ${moisLabel}`, html });
     res.json({ success: true, message: `Rapport envoyé à ${dest}` });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { sendError(res, err); }
 };
