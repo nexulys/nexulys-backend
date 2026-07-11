@@ -258,6 +258,21 @@ exports.getBilan = async (req, res) => {
   } catch (err) { sendError(res, err); }
 };
 
+// Génère un lien de paiement en ligne (Stripe) pour une facture
+exports.lienPaiement = async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
+    if (!invoice) return res.status(404).json({ success: false, message: 'Facture introuvable' });
+    if (invoice.statut === 'payee') return res.status(400).json({ success: false, message: 'Facture déjà payée' });
+    const { createInvoicePaymentLink } = require('../services/stripeService');
+    const url = await createInvoicePaymentLink({
+      numero: invoice.numero, montantTTC: invoice.montantTTC, clientEmail: invoice.client?.email
+    });
+    if (!url) return res.status(503).json({ success: false, message: 'Paiement en ligne non configuré (clé Stripe manquante).' });
+    res.json({ success: true, data: { url } });
+  } catch (err) { sendError(res, err); }
+};
+
 // Relance en masse toutes les factures impayées échues de l'entreprise
 exports.relancerImpayees = async (req, res) => {
   try {

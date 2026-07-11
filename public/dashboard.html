@@ -3811,7 +3811,7 @@
           + '<td style="color:var(--text-dim);">' + tva + '</td>'
           + '<td><span class="badge ' + cls + '">' + label + '</span></td>'
           + '<td style="color:var(--text-dim);">' + date + '</td>'
-          + '<td>' + paidBtn + relanceBtn + '<button class="btn-sm" onclick="downloadFacturePDF(\'' + inv._id + '\')" style="margin-right:4px;" title="Télécharger PDF">📥 PDF</button><button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
+          + '<td>' + paidBtn + relanceBtn + '<button class="btn-sm" onclick="downloadFacturePDF(\'' + inv._id + '\')" style="margin-right:4px;" title="Télécharger PDF">📥 PDF</button><button class="btn-sm" onclick="downloadFacturX(\'' + inv._id + '\')" style="margin-right:4px;" title="Facture électronique (Factur-X)">🇪🇺 XML</button><button class="btn-sm" onclick="genererLienPaiement(\'' + inv._id + '\')" style="margin-right:4px;" title="Lien de paiement en ligne">💳</button><button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
           + '</tr>';
       }).join('');
       if (pagDiv) {
@@ -5104,6 +5104,32 @@
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a'); a.href = url; a.download = 'facture.pdf'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
       } catch(e) { showToast('Erreur téléchargement PDF', 'error'); }
+    }
+
+    // ── Facture électronique (Factur-X XML) ──
+    async function downloadFacturX(id) {
+      showToast('Génération Factur-X...', 'info');
+      try {
+        var response = await fetch(API + '/pdf/facture/' + id + '/factur-x', { headers: apiHeaders() });
+        if (!response.ok) { var d = await response.json(); showToast(d.message || 'Erreur Factur-X', 'error'); return; }
+        var blob = await response.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'factur-x.xml'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      } catch(e) { showToast('Erreur Factur-X', 'error'); }
+    }
+
+    // ── Lien de paiement en ligne (Stripe) ──
+    async function genererLienPaiement(id) {
+      showToast('Création du lien de paiement...', 'info');
+      var res = await fetch(API + '/comptabilite/factures/' + id + '/lien-paiement', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success && data.data && data.data.url) {
+        try { await navigator.clipboard.writeText(data.data.url); } catch(e) {}
+        showToast('Lien de paiement copié dans le presse-papier', 'success');
+        window.open(data.data.url, '_blank');
+      } else {
+        showToast(data.message || 'Paiement en ligne indisponible', 'error');
+      }
     }
 
     // ── CSV Export ──

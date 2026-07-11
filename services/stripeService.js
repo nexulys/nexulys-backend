@@ -103,5 +103,22 @@ exports.constructWebhookEvent = (payload, sig, secret) => {
   return stripe.webhooks.constructEvent(payload, sig, secret);
 };
 
+// Crée un lien de paiement Stripe pour une facture (montant TTC en centimes).
+// Retourne null si Stripe n'est pas configuré (dégradation propre).
+exports.createInvoicePaymentLink = async ({ numero, montantTTC, clientEmail }) => {
+  const stripe = getStripe();
+  if (!stripe) return null;
+  const price = await stripe.prices.create({
+    unit_amount: Math.round((Number(montantTTC) || 0) * 100),
+    currency: 'eur',
+    product_data: { name: `Facture ${numero}` }
+  });
+  const link = await stripe.paymentLinks.create({
+    line_items: [{ price: price.id, quantity: 1 }],
+    metadata: { facture: numero, clientEmail: clientEmail || '' }
+  });
+  return link.url;
+};
+
 exports.NOVEXA_PRO_PRICE = NOVEXA_PRO_PRICE;
 
