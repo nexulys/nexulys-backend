@@ -9,6 +9,7 @@ router.post('/rh-assistant', c.hrAssistant);
 router.get('/prevoir-reapprovisionnement', c.predictReorder);
 router.post('/assigner-tache', c.autoAssignTask);
 router.get('/dashboard-insights', c.dashboardInsights);
+router.get('/copilote', c.copiloteProactif);
 
 // Comptabilité IA
 router.get('/anomalies-comptables', c.detectAnomalies);

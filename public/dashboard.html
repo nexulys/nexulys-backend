@@ -989,6 +989,17 @@
           </div>
         </div>
 
+        <!-- Copilote IA proactif -->
+        <div id="copilote-card" class="card" style="margin-bottom:16px;display:none;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="card-title">🤖 Copilote IA — vos priorités du moment</div>
+            <button class="btn-sm" onclick="loadCopilote()" title="Rafraîchir">↻</button>
+          </div>
+          <div class="card-body">
+            <div id="copilote-content" style="font-size:14px;line-height:1.7;color:var(--text-muted);white-space:pre-wrap;">Analyse en cours...</div>
+          </div>
+        </div>
+
         <!-- KPI Cards -->
         <div class="kpi-grid">
           <div class="kpi-card">
@@ -3338,6 +3349,21 @@
       document.querySelector('.page-title').textContent = SECTION_TITLES[name] || name;
       if (window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
       if (SECTION_LOADERS[name]) SECTION_LOADERS[name]();
+    }
+
+    // ── Copilote IA proactif ──
+    async function loadCopilote() {
+      var card = document.getElementById('copilote-card');
+      var content = document.getElementById('copilote-content');
+      if (!card || !content) return;
+      card.style.display = '';
+      content.textContent = 'Analyse en cours...';
+      var res = await apiFetch('/ai/copilote');
+      if (res && res.data && res.data.analyse) {
+        content.textContent = res.data.analyse;
+      } else {
+        card.style.display = 'none';
+      }
     }
 
     // ── Score de santé entreprise ──
@@ -6859,6 +6885,7 @@
       // Load all data
       loadKPIs();
       loadHealthScore();
+      loadCopilote();
       loadInvoices();
       loadTasks();
       loadInsights();

@@ -379,3 +379,50 @@ exports.resumerEntretien = async (req, res) => {
     res.json({ success: true, data: parsed });
   } catch (err) { sendError(res, err); }
 };
+
+// ── Copilote IA proactif : analyse les données et recommande des actions ──
+exports.copiloteProactif = async (req, res) => {
+  try {
+    const company = req.user.company;
+    const now = new Date();
+    const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [caPayees, impayees, enRetard, depensesMois, stockAlertes] = await Promise.all([
+      Invoice.find({ company, statut: 'payee', updatedAt: { $gte: debutMois } }),
+      Invoice.find({ company, statut: { $in: ['envoyee', 'en_retard'] } }),
+      Invoice.find({ company, statut: 'en_retard' }),
+      Expense.find({ company, createdAt: { $gte: debutMois } }),
+      Product.countDocuments({ company, actif: true, alerteActive: true })
+    ]);
+
+    const ca = caPayees.reduce((s, i) => s + (i.montantTTC || 0), 0);
+    const impaye = impayees.reduce((s, i) => s + (i.montantTTC || 0), 0);
+    const retard = enRetard.reduce((s, i) => s + (i.montantTTC || 0), 0);
+    const depenses = depensesMois.reduce((s, e) => s + (e.montant || 0), 0);
+    const tresorerie = ca - depenses;
+
+    const contexte = `Données de l'entreprise ce mois-ci :
+- Chiffre d'affaires encaissé : ${ca.toFixed(0)} €
+- Dépenses : ${depenses.toFixed(0)} €
+- Trésorerie du mois (CA - dépenses) : ${tresorerie.toFixed(0)} €
+- Factures impayées : ${impayees.length} pour ${impaye.toFixed(0)} €
+- Dont en retard : ${enRetard.length} pour ${retard.toFixed(0)} €
+- Produits en alerte de stock : ${stockAlertes}`;
+
+    const analyse = await aiChat(
+      "Tu es le directeur financier virtuel d'une PME française. À partir des données fournies, " +
+      "donne une analyse courte et concrète : 3 à 4 recommandations d'actions prioritaires, chiffrées, " +
+      "en français, au format liste à puces. Sois direct et actionnable, pas de blabla.",
+      contexte,
+      500
+    );
+
+    res.json({
+      success: true,
+      data: {
+        analyse,
+        chiffres: { ca, depenses, tresorerie, impaye, nbImpayees: impayees.length, retard, nbEnRetard: enRetard.length, stockAlertes }
+      }
+    });
+  } catch (err) { sendError(res, err); }
+};

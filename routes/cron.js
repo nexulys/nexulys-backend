@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const { relancerToutesEntreprises } = require('../services/relanceService');
+const { envoyerRapportsMensuelsAuto } = require('../services/rapportService');
 const { sendError } = require('../utils/errorResponse');
 const logger = require('../utils/logger');
 
@@ -17,6 +18,15 @@ router.post('/relances', cronAuth, async (req, res) => {
   try {
     const result = await relancerToutesEntreprises();
     logger.info('Cron relances exécuté', result);
+    res.json({ success: true, data: result });
+  } catch (err) { sendError(res, err); }
+});
+
+// POST /api/cron/rapports — rapport mensuel automatique (toutes entreprises)
+router.post('/rapports', cronAuth, async (req, res) => {
+  try {
+    const result = await envoyerRapportsMensuelsAuto();
+    logger.info('Cron rapports exécuté', result);
     res.json({ success: true, data: result });
   } catch (err) { sendError(res, err); }
 });
