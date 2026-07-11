@@ -476,6 +476,54 @@
       color: var(--text-dim);
       margin-bottom: 18px;
     }
+    .billing-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin: 0 auto 40px;
+      padding: 5px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      width: fit-content;
+    }
+    .billing-opt {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+    .billing-opt.active {
+      background: var(--gradient);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    }
+    .billing-save {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(74,222,128,0.15);
+      color: #4ade80;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .billing-opt.active .billing-save { background: rgba(255,255,255,0.2); color: #fff; }
+    .price-annual-note {
+      font-size: 12px;
+      color: #4ade80;
+      font-weight: 600;
+      min-height: 16px;
+      margin-top: -14px;
+      margin-bottom: 18px;
+    }
     .pricing-card {
       background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(59,130,246,0.08));
       border: 1px solid rgba(99,102,241,0.35);
@@ -945,12 +993,19 @@
         <h2 class="section-title">Un plan pour chaque étape</h2>
         <p class="section-sub">Commencez petit, évoluez sans friction. Essai gratuit 14 jours, sans carte bancaire.</p>
       </div>
+
+      <div class="billing-toggle fade-in">
+        <button id="bt-mensuel" class="billing-opt active" onclick="setBilling('mensuel')">Mensuel</button>
+        <button id="bt-annuel" class="billing-opt" onclick="setBilling('annuel')">Annuel <span class="billing-save">2 mois offerts</span></button>
+      </div>
+
       <div class="pricing-grid fade-in">
 
         <div class="pricing-card">
           <div class="pricing-name">Starter</div>
           <div class="pricing-target">Indépendants &amp; micro-entreprises</div>
-          <div class="pricing-price">39 €<span> / mois</span></div>
+          <div class="pricing-price"><span class="price-value" data-monthly="39">39 €</span><span> / mois</span></div>
+          <div class="price-annual-note" data-monthly="39"></div>
           <ul class="pricing-features">
             <li>Facturation &amp; devis illimités</li>
             <li>Suivi des dépenses</li>
@@ -966,7 +1021,8 @@
           <div class="pricing-badge">★ LE PLUS POPULAIRE</div>
           <div class="pricing-name">Business</div>
           <div class="pricing-target">PME en croissance</div>
-          <div class="pricing-price">89 €<span> / mois</span></div>
+          <div class="pricing-price"><span class="price-value" data-monthly="89">89 €</span><span> / mois</span></div>
+          <div class="price-annual-note" data-monthly="89"></div>
           <ul class="pricing-features">
             <li><strong>Tout Starter, plus :</strong></li>
             <li>RH &amp; fiches de paie françaises</li>
@@ -982,7 +1038,8 @@
         <div class="pricing-card">
           <div class="pricing-name">Pro</div>
           <div class="pricing-target">Entreprises établies</div>
-          <div class="pricing-price">199 €<span> / mois</span></div>
+          <div class="pricing-price"><span class="price-value" data-monthly="199">199 €</span><span> / mois</span></div>
+          <div class="price-annual-note" data-monthly="199"></div>
           <ul class="pricing-features">
             <li><strong>Tout Business, plus :</strong></li>
             <li>Assistant IA &amp; copilote proactif</li>
@@ -1135,6 +1192,23 @@
         nav.style.boxShadow = 'none';
       }
     });
+
+    // ── Switch de facturation mensuel / annuel (2 mois offerts) ──
+    function setBilling(mode) {
+      var annuel = mode === 'annuel';
+      document.getElementById('bt-mensuel').classList.toggle('active', !annuel);
+      document.getElementById('bt-annuel').classList.toggle('active', annuel);
+      document.querySelectorAll('.price-value').forEach(function(el) {
+        var m = parseInt(el.getAttribute('data-monthly'), 10);
+        // annuel : 10 mois payés pour 12 (2 offerts) -> mensualité équivalente
+        var affiche = annuel ? Math.round(m * 10 / 12) : m;
+        el.textContent = affiche + ' €';
+      });
+      document.querySelectorAll('.price-annual-note').forEach(function(el) {
+        var m = parseInt(el.getAttribute('data-monthly'), 10);
+        el.textContent = annuel ? ('Facturé ' + (m * 10) + ' €/an · 2 mois offerts') : '';
+      });
+    }
   </script>
 </body>
 </html>
