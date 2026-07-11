@@ -78,8 +78,10 @@ exports.login = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  const user = await User.findById(req.user.id).populate('company');
-  res.json({ success: true, data: user });
+  try {
+    const user = await User.findById(req.user.id).populate('company');
+    res.json({ success: true, data: user });
+  } catch (err) { sendError(res, err); }
 };
 
 exports.updateProfile = async (req, res) => {

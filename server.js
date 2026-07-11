@@ -126,14 +126,20 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-// Error handler
+// Error handler — filet de sécurité pour toute erreur non capturée par un contrôleur
+const { sendError } = require('./utils/errorResponse');
 app.use(sentryError);
 app.use((err, req, res, next) => {
   logger.error(err.message, { stack: err.stack });
-  res.status(err.status || 500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' ? 'Erreur interne.' : err.message
-  });
+  // Erreurs avec statut explicite (ex. payload trop volumineux) : on le respecte
+  if (err.status && err.status !== 500) {
+    return res.status(err.status).json({
+      success: false,
+      message: process.env.NODE_ENV === 'production' ? 'Requête invalide.' : err.message
+    });
+  }
+  // Sinon on applique le même mapping que les contrôleurs (ValidationError -> 400, etc.)
+  sendError(res, err);
 });
 
 // En test, on n'ouvre pas de port réseau (supertest utilise l'objet app directement)

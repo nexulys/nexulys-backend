@@ -16,7 +16,7 @@ exports.login = async (req, res) => {
     return res.status(401).json({ success: false, message: 'Mot de passe incorrect' });
   const token = jwt.sign(
     { superAdmin: true, iat: Math.floor(Date.now() / 1000) },
-    process.env.JWT_SECRET || 'novexa_secret',
+    process.env.JWT_SECRET,
     { expiresIn: '8h' }
   );
   res.json({ success: true, token });
