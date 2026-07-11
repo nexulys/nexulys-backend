@@ -12,32 +12,63 @@ exports.getPlans = async (req, res) => {
     success: true,
     data: {
       plateforme: 'Novexa by Nexulys',
-      plans: [{
-        nom: 'Novexa Pro',
-        prix: 2500,
-        devise: 'EUR',
-        facturation: 'mensuel',
-        essaiGratuit: '14 jours',
-        fonctionnalites: [
-          'Comptabilité IA complète (factures, dépenses, bilan, TVA automatique)',
-          'Ressources Humaines IA (employés, contrats, congés, fiches de paie)',
-          'Gestion des stocks intelligente (alertes, mouvements, fournisseurs)',
-          'Gestion des tâches & projets avec IA',
-          'Automatisations métier illimitées',
-          'Assistant IA intégré (analyse financière, prédictions stock, conseils RH)',
-          'Dashboard insights IA en temps réel',
-          'Utilisateurs illimités',
-          'Support prioritaire 24/7',
-          'Mises à jour incluses',
-          'API REST complète'
-        ],
-        limites: {
-          utilisateurs: 'illimité',
-          factures: 'illimité',
-          employes: 'illimité',
-          stockage: '100 Go'
+      essaiGratuit: '14 jours',
+      plans: [
+        {
+          id: 'starter',
+          nom: 'Starter',
+          prix: 29,
+          devise: 'EUR',
+          facturation: 'mensuel',
+          cible: 'Indépendants & micro-entreprises',
+          fonctionnalites: [
+            'Facturation & devis illimités',
+            'Suivi des dépenses',
+            'TVA automatique',
+            'Tableau de bord & trésorerie',
+            'Export comptable (FEC)',
+            '1 utilisateur'
+          ],
+          limites: { utilisateurs: 1, employes: 0 }
+        },
+        {
+          id: 'business',
+          nom: 'Business',
+          prix: 79,
+          devise: 'EUR',
+          facturation: 'mensuel',
+          populaire: true,
+          cible: 'PME en croissance',
+          fonctionnalites: [
+            'Tout Starter, plus :',
+            'RH & fiches de paie françaises',
+            'Gestion des stocks & fournisseurs',
+            'CRM & pipeline commercial',
+            'Projets, tâches & notes de frais',
+            'Relances de paiement automatiques',
+            "Jusqu'à 10 utilisateurs"
+          ],
+          limites: { utilisateurs: 10, employes: 25 }
+        },
+        {
+          id: 'pro',
+          nom: 'Pro',
+          prix: 199,
+          devise: 'EUR',
+          facturation: 'mensuel',
+          cible: 'Entreprises établies',
+          fonctionnalites: [
+            'Tout Business, plus :',
+            'Assistant IA & copilote proactif',
+            'Facturation électronique (Factur-X)',
+            'Rôles & permissions avancés',
+            'Multi-utilisateurs illimités',
+            'API & intégrations',
+            'Support prioritaire 24/7'
+          ],
+          limites: { utilisateurs: 'illimité', employes: 'illimité' }
         }
-      }]
+      ]
     }
   });
 };

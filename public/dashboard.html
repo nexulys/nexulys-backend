@@ -975,6 +975,20 @@
         <!-- Alertes proactives -->
         <div id="alertes-container" style="margin-bottom:16px;display:none;"></div>
 
+        <!-- Score de santé entreprise -->
+        <div id="health-card" class="card" style="margin-bottom:16px;display:none;">
+          <div class="card-body" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+            <div style="text-align:center;min-width:120px;">
+              <div id="health-score" style="font-size:44px;font-weight:900;line-height:1;letter-spacing:-1px;">—</div>
+              <div id="health-niveau" style="font-size:13px;font-weight:700;margin-top:4px;">Santé</div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Santé globale de votre entreprise</div>
+              <div id="health-details" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- KPI Cards -->
         <div class="kpi-grid">
           <div class="kpi-card">
@@ -2232,6 +2246,37 @@
 
         </div>
 
+        <!-- Identité entreprise + recherche SIRENE -->
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header">
+            <div class="card-title">🏢 Identité de l'entreprise</div>
+            <div style="font-size:12px;color:var(--text-dim);">Ces informations apparaissent sur vos factures et bulletins de paie</div>
+          </div>
+          <div class="card-body">
+            <div class="settings-field">
+              <label class="settings-label">🔍 Recherche automatique (SIRET ou nom d'entreprise)</label>
+              <div style="display:flex;gap:8px;">
+                <input class="settings-input" id="sirene-q" placeholder="Ex: 12345678900012 ou Nexulys" style="flex:1;" />
+                <button class="btn-primary" onclick="rechercherSirene()" style="white-space:nowrap;">Rechercher</button>
+              </div>
+              <div id="sirene-results" style="display:none;flex-direction:column;gap:6px;margin-top:8px;"></div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Remplit automatiquement les champs via le répertoire officiel des entreprises.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;">
+              <div class="settings-field"><label class="settings-label">Raison sociale</label><input class="settings-input" id="co-nom" /></div>
+              <div class="settings-field"><label class="settings-label">SIRET</label><input class="settings-input" id="co-siret" /></div>
+              <div class="settings-field"><label class="settings-label">Code APE / NAF</label><input class="settings-input" id="co-ape" /></div>
+              <div class="settings-field"><label class="settings-label">N° URSSAF</label><input class="settings-input" id="co-urssaf" /></div>
+              <div class="settings-field"><label class="settings-label">Adresse</label><input class="settings-input" id="co-adresse" /></div>
+              <div class="settings-field"><label class="settings-label">Code postal</label><input class="settings-input" id="co-cp" /></div>
+              <div class="settings-field"><label class="settings-label">Ville</label><input class="settings-input" id="co-ville" /></div>
+              <div class="settings-field"><label class="settings-label">Convention collective</label><input class="settings-input" id="co-convention" /></div>
+              <div class="settings-field"><label class="settings-label">IBAN (virements sortants)</label><input class="settings-input" id="co-iban" style="font-family:monospace;" /></div>
+            </div>
+            <button class="btn-primary" style="margin-top:8px;" onclick="saveCompanyIdentity()">Sauvegarder l'identité</button>
+          </div>
+        </div>
+
         <!-- Portail client -->
         <div class="card" style="margin-top:20px;">
           <div class="card-header">
@@ -3299,6 +3344,29 @@
       if (SECTION_LOADERS[name]) SECTION_LOADERS[name]();
     }
 
+    // ── Score de santé entreprise ──
+    async function loadHealthScore() {
+      var res = await apiFetch('/dashboard/sante');
+      if (!res || !res.data) return;
+      var d = res.data;
+      var card = document.getElementById('health-card');
+      if (!card) return;
+      card.style.display = '';
+      var color = d.score >= 80 ? '#4ade80' : d.score >= 60 ? '#60a5fa' : d.score >= 40 ? '#fbbf24' : '#f87171';
+      var scoreEl = document.getElementById('health-score');
+      scoreEl.textContent = d.score;
+      scoreEl.style.color = color;
+      var nivEl = document.getElementById('health-niveau');
+      nivEl.textContent = d.niveau;
+      nivEl.style.color = color;
+      document.getElementById('health-details').innerHTML = (d.details || []).map(function(x) {
+        var ok = (x.impact || 0) === 0;
+        var c = ok ? '#4ade80' : '#f87171';
+        return '<span style="font-size:11px;padding:4px 10px;border-radius:100px;background:' + (ok ? 'rgba(74,222,128,.1)' : 'rgba(248,113,113,.1)') + ';color:' + c + ';border:1px solid ' + (ok ? 'rgba(74,222,128,.25)' : 'rgba(248,113,113,.25)') + ';">'
+          + (ok ? '✓ ' : '⚠ ') + x.critere + ' : ' + x.statut + '</span>';
+      }).join('');
+    }
+
     // ── KPI Cards ──
     async function loadKPIs() {
       try {
@@ -4054,6 +4122,62 @@
       else showToast(data.message || 'Erreur', 'error');
     }
 
+    // ── Identité entreprise + recherche SIRENE ──
+    async function rechercherSirene() {
+      var q = document.getElementById('sirene-q').value.trim();
+      var box = document.getElementById('sirene-results');
+      if (q.length < 3) { showToast('Saisissez au moins 3 caractères', 'error'); return; }
+      box.style.display = 'flex';
+      box.innerHTML = '<div style="font-size:13px;color:var(--text-dim);">Recherche...</div>';
+      var res = await apiFetch('/entreprise/recherche?q=' + encodeURIComponent(q));
+      var list = (res && res.data) ? res.data : [];
+      if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--text-dim);">Aucun résultat.</div>'; return; }
+      box.innerHTML = list.map(function(e, i) {
+        return '<div onclick="remplirSirene(' + i + ')" style="cursor:pointer;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;">'
+          + '<div style="font-weight:600;font-size:13px;">' + (e.nom || '—') + '</div>'
+          + '<div style="font-size:11px;color:var(--text-dim);">SIRET ' + (e.siret || '—') + ' · ' + (e.codePostal || '') + ' ' + (e.ville || '') + '</div></div>';
+      }).join('');
+      window._sireneResults = list;
+    }
+
+    function remplirSirene(i) {
+      var e = (window._sireneResults || [])[i];
+      if (!e) return;
+      document.getElementById('co-nom').value = e.nom || '';
+      document.getElementById('co-siret').value = e.siret || '';
+      document.getElementById('co-ape').value = e.codeApe || '';
+      document.getElementById('co-adresse').value = e.adresse || '';
+      document.getElementById('co-cp').value = e.codePostal || '';
+      document.getElementById('co-ville').value = e.ville || '';
+      document.getElementById('sirene-results').style.display = 'none';
+      showToast('Informations pré-remplies', 'success');
+    }
+
+    async function saveCompanyIdentity() {
+      var payload = {
+        nom: document.getElementById('co-nom').value.trim(),
+        siret: document.getElementById('co-siret').value.trim(),
+        codeApe: document.getElementById('co-ape').value.trim(),
+        urssaf: document.getElementById('co-urssaf').value.trim(),
+        adresse: document.getElementById('co-adresse').value.trim(),
+        codePostal: document.getElementById('co-cp').value.trim(),
+        ville: document.getElementById('co-ville').value.trim(),
+        conventionCollective: document.getElementById('co-convention').value.trim(),
+        iban: document.getElementById('co-iban').value.trim().replace(/\s/g, '')
+      };
+      var res = await fetch(API + '/comptabilite/settings', { method:'PUT', headers:apiHeaders(), body:JSON.stringify(payload) });
+      var data = await res.json();
+      if (data.success) showToast('Identité entreprise sauvegardée', 'success');
+      else showToast(data.message || 'Erreur', 'error');
+    }
+
+    async function loadCompanyIdentity() {
+      var res = await apiFetch('/comptabilite/settings');
+      var c = (res && res.data) ? res.data : {};
+      var map = { 'co-nom':'nom','co-siret':'siret','co-ape':'codeApe','co-urssaf':'urssaf','co-adresse':'adresse','co-cp':'codePostal','co-ville':'ville','co-convention':'conventionCollective','co-iban':'iban' };
+      Object.keys(map).forEach(function(id) { var el = document.getElementById(id); if (el) el.value = c[map[id]] || ''; });
+    }
+
     function initDocAnnee() {
       var sel = document.getElementById('doc-annee');
       if (!sel || sel.options.length > 0) return;
@@ -4595,6 +4719,7 @@
       document.getElementById('set-nom').value = user.nom || '';
       document.getElementById('set-email').value = user.email || '';
       loadCompanySettings();
+      loadCompanyIdentity();
       loadExpertAccess();
       loadPortails();
       loadEquipe();
@@ -6653,6 +6778,7 @@
 
       // Load all data
       loadKPIs();
+      loadHealthScore();
       loadInvoices();
       loadTasks();
       loadInsights();

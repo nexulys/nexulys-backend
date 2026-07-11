@@ -463,6 +463,19 @@
       max-width: 520px;
       margin: 0 auto;
     }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1080px;
+      margin: 0 auto;
+      align-items: stretch;
+    }
+    .pricing-target {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 18px;
+    }
     .pricing-card {
       background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(59,130,246,0.08));
       border: 1px solid rgba(99,102,241,0.35);
@@ -473,6 +486,23 @@
       overflow: hidden;
       backdrop-filter: blur(20px);
       box-shadow: 0 0 60px rgba(99,102,241,0.15), var(--shadow);
+    }
+    .pricing-grid .pricing-card {
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+    }
+    .pricing-grid .pricing-card .pricing-features { flex: 1; }
+    .pricing-grid .pricing-name { font-size: 24px; }
+    .pricing-grid .pricing-price { font-size: 44px; }
+    .pricing-card-featured {
+      border-color: rgba(99,102,241,0.7);
+      box-shadow: 0 0 80px rgba(99,102,241,0.3), var(--shadow);
+      transform: scale(1.04);
+    }
+    @media (max-width: 900px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 460px; }
+      .pricing-card-featured { transform: none; }
     }
     .pricing-card::before {
       content: '';
@@ -911,33 +941,61 @@
     <div class="container">
       <div class="section-header fade-in">
         <span class="section-tag">Tarifs</span>
-        <h2 class="section-title">Simple, transparent, tout inclus</h2>
-        <p class="section-sub">Un seul plan, toutes les fonctionnalités. Aucune surprise.</p>
+        <h2 class="section-title">Un plan pour chaque étape</h2>
+        <p class="section-sub">Commencez petit, évoluez sans friction. Essai gratuit 14 jours, sans carte bancaire.</p>
       </div>
-      <div class="pricing-wrapper fade-in">
+      <div class="pricing-grid fade-in">
+
         <div class="pricing-card">
-          <div class="pricing-badge">★ NOVEXA PRO</div>
-          <div class="pricing-name">Novexa Pro</div>
-          <div class="pricing-price">2 500 €<span> / mois</span></div>
-          <div class="pricing-trial">✓ Essai gratuit 14 jours — sans engagement</div>
+          <div class="pricing-name">Starter</div>
+          <div class="pricing-target">Indépendants &amp; micro-entreprises</div>
+          <div class="pricing-price">29 €<span> / mois</span></div>
           <ul class="pricing-features">
-            <li>Comptabilité IA complète</li>
-            <li>RH &amp; Fiches de paie</li>
-            <li>Gestion des stocks</li>
-            <li>Tâches &amp; Projets</li>
-            <li>Assistant IA intégré</li>
-            <li>Automatisations illimitées</li>
-            <li>Utilisateurs illimités</li>
-            <li>Support prioritaire 24/7</li>
-            <li>API REST complète</li>
-            <li>Mises à jour incluses</li>
+            <li>Facturation &amp; devis illimités</li>
+            <li>Suivi des dépenses</li>
+            <li>TVA automatique</li>
+            <li>Tableau de bord &amp; trésorerie</li>
+            <li>Export comptable (FEC)</li>
+            <li>1 utilisateur</li>
           </ul>
-          <a href="/login.html" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">
-            Démarrer l'essai gratuit
-          </a>
-          <p class="pricing-note">Aucun engagement — annulez à tout moment</p>
+          <a href="/login.html" class="btn btn-outline btn-lg" style="width:100%;justify-content:center;">Démarrer</a>
         </div>
+
+        <div class="pricing-card pricing-card-featured">
+          <div class="pricing-badge">★ LE PLUS POPULAIRE</div>
+          <div class="pricing-name">Business</div>
+          <div class="pricing-target">PME en croissance</div>
+          <div class="pricing-price">79 €<span> / mois</span></div>
+          <ul class="pricing-features">
+            <li><strong>Tout Starter, plus :</strong></li>
+            <li>RH &amp; fiches de paie françaises</li>
+            <li>Stocks &amp; fournisseurs</li>
+            <li>CRM &amp; pipeline commercial</li>
+            <li>Projets, tâches &amp; notes de frais</li>
+            <li>Relances de paiement automatiques</li>
+            <li>Jusqu'à 10 utilisateurs</li>
+          </ul>
+          <a href="/login.html" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">Essai gratuit 14 jours</a>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-name">Pro</div>
+          <div class="pricing-target">Entreprises établies</div>
+          <div class="pricing-price">199 €<span> / mois</span></div>
+          <ul class="pricing-features">
+            <li><strong>Tout Business, plus :</strong></li>
+            <li>Assistant IA &amp; copilote proactif</li>
+            <li>Facturation électronique (Factur-X)</li>
+            <li>Rôles &amp; permissions avancés</li>
+            <li>Utilisateurs illimités</li>
+            <li>API &amp; intégrations</li>
+            <li>Support prioritaire 24/7</li>
+          </ul>
+          <a href="/login.html" class="btn btn-outline btn-lg" style="width:100%;justify-content:center;">Démarrer</a>
+        </div>
+
       </div>
+      <p class="pricing-note" style="text-align:center;margin-top:24px;">Sans engagement — annulez à tout moment. Prix HT.</p>
     </div>
   </section>
 

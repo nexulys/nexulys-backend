@@ -370,6 +370,10 @@ exports.updateSettings = async (req, res) => {
     const update = {};
     if (slackWebhookUrl !== undefined) update.slackWebhookUrl = slackWebhookUrl;
     if (approvalThreshold !== undefined) update.approvalThreshold = +approvalThreshold;
+    // Identité entreprise (paie + facturation électronique)
+    ['nom', 'siret', 'codeApe', 'urssaf', 'iban', 'conventionCollective',
+      'adresse', 'ville', 'codePostal', 'telephone', 'email', 'siteWeb', 'secteur']
+      .forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     const company = await Company.findByIdAndUpdate(req.user.company, update, { new: true });
     res.json({ success: true, data: company });
   } catch (err) { sendError(res, err); }
@@ -377,7 +381,7 @@ exports.updateSettings = async (req, res) => {
 
 exports.getSettings = async (req, res) => {
   try {
-    const company = await Company.findById(req.user.company).select('slackWebhookUrl approvalThreshold nom siret adresse email telephone');
+    const company = await Company.findById(req.user.company).select('slackWebhookUrl approvalThreshold nom siret codeApe urssaf iban conventionCollective adresse ville codePostal email telephone secteur');
     res.json({ success: true, data: company });
   } catch (err) { sendError(res, err); }
 };

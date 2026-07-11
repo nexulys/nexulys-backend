@@ -120,6 +120,7 @@ app.use('/api/pdf', require('./routes/pdf'));
 app.use('/api/import', require('./routes/import'));
 app.use('/api/contrats-clients', require('./routes/contratsClients'));
 app.use('/api/audit', require('./routes/audit'));
+app.use('/api/entreprise', require('./routes/entreprise'));
 
 // 404 handler
 app.use((req, res) => {
