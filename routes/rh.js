@@ -1,22 +1,26 @@
 const router = require('express').Router();
 const c = require('../controllers/rhController');
 const protect = require('../middleware/auth');
+const roles = require('../middleware/roles');
 const { validateEmployee } = require('../middleware/validate');
 
 router.use(protect);
 
-router.route('/employes').get(c.getEmployees).post(validateEmployee, c.createEmployee);
-router.route('/employes/:id').get(c.getEmployee).put(c.updateEmployee).delete(c.deleteEmployee);
-router.route('/contrats').get(c.getContracts).post(c.createContract);
+// Les données de paie et RH sensibles sont réservées aux rôles de gestion / RH
+const rh = roles('admin', 'manager', 'rh');
+
+router.route('/employes').get(c.getEmployees).post(rh, validateEmployee, c.createEmployee);
+router.route('/employes/:id').get(c.getEmployee).put(rh, c.updateEmployee).delete(rh, c.deleteEmployee);
+router.route('/contrats').get(c.getContracts).post(rh, c.createContract);
 router.route('/conges').get(c.getLeaves).post(c.requestLeave);
-router.put('/conges/:id/statut', c.updateLeaveStatus);
-router.post('/paie/generer', c.generatePayslip);
-router.get('/paie/all', c.getAllPayslips);
-router.get('/paie/virements/ready', c.getVirementsReady);
-router.get('/paie/virements', c.getVirements);
-router.post('/paie/virements', c.effectuerVirements);
-router.put('/paie/:id/valider', c.validerFiche);
-router.get('/paie/:employeeId', c.getPayslips);
+router.put('/conges/:id/statut', rh, c.updateLeaveStatus);
+router.post('/paie/generer', rh, c.generatePayslip);
+router.get('/paie/all', rh, c.getAllPayslips);
+router.get('/paie/virements/ready', rh, c.getVirementsReady);
+router.get('/paie/virements', rh, c.getVirements);
+router.post('/paie/virements', rh, c.effectuerVirements);
+router.put('/paie/:id/valider', rh, c.validerFiche);
+router.get('/paie/:employeeId', rh, c.getPayslips);
 
 // Avances sur salaire
 router.get('/avances', c.getAvances);

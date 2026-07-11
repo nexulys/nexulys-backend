@@ -1178,6 +1178,7 @@
             <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;">Gestion financière</h2>
           </div>
           <div id="compta-actions-factures" style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="relancerImpayes()">📧 Relancer les impayés</button>
             <button class="btn-outline" onclick="exportFacturesCSV()">📥 Export CSV</button>
             <button class="btn-outline" onclick="loadDepenses()">🔄 Actualiser</button>
             <button class="btn-primary" onclick="openModal('facture')">+ Nouvelle facture</button>
@@ -5880,6 +5881,19 @@
       a.href = URL.createObjectURL(blob);
       a.download = filename + '_' + new Date().toISOString().split('T')[0] + '.csv';
       a.click();
+    }
+
+    // ── Relance automatique des impayés ──
+    async function relancerImpayes() {
+      if (!confirm('Envoyer une relance à tous les clients ayant une facture impayée échue ?')) return;
+      showToast('Envoi des relances en cours...', 'success');
+      var res = await fetch(API + '/comptabilite/relances/auto', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) {
+        var n = (data.data && data.data.relancees) || 0;
+        showToast(n === 0 ? 'Aucune facture à relancer' : n + ' relance(s) envoyée(s)', 'success');
+        loadAllInvoices(); loadKPIs();
+      } else showToast(data.message || 'Erreur', 'error');
     }
 
     // ── Export CSV fiches de paie ──

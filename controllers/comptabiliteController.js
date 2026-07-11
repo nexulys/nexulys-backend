@@ -258,6 +258,16 @@ exports.getBilan = async (req, res) => {
   } catch (err) { sendError(res, err); }
 };
 
+// Relance en masse toutes les factures impayées échues de l'entreprise
+exports.relancerImpayees = async (req, res) => {
+  try {
+    const { relancerImpayeesCompany } = require('../services/relanceService');
+    const result = await relancerImpayeesCompany(req.user.company);
+    logAction(req, { action: 'RELANCE_AUTO', entity: 'Invoice', details: `${result.relancees} relance(s)` });
+    res.json({ success: true, message: `${result.relancees} relance(s) envoyée(s)`, data: result });
+  } catch (err) { sendError(res, err); }
+};
+
 exports.relancerFacture = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
