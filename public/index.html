@@ -996,7 +996,7 @@
 
       <div class="billing-toggle fade-in">
         <button id="bt-mensuel" class="billing-opt active" onclick="setBilling('mensuel')">Mensuel</button>
-        <button id="bt-annuel" class="billing-opt" onclick="setBilling('annuel')">Annuel <span class="billing-save">2 mois offerts</span></button>
+        <button id="bt-annuel" class="billing-opt" onclick="setBilling('annuel')">Annuel <span class="billing-save">2 semaines offertes</span></button>
       </div>
 
       <div class="pricing-grid fade-in">
@@ -1201,12 +1201,12 @@
       document.querySelectorAll('.price-value').forEach(function(el) {
         var m = parseInt(el.getAttribute('data-monthly'), 10);
         // annuel : 10 mois payés pour 12 (2 offerts) -> mensualité équivalente
-        var affiche = annuel ? Math.round(m * 10 / 12) : m;
+        var affiche = annuel ? Math.round(m * 11.5 / 12) : m;
         el.textContent = affiche + ' €';
       });
       document.querySelectorAll('.price-annual-note').forEach(function(el) {
         var m = parseInt(el.getAttribute('data-monthly'), 10);
-        el.textContent = annuel ? ('Facturé ' + (m * 10) + ' €/an · 2 mois offerts') : '';
+        el.textContent = annuel ? ('Facturé ' + Math.round(m * 11.5) + ' €/an · 2 semaines offertes') : '';
       });
     }
   </script>
