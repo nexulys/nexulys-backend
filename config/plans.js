@@ -6,7 +6,7 @@ const PLANS = [
   {
     id: 'starter',
     nom: 'Starter',
-    prix: 1000,
+    prix: 39,
     devise: 'EUR',
     facturation: 'mensuel',
     cible: 'Indépendants & micro-entreprises',
@@ -23,7 +23,7 @@ const PLANS = [
   {
     id: 'business',
     nom: 'Business',
-    prix: 1500,
+    prix: 89,
     devise: 'EUR',
     facturation: 'mensuel',
     populaire: true,
@@ -42,7 +42,7 @@ const PLANS = [
   {
     id: 'pro',
     nom: 'Pro',
-    prix: 2000,
+    prix: 199,
     devise: 'EUR',
     facturation: 'mensuel',
     cible: 'Entreprises établies',

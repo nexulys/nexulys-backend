@@ -4,7 +4,7 @@ const subscriptionSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   // Identifiant de plan : 'starter' | 'business' | 'pro'
   plan: { type: String, default: 'business' },
-  priceMonthly: { type: Number, default: 1500 },
+  priceMonthly: { type: Number, default: 89 },
   currency: { type: String, default: 'EUR' },
   features: {
     type: [String],
