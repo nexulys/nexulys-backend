@@ -2188,7 +2188,7 @@
                 <div class="settings-section-title" style="margin-bottom:12px;">🌐 Informations</div>
                 <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
                   <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Version</span><span style="font-weight:600;">Novexa 1.0.0</span></div>
-                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Plan</span><span class="badge badge-blue">Novexa Pro</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Plan</span><span class="badge badge-blue" id="set-plan-badge">—</span></div>
                   <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Créé par</span><span style="font-weight:600;">Nexulys</span></div>
                 </div>
               </div>
@@ -2326,8 +2326,8 @@
         <div class="card" style="margin-top:20px;">
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <div class="card-title">💳 Abonnement Novexa Pro</div>
-              <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">2 500 € / mois — prélevé le 5 de chaque mois</div>
+              <div class="card-title" id="sub-title">💳 Abonnement</div>
+              <div id="sub-subtitle" style="font-size:12px;color:var(--text-dim);margin-top:2px;">Prélevé le 5 de chaque mois</div>
             </div>
             <div id="sub-badge"></div>
           </div>
@@ -2341,7 +2341,7 @@
                 </div>
                 <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;text-align:center;">
                   <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Montant</div>
-                  <div style="font-size:18px;font-weight:800;color:#34d399;">2 500 €</div>
+                  <div id="sub-amount" style="font-size:18px;font-weight:800;color:#34d399;">—</div>
                 </div>
                 <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;text-align:center;">
                   <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Actif depuis</div>
@@ -2359,14 +2359,9 @@
             </div>
             <div id="sub-inactif" style="display:none;">
               <div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:12px;padding:24px;margin-bottom:20px;">
-                <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Novexa Pro — 2 500 € / mois</div>
-                <ul style="font-size:13px;color:var(--text-muted);line-height:2;padding-left:20px;">
-                  <li>Comptabilité IA complète (factures, TVA, bilan)</li>
-                  <li>RH & paie avec virements de salaire</li>
-                  <li>CRM, Devis, Projets, Stocks</li>
-                  <li>Assistant IA intégré (Groq / GPT-4)</li>
-                  <li>Utilisateurs illimités — Support 24/7</li>
-                </ul>
+                <div id="sub-offer-name" style="font-size:15px;font-weight:700;margin-bottom:8px;">Choisissez votre offre</div>
+                <ul id="sub-offer-features" style="font-size:13px;color:var(--text-muted);line-height:2;padding-left:20px;"></ul>
+                <div id="sub-plan-choice" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;"></div>
                 <div style="margin-top:12px;font-size:12px;color:#a5b4fc;">Premier prélèvement le 5 du mois suivant l'activation.</div>
               </div>
               <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
@@ -4728,19 +4723,48 @@
       loadAuditLog();
     }
 
+    var NOVEXA_PLANS = [];
+    var selectedPlanId = 'business';
+    async function ensurePlans() {
+      if (NOVEXA_PLANS.length) return;
+      var r = await apiFetch('/abonnement/plans');
+      NOVEXA_PLANS = (r && r.data && r.data.plans) ? r.data.plans : [];
+    }
+    function planById(id) { return NOVEXA_PLANS.find(function(p){ return p.id === id; }) || NOVEXA_PLANS[1] || NOVEXA_PLANS[0]; }
+
     async function loadAbonnement() {
+      await ensurePlans();
       var res = await apiFetch('/abonnement');
       var loading = document.getElementById('sub-loading');
       var actif = document.getElementById('sub-actif');
       var inactif = document.getElementById('sub-inactif');
       var badge = document.getElementById('sub-badge');
       if (loading) loading.style.display = 'none';
+
+      // Choix de plan (bloc inactif) — toujours (re)construit
+      var choiceEl = document.getElementById('sub-plan-choice');
+      if (choiceEl) {
+        choiceEl.innerHTML = NOVEXA_PLANS.map(function(p) {
+          return '<button class="btn-outline" onclick="choisirPlan(\'' + p.id + '\')" id="planbtn-' + p.id + '" style="flex:1;min-width:120px;">' + p.nom + ' — ' + p.prix + ' €' + (p.populaire ? ' ★' : '') + '</button>';
+        }).join('');
+      }
+
       if (!res || !res.success || !res.data) {
         if (inactif) inactif.style.display = '';
         if (badge) badge.innerHTML = '<span class="badge badge-gray">Inactif</span>';
+        choisirPlan(selectedPlanId);
         return;
       }
       var sub = res.data;
+      var plan = planById(sub.plan);
+      // En-tête + montant dynamiques
+      if (document.getElementById('sub-title')) document.getElementById('sub-title').textContent = '💳 Abonnement ' + (plan ? plan.nom : '');
+      if (document.getElementById('sub-subtitle')) document.getElementById('sub-subtitle').textContent = (plan ? plan.prix + ' € / mois' : '') + ' — prélevé le 5 de chaque mois';
+      if (document.getElementById('sub-amount')) document.getElementById('sub-amount').textContent = (sub.priceMonthly != null ? sub.priceMonthly : (plan ? plan.prix : 0)) + ' €';
+      var badgePlan = document.getElementById('set-plan-badge');
+      if (badgePlan) badgePlan.textContent = plan ? plan.nom : '—';
+      selectedPlanId = sub.plan || 'business';
+      choisirPlan(selectedPlanId);
       var statut = sub.statut;
       var isActif = statut === 'actif' || statut === 'active';
       var isEssai = statut === 'essai' || statut === 'trial';
@@ -4774,6 +4798,22 @@
       }
     }
 
+    function choisirPlan(id) {
+      selectedPlanId = id;
+      var plan = planById(id);
+      // met en évidence le bouton sélectionné
+      NOVEXA_PLANS.forEach(function(p) {
+        var b = document.getElementById('planbtn-' + p.id);
+        if (b) b.className = (p.id === id) ? 'btn-primary' : 'btn-outline';
+      });
+      if (plan) {
+        var nameEl = document.getElementById('sub-offer-name');
+        if (nameEl) nameEl.textContent = plan.nom + ' — ' + plan.prix + ' € / mois';
+        var featEl = document.getElementById('sub-offer-features');
+        if (featEl) featEl.innerHTML = (plan.fonctionnalites || []).map(function(f){ return '<li>' + f + '</li>'; }).join('');
+      }
+    }
+
     async function activerAbonnement() {
       var email = document.getElementById('sub-email')?.value.trim();
       var errEl = document.getElementById('sub-error');
@@ -4784,7 +4824,7 @@
       try {
         var res = await fetch(API + '/abonnement/activer', {
           method: 'POST', headers: apiHeaders(),
-          body: JSON.stringify({ emailFacturation: email })
+          body: JSON.stringify({ emailFacturation: email, planId: selectedPlanId })
         });
         var data = await res.json();
         if (data.success) {
@@ -4800,7 +4840,7 @@
     }
 
     async function annulerAbonnement() {
-      if (!confirm('Confirmer l\'annulation de l\'abonnement Novexa Pro ?')) return;
+      if (!confirm('Confirmer l\'annulation de votre abonnement ?')) return;
       var res = await fetch(API + '/abonnement/annuler', { method: 'POST', headers: apiHeaders() });
       var data = await res.json();
       if (data.success) { showToast('Abonnement annulé', 'success'); loadAbonnement(); }

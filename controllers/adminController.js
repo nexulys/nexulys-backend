@@ -37,7 +37,9 @@ exports.getOverview = async (req, res) => {
     const suspended = subs.filter(s => ['suspendu'].includes(s.statut)).length;
     const cancelled = subs.filter(s => ['annule', 'cancelled'].includes(s.statut)).length;
 
-    const mrr = active * 2500;
+    const mrr = subs
+      .filter(s => ['actif', 'active'].includes(s.statut))
+      .reduce((sum, s) => sum + (s.priceMonthly || 79), 0);
     const arr = mrr * 12;
 
     const allPayments = [];
@@ -105,8 +107,8 @@ exports.getClients = async (req, res) => {
         factures: invoiceCount,
         subscription: sub ? {
           statut: sub.statut,
-          plan: sub.plan || 'Novexa Pro',
-          mrr: ['actif', 'active'].includes(sub.statut) ? (sub.priceMonthly || 2500) : 0,
+          plan: sub.plan || 'business',
+          mrr: ['actif', 'active'].includes(sub.statut) ? (sub.priceMonthly || 79) : 0,
           trialEndsAt: sub.trialEndsAt,
           stripeCustomerId: sub.stripeCustomerId || null,
           billingCount: (sub.billingHistory || []).length
@@ -134,7 +136,7 @@ exports.getMRRChart = async (req, res) => {
       const m = months.find(x => x.year === d.getFullYear() && x.month === d.getMonth());
       if (m) {
         m.nouveauxClients++;
-        if (['actif', 'active'].includes(s.statut)) m.mrrEstime += s.priceMonthly || 2500;
+        if (['actif', 'active'].includes(s.statut)) m.mrrEstime += s.priceMonthly || 79;
       }
       (s.billingHistory || []).forEach(b => {
         if (!b.date) return;

@@ -35,7 +35,7 @@ exports.register = async (req, res) => {
     sendMail({
       to: email,
       subject: 'Bienvenue sur Novexa !',
-      html: `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px"><h2 style="color:#6366f1">Bienvenue ${prenom} sur Novexa !</h2><p>Votre compte Novexa Pro est créé avec succès. Profitez de <strong>14 jours d'essai gratuit</strong>.</p><p>Connectez-vous maintenant et commencez à gérer votre entreprise intelligemment.</p><hr style="border-color:#eee;margin:24px 0"/><small style="color:#999">Novexa by Nexulys — La plateforme de gestion d'entreprise intelligente</small></div>`
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px"><h2 style="color:#6366f1">Bienvenue ${prenom} sur Novexa !</h2><p>Votre compte est créé avec succès. Profitez de <strong>14 jours d'essai gratuit</strong>, sans carte bancaire.</p><p>Connectez-vous maintenant et commencez à gérer votre entreprise intelligemment.</p><hr style="border-color:#eee;margin:24px 0"/><small style="color:#999">Novexa by Nexulys — La plateforme de gestion d'entreprise intelligente</small></div>`
     }).catch(() => {});
 
     const token = generateToken(user._id);
@@ -48,8 +48,8 @@ exports.register = async (req, res) => {
         utilisateur: { id: user._id, nom, prenom, email, role: user.role },
         entreprise: { id: company._id, nom: nomEntreprise },
         abonnement: {
-          plan: 'Novexa Pro',
-          prix: '2 500 € / mois',
+          plan: 'Business',
+          prix: '79 € / mois',
           statut: 'essai',
           dureeEssai: '14 jours'
         }

@@ -1,5 +1,6 @@
 const Subscription = require('../models/Subscription');
 const { sendError } = require('../utils/errorResponse');
+const { PLANS, ESSAI_GRATUIT, getPlan } = require('../config/plans');
 const {
   createCustomer,
   createSubscription: createStripeSubscription,
@@ -10,66 +11,7 @@ const {
 exports.getPlans = async (req, res) => {
   res.json({
     success: true,
-    data: {
-      plateforme: 'Novexa by Nexulys',
-      essaiGratuit: '14 jours',
-      plans: [
-        {
-          id: 'starter',
-          nom: 'Starter',
-          prix: 29,
-          devise: 'EUR',
-          facturation: 'mensuel',
-          cible: 'Indépendants & micro-entreprises',
-          fonctionnalites: [
-            'Facturation & devis illimités',
-            'Suivi des dépenses',
-            'TVA automatique',
-            'Tableau de bord & trésorerie',
-            'Export comptable (FEC)',
-            '1 utilisateur'
-          ],
-          limites: { utilisateurs: 1, employes: 0 }
-        },
-        {
-          id: 'business',
-          nom: 'Business',
-          prix: 79,
-          devise: 'EUR',
-          facturation: 'mensuel',
-          populaire: true,
-          cible: 'PME en croissance',
-          fonctionnalites: [
-            'Tout Starter, plus :',
-            'RH & fiches de paie françaises',
-            'Gestion des stocks & fournisseurs',
-            'CRM & pipeline commercial',
-            'Projets, tâches & notes de frais',
-            'Relances de paiement automatiques',
-            "Jusqu'à 10 utilisateurs"
-          ],
-          limites: { utilisateurs: 10, employes: 25 }
-        },
-        {
-          id: 'pro',
-          nom: 'Pro',
-          prix: 199,
-          devise: 'EUR',
-          facturation: 'mensuel',
-          cible: 'Entreprises établies',
-          fonctionnalites: [
-            'Tout Business, plus :',
-            'Assistant IA & copilote proactif',
-            'Facturation électronique (Factur-X)',
-            'Rôles & permissions avancés',
-            'Multi-utilisateurs illimités',
-            'API & intégrations',
-            'Support prioritaire 24/7'
-          ],
-          limites: { utilisateurs: 'illimité', employes: 'illimité' }
-        }
-      ]
-    }
+    data: { plateforme: 'Novexa by Nexulys', essaiGratuit: ESSAI_GRATUIT, plans: PLANS }
   });
 };
 
@@ -83,19 +25,23 @@ exports.getSubscription = async (req, res) => {
 
 exports.activateSubscription = async (req, res) => {
   try {
-    const { methodePaiement, emailFacturation } = req.body;
+    const { methodePaiement, emailFacturation, planId } = req.body;
+    const plan = getPlan(planId);
 
-    // Create Stripe customer and subscription
+    // Create Stripe customer and subscription (pour le plan choisi)
     const stripeCustomer = await createCustomer({
       email: emailFacturation || req.user.email,
       nom: req.user.nom || req.user.name || '',
       companyName: req.user.companyName || ''
     });
-    const stripeSub = await createStripeSubscription(stripeCustomer.id);
+    const stripeSub = await createStripeSubscription(stripeCustomer.id, plan);
 
     const sub = await Subscription.findOneAndUpdate(
       { company: req.user.company },
       {
+        plan: plan.id,
+        priceMonthly: plan.prix,
+        features: plan.fonctionnalites,
         statut: 'actif',
         startDate: new Date(),
         nextBillingDate: nextBillingOn5th(),
@@ -108,7 +54,7 @@ exports.activateSubscription = async (req, res) => {
     );
     res.json({
       success: true,
-      message: 'Abonnement Novexa Pro activé — 2 500 € / mois',
+      message: `Abonnement ${plan.nom} activé — ${plan.prix} € / mois`,
       data: sub
     });
   } catch (err) { sendError(res, err); }

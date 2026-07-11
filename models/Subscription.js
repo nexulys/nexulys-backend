@@ -2,23 +2,19 @@ const mongoose = require('mongoose');
 
 const subscriptionSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
-  // Plan name (string for easy reference)
-  plan: { type: String, default: 'Novexa Pro' },
-  priceMonthly: { type: Number, default: 2500 },
+  // Identifiant de plan : 'starter' | 'business' | 'pro'
+  plan: { type: String, default: 'business' },
+  priceMonthly: { type: Number, default: 79 },
   currency: { type: String, default: 'EUR' },
   features: {
     type: [String],
     default: [
-      'Comptabilité IA complète (factures, dépenses, bilan, TVA auto)',
-      'Ressources Humaines IA (employés, contrats, congés, fiches de paie)',
-      'Gestion des stocks intelligente (alertes, mouvements, fournisseurs)',
-      'Gestion des tâches & projets avec IA',
-      'Automatisations illimitées',
-      'Assistant IA intégré (analyse financière, prédictions stock, RH)',
-      'Dashboard insights IA en temps réel',
-      'Utilisateurs illimités',
-      'Support prioritaire 24/7',
-      'Mises à jour incluses'
+      'RH & fiches de paie françaises',
+      'Gestion des stocks & fournisseurs',
+      'CRM & pipeline commercial',
+      'Projets, tâches & notes de frais',
+      'Relances de paiement automatiques',
+      "Jusqu'à 10 utilisateurs"
     ]
   },
   // Support both French (statut) and English (status) field names

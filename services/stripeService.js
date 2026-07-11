@@ -46,18 +46,20 @@ exports.createCustomer = async ({ email, nom, companyName }) => {
   }
 };
 
-exports.createSubscription = async (customerId) => {
+exports.createSubscription = async (customerId, plan) => {
   const stripe = getStripe();
   if (!stripe || (customerId && customerId.startsWith('cus_mock'))) {
     return { mock: true, id: `sub_mock_${Date.now()}`, status: 'active' };
   }
   try {
-    const product = await stripe.products.create({ name: NOVEXA_PRO_PRICE.product_name });
+    const nom = plan?.nom ? `Novexa ${plan.nom}` : NOVEXA_PRO_PRICE.product_name;
+    const montant = plan?.prix != null ? Math.round(plan.prix * 100) : NOVEXA_PRO_PRICE.amount;
+    const product = await stripe.products.create({ name: nom });
     const price = await stripe.prices.create({
       product: product.id,
-      unit_amount: NOVEXA_PRO_PRICE.amount,
-      currency: NOVEXA_PRO_PRICE.currency,
-      recurring: { interval: NOVEXA_PRO_PRICE.interval }
+      unit_amount: montant,
+      currency: 'eur',
+      recurring: { interval: 'month' }
     });
     const billingAnchor = Math.floor(nextBillingOn5th().getTime() / 1000);
     return await stripe.subscriptions.create({
