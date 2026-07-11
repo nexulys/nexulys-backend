@@ -39,7 +39,7 @@ exports.getOverview = async (req, res) => {
 
     const mrr = subs
       .filter(s => ['actif', 'active'].includes(s.statut))
-      .reduce((sum, s) => sum + (s.priceMonthly || 79), 0);
+      .reduce((sum, s) => sum + (s.priceMonthly || 1500), 0);
     const arr = mrr * 12;
 
     const allPayments = [];
@@ -108,7 +108,7 @@ exports.getClients = async (req, res) => {
         subscription: sub ? {
           statut: sub.statut,
           plan: sub.plan || 'business',
-          mrr: ['actif', 'active'].includes(sub.statut) ? (sub.priceMonthly || 79) : 0,
+          mrr: ['actif', 'active'].includes(sub.statut) ? (sub.priceMonthly || 1500) : 0,
           trialEndsAt: sub.trialEndsAt,
           stripeCustomerId: sub.stripeCustomerId || null,
           billingCount: (sub.billingHistory || []).length

@@ -49,7 +49,7 @@ exports.register = async (req, res) => {
         entreprise: { id: company._id, nom: nomEntreprise },
         abonnement: {
           plan: 'Business',
-          prix: '79 € / mois',
+          prix: '1 500 € / mois',
           statut: 'essai',
           dureeEssai: '14 jours'
         }
