@@ -6930,8 +6930,8 @@
           + '<td style="color:var(--text-muted);">' + (c.type || '—') + '</td>'
           + '<td>' + fin + alerte + '</td>'
           + '<td style="font-weight:700;">' + (c.valeur || 0).toLocaleString('fr') + ' €</td>'
-          + '<td><span class="badge ' + (statutMap[c.statut] || 'badge-gray') + '">' + (statutLabel[c.statut] || c.statut) + '</span></td>'
-          + '<td><button class="btn-sm btn-del-sm" onclick="deleteContratClient(\'' + c._id + '\')">🗑</button></td>'
+          + '<td><span class="badge ' + (statutMap[c.statut] || 'badge-gray') + '">' + (statutLabel[c.statut] || c.statut) + '</span>' + (c.signe ? ' <span class="badge badge-green" title="Signé le ' + (c.signedAt ? new Date(c.signedAt).toLocaleDateString('fr') : '') + '">✍️ signé</span>' : '') + '</td>'
+          + '<td>' + (c.signe ? '' : '<button class="btn-sm" onclick="envoyerContratSignature(\'' + c._id + '\')" title="Envoyer pour signature">✍️</button> ') + '<button class="btn-sm btn-del-sm" onclick="deleteContratClient(\'' + c._id + '\')">🗑</button></td>'
           + '</tr>';
       }).join('');
     }
@@ -6958,6 +6958,17 @@
         else { document.getElementById('cc-error').textContent = data.message || 'Erreur.'; document.getElementById('cc-error').style.display=''; }
       } catch(e) { document.getElementById('cc-error').textContent = 'Erreur réseau.'; document.getElementById('cc-error').style.display=''; }
       setModalLoading('cc-btn', false, 'Créer le contrat');
+    }
+
+    async function envoyerContratSignature(id) {
+      var res = await fetch(API + '/contrats-clients/' + id + '/envoyer-signature', { method:'POST', headers:apiHeaders() });
+      var data = await res.json();
+      if (data.success) {
+        var url = data.data && data.data.url;
+        if (url) { try { await navigator.clipboard.writeText(url); } catch(e) {} }
+        showToast(data.message + (url ? ' — lien copié' : ''), 'success');
+        loadContratsClients();
+      } else showToast(data.message || 'Erreur', 'error');
     }
 
     async function deleteContratClient(id) {

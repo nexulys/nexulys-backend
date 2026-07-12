@@ -16,6 +16,12 @@ const contratClientSchema = new mongoose.Schema({
   statut: { type: String, enum: ['actif', 'expire', 'resilie', 'en_negociation', 'renouvellement_prevu'], default: 'actif' },
   alerteRenouvellement: { type: Number, default: 30 }, // jours avant fin
   notes: { type: String },
+  // Signature électronique
+  signatureToken: { type: String },
+  signe: { type: Boolean, default: false },
+  signataire: { type: String },
+  signedAt: { type: Date },
+  signatureIP: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 contratClientSchema.index({ company: 1, dateFin: 1 });
