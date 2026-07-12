@@ -6,6 +6,9 @@ const clearPdpEnv = () => {
   delete process.env.PDP_PROVIDER;
   delete process.env.PDP_BASE_URL;
   delete process.env.PDP_API_KEY;
+  delete process.env.PDP_CLIENT_ID;
+  delete process.env.PDP_CLIENT_SECRET;
+  delete process.env.PDP_TOKEN_URL;
   delete process.env.PDP_ENV;
 };
 
@@ -23,6 +26,30 @@ describe('pdpService — couche d\'abstraction PDP', () => {
       expect(pdpService.isConfigured()).toBe(false);
       process.env.PDP_API_KEY = 'secret';
       expect(pdpService.isConfigured()).toBe(true);
+    });
+    it('accepte le couple OAuth2 client_credentials à la place de la clé statique', () => {
+      process.env.PDP_BASE_URL = 'https://pdp.example';
+      process.env.PDP_CLIENT_ID = 'client';
+      expect(pdpService.isConfigured()).toBe(false); // secret manquant
+      process.env.PDP_CLIENT_SECRET = 'shhh';
+      expect(pdpService.isConfigured()).toBe(true);
+    });
+  });
+
+  describe('adaptateur Iopole', () => {
+    it('détecte le fournisseur quelle que soit la casse', () => {
+      process.env.PDP_PROVIDER = 'Iopole';
+      expect(pdpService.isIopole()).toBe(true);
+      process.env.PDP_PROVIDER = 'autre';
+      expect(pdpService.isIopole()).toBe(false);
+    });
+    it('déduit l\'URL de base sandbox/production sans PDP_BASE_URL', () => {
+      process.env.PDP_PROVIDER = 'iopole';
+      process.env.PDP_API_KEY = 'jeton';
+      expect(pdpService.isConfigured()).toBe(true); // URL déduite (ppd = sandbox)
+      expect(pdpService.infos().baseUrl).toBe('https://api.ppd.iopole.fr');
+      process.env.PDP_ENV = 'production';
+      expect(pdpService.infos().baseUrl).toBe('https://api.iopole.fr');
     });
   });
 
@@ -73,11 +100,13 @@ describe('pdpService — couche d\'abstraction PDP', () => {
     it('n\'expose jamais la clé API', () => {
       process.env.PDP_BASE_URL = 'https://pdp.example';
       process.env.PDP_API_KEY = 'super-secret';
+      process.env.PDP_CLIENT_SECRET = 'ultra-secret';
       process.env.PDP_PROVIDER = 'iopole';
       const i = pdpService.infos();
       expect(i.configured).toBe(true);
       expect(i.provider).toBe('iopole');
       expect(JSON.stringify(i)).not.toContain('super-secret');
+      expect(JSON.stringify(i)).not.toContain('ultra-secret');
       expect(i.statuts.encaissee).toBe('Encaissée');
     });
   });
