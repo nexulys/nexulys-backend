@@ -33,6 +33,19 @@ const invoiceSchema = new mongoose.Schema({
     type: { type: String, enum: ['J7', 'J15', 'J30'] },
     sentAt: { type: Date, default: Date.now }
   }],
+  // Transmission via une PDP (réforme facturation électronique)
+  pdp: {
+    provider: { type: String },
+    transmissionId: { type: String },
+    statut: { type: String },        // clé normalisée (pdpService.STATUTS_CYCLE)
+    statutLabel: { type: String },   // libellé lisible
+    lastSyncAt: { type: Date },
+    history: [{
+      statut: { type: String },
+      label: { type: String },
+      at: { type: Date, default: Date.now }
+    }]
+  },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
