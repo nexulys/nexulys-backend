@@ -78,7 +78,64 @@ const isConfigured = () => Boolean(baseUrl() && hasCredentials());
 const providerName = () => process.env.PDP_PROVIDER || (isConfigured() ? 'pdp' : null);
 
 // ── Jeton OAuth2 (client_credentials) avec cache mémoire ────────────────────
-let tokenCache = { value: null, expiresAt: 0 };
+// Chaque fournisseur héberge son endpoint de jeton différemment (serveur d'auth
+// dédié type OpenID Connect, ou route de l'API elle-même). On essaie donc une
+// liste de candidats dans l'ordre, on mémorise celui qui fonctionne, et on
+// journalise précisément chaque échec pour un diagnostic en un coup d'œil.
+let tokenCache = { value: null, expiresAt: 0, url: null };
+let lastTokenError = null;
+
+const tokenUrlCandidates = () => {
+  if (process.env.PDP_TOKEN_URL) return [process.env.PDP_TOKEN_URL];
+  const candidates = [];
+  if (isIopole()) {
+    // Serveur d'authentification Iopole (OpenID Connect), sandbox (ppd) ou production.
+    const host = env() === 'production' ? 'https://auth.iopole.fr' : 'https://auth.ppd.iopole.fr';
+    candidates.push(`${host}/realms/iopole/protocol/openid-connect/token`);
+    candidates.push(`${host}/auth/realms/iopole/protocol/openid-connect/token`);
+  }
+  candidates.push(`${baseUrl()}/v1/auth/token`);
+  candidates.push(`${baseUrl()}/oauth/token`);
+  return candidates;
+};
+
+// Tente un endpoint de jeton avec les deux styles OAuth2 : identifiants dans le
+// corps (client_secret_post) puis en-tête Basic (client_secret_basic).
+const tryTokenUrl = async (tokenUrl, clientId, clientSecret) => {
+  const attempts = [
+    {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'client_credentials', client_id: clientId, client_secret: clientSecret })
+    },
+    {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+      },
+      body: new URLSearchParams({ grant_type: 'client_credentials' })
+    }
+  ];
+  for (const attempt of attempts) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(tokenUrl, { method: 'POST', headers: attempt.headers, body: attempt.body, signal: controller.signal });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.access_token) return { token: data.access_token, expiresIn: Number(data.expires_in) || 300 };
+      lastTokenError = `${tokenUrl} → HTTP ${res.status}${data && (data.error_description || data.error) ? ' (' + (data.error_description || data.error) + ')' : ''}`;
+      logger.warn('PDP : endpoint de jeton refusé', { url: tokenUrl, status: res.status, detail: data && (data.error_description || data.error) });
+      // 404/405 : mauvais chemin, inutile de retenter en Basic sur la même URL.
+      if (res.status === 404 || res.status === 405) break;
+    } catch (err) {
+      lastTokenError = `${tokenUrl} → ${err.name === 'AbortError' ? 'délai dépassé' : err.message}`;
+      logger.warn('PDP : endpoint de jeton injoignable', { url: tokenUrl, error: err.message });
+      break; // réseau KO sur cette URL : passer à la suivante
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
+};
 
 const getToken = async () => {
   const { PDP_CLIENT_ID, PDP_CLIENT_SECRET } = process.env;
@@ -87,36 +144,21 @@ const getToken = async () => {
   // Jeton encore valide (marge de 30 s) : on le réutilise.
   if (tokenCache.value && Date.now() < tokenCache.expiresAt - 30000) return tokenCache.value;
 
-  const tokenUrl = process.env.PDP_TOKEN_URL || `${baseUrl()}/v1/auth/token`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
-  try {
-    const res = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: PDP_CLIENT_ID,
-        client_secret: PDP_CLIENT_SECRET
-      }),
-      signal: controller.signal
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !data || !data.access_token) {
-      logger.warn('PDP : échec de récupération du jeton OAuth2', { status: res.status });
-      return null;
+  // URL déjà validée lors d'un appel précédent : on la privilégie.
+  const urls = tokenCache.url
+    ? [tokenCache.url, ...tokenUrlCandidates().filter((u) => u !== tokenCache.url)]
+    : tokenUrlCandidates();
+
+  for (const url of urls) {
+    const result = await tryTokenUrl(url, PDP_CLIENT_ID, PDP_CLIENT_SECRET);
+    if (result) {
+      tokenCache = { value: result.token, expiresAt: Date.now() + result.expiresIn * 1000, url };
+      lastTokenError = null;
+      logger.info('PDP : jeton OAuth2 obtenu', { url });
+      return result.token;
     }
-    tokenCache = {
-      value: data.access_token,
-      expiresAt: Date.now() + (Number(data.expires_in) || 300) * 1000
-    };
-    return tokenCache.value;
-  } catch (err) {
-    logger.warn('PDP : jeton OAuth2 injoignable', { error: err.message });
-    return null;
-  } finally {
-    clearTimeout(timer);
   }
+  return null;
 };
 
 // Traduit un statut brut renvoyé par la PDP vers notre vocabulaire normalisé.
@@ -143,7 +185,13 @@ const normaliserStatut = (raw) => {
 // automatiquement par fetch, frontière comprise).
 const call = async (path, { method = 'GET', body } = {}) => {
   const token = await getToken();
-  if (!token) return { ok: false, status: 401, error: 'Authentification PDP impossible (jeton indisponible)' };
+  if (!token) {
+    return {
+      ok: false,
+      status: 401,
+      error: 'Authentification PDP impossible' + (lastTokenError ? ` — dernier échec : ${lastTokenError}` : ' (jeton indisponible)')
+    };
+  }
   const url = baseUrl() + (path.startsWith('/') ? path : '/' + path);
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
@@ -285,6 +333,8 @@ const infos = () => ({
   env: isConfigured() ? env() : null,
   baseUrl: isConfigured() ? baseUrl() : null,
   authMode: process.env.PDP_CLIENT_ID ? 'oauth2_client_credentials' : (process.env.PDP_API_KEY ? 'api_key' : null),
+  tokenUrl: tokenCache.url || null,        // endpoint de jeton validé (diagnostic)
+  lastTokenError: lastTokenError || null,  // dernier échec d'authentification (diagnostic)
   statuts: STATUTS_CYCLE
 });
 
