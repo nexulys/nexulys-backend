@@ -156,6 +156,7 @@
     </div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au panel</button>
     <div class="login-error" id="login-error"></div>
+    <p style="text-align:center;margin-top:16px;"><a href="/dashboard.html" style="color:#64748b;font-size:12px;text-decoration:none;">← Retour au dashboard</a></p>
   </div>
 </div>
 
@@ -170,6 +171,7 @@
     </div>
     <div class="header-right">
       <span class="last-refresh" id="last-refresh"></span>
+      <button class="header-refresh" onclick="window.location.href='/dashboard.html'">← Dashboard</button>
       <button class="header-refresh" onclick="loadAll()">🔄 Actualiser</button>
       <button class="header-logout" onclick="doLogout()">Déconnexion</button>
     </div>

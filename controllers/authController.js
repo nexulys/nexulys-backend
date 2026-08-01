@@ -80,7 +80,15 @@ exports.login = async (req, res) => {
 exports.me = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate('company');
-    res.json({ success: true, data: user });
+    // Propriétaire de la plateforme (email = ADMIN_EMAIL) : débloque l'accès
+    // au back-office Novexa depuis le dashboard (le panel reste protégé par
+    // ADMIN_SECRET — ce drapeau ne fait qu'afficher le lien).
+    const isPlatformAdmin = Boolean(
+      process.env.ADMIN_EMAIL && user &&
+      user.email && user.email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()
+    );
+    const data = user ? { ...user.toObject(), isPlatformAdmin } : user;
+    res.json({ success: true, data });
   } catch (err) { sendError(res, err); }
 };
 

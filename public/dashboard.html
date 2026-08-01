@@ -925,6 +925,9 @@
       <button class="nav-item" onclick="switchSection('parametres')">
         <span class="icon">⚙️</span><span class="label">Paramètres</span>
       </button>
+      <button class="nav-item" id="nav-admin" style="display:none;" onclick="window.location.href='/admin.html'">
+        <span class="icon">🛡️</span><span class="label">Administration</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -6900,6 +6903,18 @@
       document.getElementById('user-name').textContent = displayName;
       document.getElementById('user-avatar').textContent = initials;
       document.getElementById('topbar-avatar').textContent = initials;
+
+      // Lien Administration : visible uniquement pour le propriétaire de la
+      // plateforme (email = ADMIN_EMAIL côté serveur). Le panel reste protégé
+      // par son propre mot de passe (ADMIN_SECRET).
+      fetch(API + '/auth/me', { headers: apiHeaders() })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.success && d.data && d.data.isPlatformAdmin) {
+            document.getElementById('nav-admin').style.display = '';
+          }
+        })
+        .catch(function(){});
 
       // Load all data
       loadKPIs();
