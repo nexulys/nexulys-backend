@@ -12,7 +12,9 @@
     "seed": "node scripts/seed.js",
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
-    "check-env": "node scripts/check-env.js"
+    "check-env": "node scripts/check-env.js",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -39,6 +41,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "mongodb-memory-server": "^11.2.0"
+    "mongodb-memory-server": "^11.2.0",
+    "wrangler": "^4.110.0"
   }
 }
