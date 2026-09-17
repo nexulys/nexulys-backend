@@ -25,6 +25,18 @@ router.post('/relances', cronAuth, async (req, res) => {
   } catch (err) { sendError(res, err); }
 });
 
+// POST /api/cron/purge-rgpd — exécute les demandes d'effacement dont le délai de
+// rétractation est écoulé. Sans cet appel planifié, les demandes resteraient en
+// attente indéfiniment et l'effacement ne serait qu'une promesse.
+router.post('/purge-rgpd', cronAuth, async (req, res) => {
+  try {
+    const { purgerDemandesEchues } = require('../services/rgpdService');
+    const result = await purgerDemandesEchues();
+    logger.warn('Cron purge RGPD exécuté', result);
+    res.json({ success: true, data: result });
+  } catch (err) { sendError(res, err); }
+});
+
 // POST /api/cron/rapports — rapport mensuel automatique (toutes entreprises)
 router.post('/rapports', cronAuth, async (req, res) => {
   try {

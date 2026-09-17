@@ -193,49 +193,109 @@ exports.logout = (req, res) => {
   res.json({ success: true, message: 'Déconnecté.' });
 };
 
-// RGPD — Export de toutes les données personnelles
+// RGPD — Export de toutes les données de l'entreprise (art. 15 et 20)
 exports.exportMyData = async (req, res) => {
   try {
-    const userId = req.user.id;
     const companyId = req.user.company;
-    const Invoice = require('../models/Invoice');
-    const Employee = require('../models/Employee');
+    // Export complet : l'ancienne version se limitait à 100 factures et 100 employés
+    // en renvoyant à un contact support, ce qui ne satisfait ni le droit d'accès ni
+    // la portabilité. On parcourt dynamiquement toutes les collections rattachées à
+    // l'entreprise, pour qu'un modèle ajouté plus tard soit exporté sans oubli.
+    const { modelesAPurger } = require('../services/rgpdService');
 
-    const [user, company, invoices, employees] = await Promise.all([
-      User.findById(userId).select('-password -resetPasswordToken'),
-      Company.findById(companyId),
-      Invoice.find({ company: companyId }).limit(100),
-      Employee.find({ company: companyId }).select('-numeroSecu -iban').limit(100)
+    const [user, company] = await Promise.all([
+      User.findById(req.user.id),
+      Company.findById(companyId)
     ]);
+
+    const donnees = {};
+    for (const modele of modelesAPurger()) {
+      const documents = await modele.find({ company: companyId });
+      if (documents.length) donnees[modele.modelName] = documents;
+    }
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="mes_donnees_novexa_${new Date().toISOString().split('T')[0]}.json"`);
     res.json({
       exportDate: new Date().toISOString(),
-      user,
-      company,
-      invoices: { count: invoices.length, data: invoices },
-      employees: { count: employees.length, data: employees },
-      note: 'Export RGPD partiel — contactez support@novexa.fr pour un export complet'
+      demandePar: { id: user?._id, email: user?.email },
+      entreprise: company,
+      donnees,
+      note: 'Export complet des données de votre entreprise, au format JSON réutilisable (RGPD art. 15 et 20).'
     });
   } catch (err) { sendError(res, err); }
 };
 
-// RGPD — Demande de suppression du compte
+// RGPD — Demande d'effacement (art. 17). Seul le propriétaire du compte peut la faire :
+// elle détruit les données de toute l'entreprise, pas seulement celles du demandeur.
 exports.requestAccountDeletion = async (req, res) => {
   try {
     const { motif } = req.body;
-    const logger = require('../utils/logger');
+    const { demanderSuppression, DELAI_RETRACTATION_JOURS } = require('../services/rgpdService');
 
-    logger.warn('Demande de suppression de compte', { userId: req.user.id, company: req.user.company, motif });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Seul un administrateur de l'entreprise peut demander l'effacement du compte."
+      });
+    }
 
-    // Notifier l'admin Novexa
-    await sendMail({
-      to: process.env.ADMIN_EMAIL || 'admin@novexa.fr',
-      subject: `[RGPD] Demande suppression compte — ${req.user.email}`,
-      html: `<p>L'utilisateur <b>${escapeHtml(req.user.email)}</b> (company: ${escapeHtml(req.user.company)}) demande la suppression de son compte.</p><p>Motif : ${escapeHtml(String(motif || 'Non précisé').slice(0, 1000))}</p><p>Traiter sous 30 jours (obligation RGPD).</p>`
+    const company = await demanderSuppression({
+      companyId: req.user.company,
+      userId: req.user.id,
+      motif
     });
+    if (!company) return res.status(404).json({ success: false, message: 'Entreprise introuvable' });
 
-    res.json({ success: true, message: 'Votre demande de suppression a été enregistrée. Elle sera traitée dans un délai de 30 jours conformément au RGPD.' });
+    sendMail({
+      to: process.env.ADMIN_EMAIL || 'admin@novexa.fr',
+      subject: `[RGPD] Effacement programmé — ${req.user.email}`,
+      html: `<p>L'utilisateur <b>${escapeHtml(req.user.email)}</b> (entreprise ${escapeHtml(req.user.company)}) a demandé l'effacement de son compte.</p>
+             <p>Motif : ${escapeHtml(String(motif || 'Non précisé').slice(0, 1000))}</p>
+             <p>Purge automatique prévue le ${company.suppressionPrevueLe.toLocaleDateString('fr-FR')}, révocable jusque-là.</p>`
+    }).catch(() => {});
+
+    res.json({
+      success: true,
+      message: `Votre demande d'effacement est enregistrée. Vos données seront définitivement supprimées le ${company.suppressionPrevueLe.toLocaleDateString('fr-FR')}. Vous pouvez annuler cette demande jusqu'à cette date, et exporter vos données d'ici là.`,
+      data: {
+        suppressionPrevueLe: company.suppressionPrevueLe,
+        delaiRetractationJours: DELAI_RETRACTATION_JOURS
+      }
+    });
+  } catch (err) { sendError(res, err); }
+};
+
+// RGPD — Révocation de la demande, tant que la purge n'a pas eu lieu
+exports.cancelAccountDeletion = async (req, res) => {
+  try {
+    const { annulerSuppression } = require('../services/rgpdService');
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "Seul un administrateur de l'entreprise peut annuler la demande." });
+    }
+    const company = await annulerSuppression(req.user.company);
+    if (!company) return res.status(404).json({ success: false, message: 'Entreprise introuvable' });
+    if (company.supprimeeLe) {
+      return res.status(410).json({ success: false, message: 'Les données ont déjà été supprimées : la demande ne peut plus être annulée.' });
+    }
+    res.json({ success: true, message: "Votre demande d'effacement a été annulée. Votre compte reste actif." });
+  } catch (err) { sendError(res, err); }
+};
+
+// RGPD — État de la demande en cours
+exports.deletionStatus = async (req, res) => {
+  try {
+    const company = await Company.findById(req.user.company)
+      .select('suppressionDemandeeLe suppressionPrevueLe supprimeeLe anonymisee');
+    if (!company) return res.status(404).json({ success: false, message: 'Entreprise introuvable' });
+    res.json({
+      success: true,
+      data: {
+        demandeEnCours: Boolean(company.suppressionDemandeeLe && !company.supprimeeLe),
+        demandeeLe: company.suppressionDemandeeLe || null,
+        prevueLe: company.suppressionPrevueLe || null,
+        effectueeLe: company.supprimeeLe || null
+      }
+    });
   } catch (err) { sendError(res, err); }
 };
