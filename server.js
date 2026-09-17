@@ -38,12 +38,23 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      // Plus de 'unsafe-inline' : tout le JS des pages est servi depuis /js/*.js.
+      // Un attaquant qui parvient à injecter du HTML ne peut donc plus faire
+      // exécuter de <script>, ce qui coupe la voie d'exploitation XSS classique.
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      // Les pages conservent des gestionnaires inline (onclick=…) : cette directive
+      // les autorise sans rouvrir l'exécution de blocs <script> injectés.
+      scriptSrcAttr: ["'unsafe-inline'"],
+      // styleSrc garde 'unsafe-inline' pour les attributs style= des templates :
+      // sans exécution de script, l'impact se limite à de la mise en forme.
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "https://nexulys-backend-1.onrender.com"],
       objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
       upgradeInsecureRequests: [],
     }
   },
