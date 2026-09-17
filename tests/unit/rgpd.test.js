@@ -55,6 +55,25 @@ describe('Découverte des modèles à purger', () => {
     }
     expect(noms()).not.toContain(nom);
   });
+
+  it('couvre TOUS les modèles du dossier models/, sans dépendre des imports déjà faits', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const surDisque = fs.readdirSync(path.join(__dirname, '..', '..', 'models'))
+      .filter((f) => f.endsWith('.js'))
+      .map((f) => f.replace('.js', ''));
+
+    const couverts = new Set(noms());
+    const attendus = surDisque.filter((m) => {
+      if (['Company', 'Subscription'].includes(m)) return false;
+      return Boolean(mongoose.model(m).schema.path('company'));
+    });
+
+    const oublies = attendus.filter((m) => !couverts.has(m));
+    // Un modèle oublié ici, c'est une donnée personnelle qui survit à l'effacement.
+    expect(oublies).toEqual([]);
+    expect(attendus.length).toBeGreaterThan(30);
+  });
 });
 
 describe('Délai de rétractation', () => {

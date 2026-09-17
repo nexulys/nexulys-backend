@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
@@ -29,13 +31,26 @@ const DELAI_RETRACTATION_JOURS = 30;
 /** Modèles à purger : tous ceux rattachés à une entreprise, sauf exceptions. */
 const CONSERVES = new Set(['Company', 'Subscription']);
 
-const modelesAPurger = () =>
-  mongoose.modelNames()
+/**
+ * Enregistre tous les schémas du dossier models/.
+ * `mongoose.modelNames()` ne connaît que les modèles déjà importés : s'appuyer sur
+ * l'ordre de chargement des routes suffirait aujourd'hui, mais un modèle ajouté plus
+ * tard sans être référencé par une route échapperait silencieusement à l'effacement.
+ */
+const chargerTousLesModeles = () => {
+  const dossier = path.join(__dirname, '..', 'models');
+  for (const fichier of fs.readdirSync(dossier)) {
+    if (fichier.endsWith('.js')) require(path.join(dossier, fichier));
+  }
+};
+
+const modelesAPurger = () => {
+  chargerTousLesModeles();
+  return mongoose.modelNames()
     .filter((nom) => !CONSERVES.has(nom))
     .map((nom) => mongoose.model(nom))
-    // Découverte dynamique plutôt qu'une liste figée : un modèle ajouté plus tard
-    // est purgé automatiquement, au lieu de survivre silencieusement à l'effacement.
     .filter((modele) => Boolean(modele.schema.path('company')));
+};
 
 /** Programme l'effacement, avec un délai pendant lequel la demande reste révocable. */
 const demanderSuppression = async ({ companyId, userId, motif }) => {
