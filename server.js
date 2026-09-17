@@ -5,6 +5,12 @@ if (!process.env.JWT_SECRET) {
   console.error('FATAL: JWT_SECRET non défini. Arrêt du serveur.');
   process.exit(1);
 }
+// Les IBAN et numéros de sécurité sociale sont chiffrés au repos. Sans la clé, ils
+// seraient réécrits en clair et les valeurs déjà chiffrées deviendraient illisibles.
+if (process.env.NODE_ENV === 'production' && !process.env.DATA_ENCRYPTION_KEY) {
+  console.error('FATAL: DATA_ENCRYPTION_KEY non définie — les données sensibles (IBAN, NIR) ne peuvent pas être chiffrées. Générez-la avec `npm run generate:key`. Arrêt du serveur.');
+  process.exit(1);
+}
 if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS) {
   console.warn('WARNING: ALLOWED_ORIGINS non défini en production — le CORS bloquera les requêtes frontend.');
 }
