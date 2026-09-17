@@ -17,9 +17,23 @@
   document.getElementById('admin-password').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
   });
+  document.getElementById('admin-code').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  // Le champ du second facteur n'apparaît que si le serveur l'exige.
+  fetch(API + '/login-config')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.data && d.data.mfaRequis) {
+        document.getElementById('mfa-field').style.display = 'block';
+      }
+    })
+    .catch(function() {});
 
   async function doLogin() {
     var pwd = document.getElementById('admin-password').value;
+    var code = document.getElementById('admin-code').value;
     var btn = document.getElementById('login-btn');
     var errEl = document.getElementById('login-error');
     errEl.style.display = 'none';
@@ -29,7 +43,7 @@
       var res = await fetch(API + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pwd })
+        body: JSON.stringify({ password: pwd, code: code })
       });
       var data = await res.json();
       if (data.success) {

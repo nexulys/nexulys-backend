@@ -3,6 +3,7 @@ const adminAuth = require('../middleware/adminAuth');
 const { adminLoginLimiter } = require('../middleware/rateLimiter');
 const c = require('../controllers/adminController');
 
+router.get('/login-config', c.loginConfig);
 router.post('/login', adminLoginLimiter, c.login);
 router.get('/overview', adminAuth, c.getOverview);
 router.get('/clients', adminAuth, c.getClients);

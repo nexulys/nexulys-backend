@@ -12,7 +12,8 @@
     "seed": "node scripts/seed.js",
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
-    "check-env": "node scripts/check-env.js"
+    "check-env": "node scripts/check-env.js",
+    "admin:mfa": "node scripts/admin-mfa.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -7,22 +7,45 @@ const Expense = require('../models/Expense');
 const Employee = require('../models/Employee');
 const { sendError } = require('../utils/errorResponse');
 const { secureCompare } = require('../utils/secureCompare');
+const { verifierTotp } = require('../utils/totp');
 
 exports.login = async (req, res) => {
-  const { password } = req.body;
+  const { password, code } = req.body;
   const secret = process.env.ADMIN_SECRET;
+  const totpSecret = process.env.ADMIN_TOTP_SECRET;
+
   if (!secret)
     return res.status(503).json({ success: false, message: 'Panel admin non configuré (ADMIN_SECRET manquant)' });
   if (secret.length < 16)
     return res.status(503).json({ success: false, message: 'Panel admin non configuré (ADMIN_SECRET trop faible)' });
-  if (!secureCompare(String(password || ''), secret))
-    return res.status(401).json({ success: false, message: 'Mot de passe incorrect' });
+
+  // Ce panel expose les données de tous les clients : un facteur unique et partagé
+  // ne suffit pas en production. Le secret se génère avec `npm run admin:mfa`.
+  if (process.env.NODE_ENV === 'production' && !totpSecret)
+    return res.status(503).json({
+      success: false,
+      message: 'Panel admin non configuré : ADMIN_TOTP_SECRET requis en production (générez-le avec `npm run admin:mfa`).'
+    });
+
+  const motDePasseOk = secureCompare(String(password || ''), secret);
+  // Le code est toujours vérifié, même si le mot de passe est faux : sans cela, le
+  // temps de réponse distingue « mot de passe correct » de « mot de passe faux ».
+  const codeOk = totpSecret ? verifierTotp(totpSecret, code) : true;
+
+  if (!motDePasseOk || !codeOk)
+    return res.status(401).json({ success: false, message: 'Identifiants ou code invalides' });
+
   const token = jwt.sign(
     { superAdmin: true, iat: Math.floor(Date.now() / 1000) },
     process.env.JWT_SECRET,
     { expiresIn: '8h' }
   );
   res.json({ success: true, token });
+};
+
+/** Indique au frontend s'il doit afficher le champ de code à usage unique. */
+exports.loginConfig = (req, res) => {
+  res.json({ success: true, data: { mfaRequis: Boolean(process.env.ADMIN_TOTP_SECRET) } });
 };
 
 exports.getOverview = async (req, res) => {

@@ -154,6 +154,11 @@
       <label class="login-label">Mot de passe admin</label>
       <input class="login-input" type="password" id="admin-password" placeholder="••••••••••••" autocomplete="current-password" />
     </div>
+    <div class="login-field" id="mfa-field" style="display:none;">
+      <label class="login-label">Code de validation (application d'authentification)</label>
+      <input class="login-input" type="text" id="admin-code" placeholder="123456" inputmode="numeric"
+             autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" />
+    </div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au panel</button>
     <div class="login-error" id="login-error"></div>
     <p style="text-align:center;margin-top:16px;"><a href="/dashboard.html" style="color:#64748b;font-size:12px;text-decoration:none;">← Retour au dashboard</a></p>
