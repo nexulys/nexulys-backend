@@ -196,6 +196,14 @@ exports.logout = (req, res) => {
 // RGPD — Export de toutes les données de l'entreprise (art. 15 et 20)
 exports.exportMyData = async (req, res) => {
   try {
+    // Réservé aux administrateurs : l'export porte sur TOUTE l'entreprise et contient
+    // des données que la plupart des rôles ne doivent pas voir (salaires, IBAN, NIR).
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Seul un administrateur peut exporter les données de l'entreprise. Pour vos propres données, contactez-le."
+      });
+    }
     const companyId = req.user.company;
     // Export complet : l'ancienne version se limitait à 100 factures et 100 employés
     // en renvoyant à un contact support, ce qui ne satisfait ni le droit d'accès ni
