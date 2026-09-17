@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Company = require('../models/Company');
 const { sendError } = require('../utils/errorResponse');
+const { refuserSiQuotaAtteint } = require('../utils/quotas');
 
 const ROLES_AUTORISES = ['admin', 'comptable', 'rh', 'manager', 'employee', 'employe', 'lecture'];
 
@@ -33,6 +34,8 @@ exports.inviterMembre = async (req, res) => {
 
     const existing = await User.findOne({ email: String(email).toLowerCase() });
     if (existing) return res.status(400).json({ success: false, message: 'Cet email est déjà utilisé' });
+
+    if (await refuserSiQuotaAtteint(req, res, 'utilisateurs')) return;
 
     const membre = await User.create({
       email,

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const c = require('../controllers/portailController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 const { paymentLimiter } = require('../middleware/rateLimiter');
 const { resoudreToken } = require('../middleware/accessToken');
 
@@ -14,6 +15,9 @@ router.get('/:token', resoudreToken, c.viewPortal);
 router.post('/:token/payer/:invoiceId', paymentLimiter, resoudreToken, c.payerFacture);
 
 router.use(protect);
+
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 router.get('/', c.listPortals);
 router.post('/', c.createPortal);
 

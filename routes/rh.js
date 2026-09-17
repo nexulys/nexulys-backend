@@ -1,11 +1,14 @@
 const router = require('express').Router();
 const c = require('../controllers/rhController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 const roles = require('../middleware/roles');
 const { validateEmployee } = require('../middleware/validate');
 
 router.use(protect);
 
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 // Les données de paie et RH sensibles sont réservées aux rôles de gestion / RH
 const rh = roles('admin', 'manager', 'rh');
 

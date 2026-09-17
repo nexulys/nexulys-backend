@@ -1,11 +1,14 @@
 const router = require('express').Router();
 const c = require('../controllers/comptabiliteController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 const roles = require('../middleware/roles');
 const { validateInvoice } = require('../middleware/validate');
 
 router.use(protect);
 
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 // Relance en masse des impayés (réservé gestion / comptabilité)
 router.post('/relances/auto', roles('admin', 'manager', 'comptable'), c.relancerImpayees);
 

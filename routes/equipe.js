@@ -1,10 +1,13 @@
 const router = require('express').Router();
 const c = require('../controllers/equipeController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 const roles = require('../middleware/roles');
 
 router.use(protect);
 
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 // La lecture reste ouverte à tous les membres de l'entreprise ; toute écriture sur
 // les comptes (création, changement de rôle, suppression) est réservée aux admins.
 router.route('/')

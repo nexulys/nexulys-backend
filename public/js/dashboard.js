@@ -1614,12 +1614,14 @@
           body: JSON.stringify({ emailFacturation: email, planId: selectedPlanId })
         });
         var data = await res.json();
-        if (data.success) {
-          showToast('Abonnement activé — premier prélèvement le 5 du mois prochain', 'success');
-          loadAbonnement();
-        } else {
-          if (errEl) errEl.textContent = data.message || 'Erreur lors de l\'activation.';
+        // L'abonnement n'est actif qu'une fois le paiement encaissé : on redirige vers
+        // la page de paiement Stripe plutôt que d'annoncer une activation prématurée.
+        if (data.success && data.data && data.data.checkoutUrl) {
+          showToast('Redirection vers le paiement sécurisé...', 'success');
+          window.location.href = data.data.checkoutUrl;
+          return;
         }
+        if (errEl) errEl.textContent = data.message || 'Erreur lors de l\'activation.';
       } catch(e) {
         if (errEl) errEl.textContent = 'Erreur réseau.';
       }

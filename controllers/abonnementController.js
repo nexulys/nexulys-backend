@@ -3,9 +3,8 @@ const { sendError } = require('../utils/errorResponse');
 const { PLANS, ESSAI_GRATUIT, getPlan } = require('../config/plans');
 const {
   createCustomer,
-  createSubscription: createStripeSubscription,
-  cancelSubscription: cancelStripeSubscription,
-  nextBillingOn5th
+  createCheckoutSession,
+  cancelSubscription: cancelStripeSubscription
 } = require('../services/stripeService');
 
 exports.getPlans = async (req, res) => {
@@ -34,28 +33,43 @@ exports.activateSubscription = async (req, res) => {
       nom: req.user.nom || req.user.name || '',
       companyName: req.user.companyName || ''
     });
-    const stripeSub = await createStripeSubscription(stripeCustomer.id, plan);
+    const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const session = await createCheckoutSession({
+      customerId: stripeCustomer.id,
+      plan,
+      companyId: req.user.company,
+      appUrl,
+      email: emailFacturation || req.user.email
+    });
 
+    // L'abonnement n'est PAS activé ici : il ne le sera qu'au retour du webhook, une
+    // fois le paiement réellement encaissé. Auparavant, un simple appel à cette route
+    // suffisait à obtenir un accès payant sans le moindre encaissement.
     const sub = await Subscription.findOneAndUpdate(
       { company: req.user.company },
       {
         plan: plan.id,
         priceMonthly: plan.prix,
         features: plan.fonctionnalites,
-        statut: 'actif',
-        startDate: new Date(),
-        nextBillingDate: nextBillingOn5th(),
+        statut: 'en_attente_paiement',
         paymentMethod: methodePaiement,
         billingEmail: emailFacturation,
-        stripeCustomerId: stripeCustomer.id,
-        stripeSubscriptionId: stripeSub.id
+        stripeCustomerId: stripeCustomer.id
       },
       { new: true }
     );
+
+    if (!session?.url) {
+      return res.status(503).json({
+        success: false,
+        message: 'Le service de paiement est momentanément indisponible. Réessayez dans quelques minutes.'
+      });
+    }
+
     res.json({
       success: true,
-      message: `Abonnement ${plan.nom} activé — ${plan.prix} € / mois`,
-      data: sub
+      message: `Redirection vers le paiement sécurisé — ${plan.nom}, ${plan.prix} € / mois`,
+      data: { abonnement: sub, checkoutUrl: session.url }
     });
   } catch (err) { sendError(res, err); }
 };

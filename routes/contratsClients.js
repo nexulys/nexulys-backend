@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 const { resoudreToken } = require('../middleware/accessToken');
 const {
   getContrats, createContrat, updateContrat, deleteContrat, getContratsExpirants,
@@ -14,8 +15,8 @@ router.post('/signer/:token', resoudreToken, signerContrat);
 
 router.get('/expirants', auth, getContratsExpirants);
 router.get('/', auth, getContrats);
-router.post('/', auth, createContrat);
-router.put('/:id', auth, updateContrat);
-router.delete('/:id', auth, deleteContrat);
-router.post('/:id/envoyer-signature', auth, envoyerContratSignature);
+router.post('/', auth, verifierAbonnement, createContrat);
+router.put('/:id', auth, verifierAbonnement, updateContrat);
+router.delete('/:id', auth, verifierAbonnement, deleteContrat);
+router.post('/:id/envoyer-signature', auth, verifierAbonnement, envoyerContratSignature);
 module.exports = router;
