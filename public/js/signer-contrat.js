@@ -6,7 +6,28 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-const token = new URLSearchParams(location.search).get('token');
+// Jeton d'accès : lu dans le fragment d'URL (#token=…), qui n'est jamais transmis
+// au serveur ni journalisé. Les liens déjà distribués utilisent encore ?token=, on
+// les accepte puis on réécrit l'URL pour retirer le jeton de la query string.
+const token = (function () {
+  const hash = new URLSearchParams(location.hash.replace(/^#/, '')).get('token');
+  if (hash) return hash;
+  const query = new URLSearchParams(location.search).get('token');
+  if (query) {
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('token');
+      url.hash = 'token=' + query;
+      history.replaceState(null, '', url.toString());
+    } catch (e) {}
+  }
+  return query;
+})();
+
+// Le jeton part en en-tête plutôt que dans le chemin : dans l'URL il serait écrit en
+// clair dans les logs d'accès nginx et morgan.
+const authHeaders = () => ({ 'Content-Type': 'application/json', 'X-Access-Token': token || '' });
+
 const API = 'https://nexulys-backend-1.onrender.com/api';
 const fmt = n => (n||0).toLocaleString('fr-FR', {minimumFractionDigits:2,maximumFractionDigits:2});
 const PERIOD = { unique:'Paiement unique', mensuel:'Mensuel', trimestriel:'Trimestriel', annuel:'Annuel' };
@@ -15,7 +36,7 @@ const dstr = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
 async function load() {
   if (!token) { show('error-view'); return; }
   try {
-    const res = await fetch(API + '/contrats-clients/view/' + token);
+    const res = await fetch(API + '/contrats-clients/acces', { headers: authHeaders() });
     const data = await res.json();
     if (!data.success) { show('error-view'); return; }
     const c = data.data;
@@ -67,8 +88,8 @@ async function signer() {
   const btn = document.getElementById('sign-btn');
   btn.disabled = true; btn.textContent = 'Enregistrement...';
   try {
-    const res = await fetch(API + '/contrats-clients/signer/' + token, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ signataire: nom })
+    const res = await fetch(API + '/contrats-clients/acces/signer', {
+      method:'POST', headers: authHeaders(), body: JSON.stringify({ signataire: nom })
     });
     const data = await res.json();
     if (data.success) { show('signed-view'); }

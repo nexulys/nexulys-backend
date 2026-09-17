@@ -1,10 +1,13 @@
 const router = require('express').Router();
 const c = require('../controllers/devisController');
 const protect = require('../middleware/auth');
+const { resoudreToken } = require('../middleware/accessToken');
 
 // Routes publiques (signature)
-router.get('/view/:token', c.viewDevis);
-router.post('/signer/:token', c.signerDevis);
+router.get('/acces', resoudreToken, c.viewDevis);
+router.post('/acces/signer', resoudreToken, c.signerDevis);
+router.get('/view/:token', resoudreToken, c.viewDevis);
+router.post('/signer/:token', resoudreToken, c.signerDevis);
 
 router.use(protect);
 router.get('/', c.getDevis);

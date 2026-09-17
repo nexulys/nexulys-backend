@@ -16,7 +16,7 @@ exports.createAccess = async (req, res) => {
       company: req.user.company, token, label: label || 'Expert-comptable', expiresAt
     });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    res.status(201).json({ success: true, data: { ...access.toObject(), url: `${appUrl}/comptable.html?token=${token}` } });
+    res.status(201).json({ success: true, data: { ...access.toObject(), url: `${appUrl}/comptable.html#token=${token}` } });
   } catch (err) { sendError(res, err); }
 };
 
@@ -24,7 +24,7 @@ exports.listAccess = async (req, res) => {
   try {
     const list = await ExpertAccess.find({ company: req.user.company, actif: true }).sort({ createdAt: -1 });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const data = list.map(a => ({ ...a.toObject(), url: `${appUrl}/comptable.html?token=${a.token}` }));
+    const data = list.map(a => ({ ...a.toObject(), url: `${appUrl}/comptable.html#token=${a.token}` }));
     res.json({ success: true, data });
   } catch (err) { sendError(res, err); }
 };
@@ -38,7 +38,7 @@ exports.revokeAccess = async (req, res) => {
 
 exports.viewAccess = async (req, res) => {
   try {
-    const access = await ExpertAccess.findOne({ token: req.params.token, actif: true });
+    const access = await ExpertAccess.findOne({ token: req.accessToken, actif: true });
     if (!access) return res.status(404).json({ success: false, message: 'Lien invalide ou expiré' });
     if (access.expiresAt < new Date()) return res.status(403).json({ success: false, message: 'Lien expiré' });
 

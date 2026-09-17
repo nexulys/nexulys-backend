@@ -14,7 +14,7 @@ exports.createPortal = async (req, res) => {
     const expiresAt = new Date(Date.now() + jours * 24 * 60 * 60 * 1000);
     const portal = await ClientPortal.create({ company: req.user.company, clientNom, clientEmail, token, expiresAt });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    res.status(201).json({ success: true, data: { ...portal.toObject(), url: `${appUrl}/portail.html?token=${token}` } });
+    res.status(201).json({ success: true, data: { ...portal.toObject(), url: `${appUrl}/portail.html#token=${token}` } });
   } catch (err) { sendError(res, err); }
 };
 
@@ -22,14 +22,14 @@ exports.listPortals = async (req, res) => {
   try {
     const list = await ClientPortal.find({ company: req.user.company }).sort({ createdAt: -1 });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const data = list.map(p => ({ ...p.toObject(), url: `${appUrl}/portail.html?token=${p.token}` }));
+    const data = list.map(p => ({ ...p.toObject(), url: `${appUrl}/portail.html#token=${p.token}` }));
     res.json({ success: true, data });
   } catch (err) { sendError(res, err); }
 };
 
 exports.viewPortal = async (req, res) => {
   try {
-    const portal = await ClientPortal.findOne({ token: req.params.token, actif: true });
+    const portal = await ClientPortal.findOne({ token: req.accessToken, actif: true });
     if (!portal) return res.status(404).json({ success: false, message: 'Lien invalide' });
     if (portal.expiresAt < new Date()) return res.status(403).json({ success: false, message: 'Lien expiré' });
 
@@ -57,7 +57,7 @@ exports.viewPortal = async (req, res) => {
 
 exports.payerFacture = async (req, res) => {
   try {
-    const portal = await ClientPortal.findOne({ token: req.params.token, actif: true });
+    const portal = await ClientPortal.findOne({ token: req.accessToken, actif: true });
     if (!portal || portal.expiresAt < new Date()) return res.status(403).json({ success: false, message: 'Lien invalide ou expiré' });
 
     const invoice = await Invoice.findOne({ _id: req.params.invoiceId, company: portal.company, statut: { $ne: 'payee' } });
@@ -82,8 +82,8 @@ exports.payerFacture = async (req, res) => {
         },
         quantity: 1
       }],
-      success_url: `${appUrl}/portail.html?token=${req.params.token}&paid=1`,
-      cancel_url: `${appUrl}/portail.html?token=${req.params.token}`,
+      success_url: `${appUrl}/portail.html?paid=1#token=${req.accessToken}`,
+      cancel_url: `${appUrl}/portail.html#token=${req.accessToken}`,
       metadata: { invoiceId: invoice._id.toString(), companyId: portal.company.toString() }
     });
 

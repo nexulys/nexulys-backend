@@ -1,4 +1,25 @@
-const token = new URLSearchParams(location.search).get('token');
+// Jeton d'accès : lu dans le fragment d'URL (#token=…), qui n'est jamais transmis
+// au serveur ni journalisé. Les liens déjà distribués utilisent encore ?token=, on
+// les accepte puis on réécrit l'URL pour retirer le jeton de la query string.
+const token = (function () {
+  const hash = new URLSearchParams(location.hash.replace(/^#/, '')).get('token');
+  if (hash) return hash;
+  const query = new URLSearchParams(location.search).get('token');
+  if (query) {
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('token');
+      url.hash = 'token=' + query;
+      history.replaceState(null, '', url.toString());
+    } catch (e) {}
+  }
+  return query;
+})();
+
+// Le jeton part en en-tête plutôt que dans le chemin : dans l'URL il serait écrit en
+// clair dans les logs d'accès nginx et morgan.
+const authHeaders = () => ({ 'Content-Type': 'application/json', 'X-Access-Token': token || '' });
+
 const paid = new URLSearchParams(location.search).get('paid');
 
 function showToast(msg, type) {
@@ -22,7 +43,7 @@ function statusBadge(s) {
 async function load() {
   if (!token) { show('error-view'); return; }
   try {
-    const res = await fetch('https://nexulys-backend-1.onrender.com/api/portail/' + token);
+    const res = await fetch('https://nexulys-backend-1.onrender.com/api/portail/acces', { headers: authHeaders() });
     const data = await res.json();
     if (!data.success) { show('error-view'); return; }
     const d = data.data;
@@ -76,7 +97,7 @@ async function load() {
 async function payer(invoiceId, btn) {
   btn.disabled = true; btn.textContent = 'Redirection...';
   try {
-    const res = await fetch(`https://nexulys-backend-1.onrender.com/api/portail/${token}/payer/${invoiceId}`, { method:'POST', headers:{'Content-Type':'application/json'} });
+    const res = await fetch(`https://nexulys-backend-1.onrender.com/api/portail/acces/payer/${invoiceId}`, { method:'POST', headers: authHeaders() });
     const data = await res.json();
     if (data.success && data.data?.url) { window.location.href = data.data.url; }
     else { showToast(data.message || 'Erreur de paiement', 'error'); btn.disabled = false; btn.textContent = '💳 Payer en ligne'; }
