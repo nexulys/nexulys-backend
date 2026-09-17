@@ -3,13 +3,15 @@ const ClientPortal = require('../models/ClientPortal');
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 const { sendError } = require('../utils/errorResponse');
+const { escapeRegex } = require('../utils/escape');
 
 exports.createPortal = async (req, res) => {
   try {
     const { clientNom, clientEmail, dureeJours = 30 } = req.body;
     if (!clientNom) return res.status(400).json({ success: false, message: 'Nom du client requis' });
+    const jours = Math.min(Math.max(parseInt(dureeJours, 10) || 30, 1), 365);
     const token = crypto.randomBytes(24).toString('hex');
-    const expiresAt = new Date(Date.now() + dureeJours * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + jours * 24 * 60 * 60 * 1000);
     const portal = await ClientPortal.create({ company: req.user.company, clientNom, clientEmail, token, expiresAt });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
     res.status(201).json({ success: true, data: { ...portal.toObject(), url: `${appUrl}/portail.html?token=${token}` } });
@@ -32,9 +34,13 @@ exports.viewPortal = async (req, res) => {
     if (portal.expiresAt < new Date()) return res.status(403).json({ success: false, message: 'Lien expiré' });
 
     const company = await Company.findById(portal.company);
+    // Le nom du client est échappé et ancré : non échappé, un nom valant `.*` exposerait
+    // les factures de TOUS les clients de l'entreprise, et un nom comme `(a+)+$`
+    // provoquerait un ReDoS bloquant le serveur. Ancré = plus de correspondance partielle
+    // entre clients aux noms proches (« Acme » ne remonte plus « Acme Industries »).
     const invoices = await Invoice.find({
       company: portal.company,
-      'client.nom': { $regex: new RegExp(portal.clientNom, 'i') }
+      'client.nom': { $regex: new RegExp(`^${escapeRegex(portal.clientNom)}$`, 'i') }
     }).sort({ createdAt: -1 });
 
     res.json({

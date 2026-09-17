@@ -5,8 +5,14 @@ const Subscription = require('../models/Subscription');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../utils/mailer');
 const { sendError } = require('../utils/errorResponse');
+const { escapeHtml } = require('../utils/escape');
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (user) =>
+  jwt.sign(
+    { id: user._id, tokenVersion: user.tokenVersion || 0 },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 
 const setTokenCookie = (res, token) => {
   res.cookie('novexa_token', token, {
@@ -38,7 +44,7 @@ exports.register = async (req, res) => {
       html: `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px"><h2 style="color:#6366f1">Bienvenue ${prenom} sur Novexa !</h2><p>Votre compte est créé avec succès. Profitez de <strong>14 jours d'essai gratuit</strong>, sans carte bancaire.</p><p>Connectez-vous maintenant et commencez à gérer votre entreprise intelligemment.</p><hr style="border-color:#eee;margin:24px 0"/><small style="color:#999">Novexa by Nexulys — La plateforme de gestion d'entreprise intelligente</small></div>`
     }).catch(() => {});
 
-    const token = generateToken(user._id);
+    const token = generateToken(user);
     setTokenCookie(res, token);
     res.status(201).json({
       success: true,
@@ -64,7 +70,9 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password').populate('company');
     if (!user || !(await user.comparePassword(password)))
       return res.status(401).json({ success: false, message: 'Identifiants invalides' });
-    const token = generateToken(user._id);
+    if (user.actif === false)
+      return res.status(403).json({ success: false, message: 'Compte désactivé. Contactez votre administrateur.' });
+    const token = generateToken(user);
     setTokenCookie(res, token);
     res.json({
       success: true,
@@ -95,7 +103,25 @@ exports.me = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { nom, prenom, email } = req.body;
-    const user = await User.findByIdAndUpdate(req.user.id, { nom, prenom, email }, { new: true });
+    const update = {};
+    if (nom !== undefined) update.nom = nom;
+    if (prenom !== undefined) update.prenom = prenom;
+
+    if (email !== undefined) {
+      const normalise = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalise))
+        return res.status(400).json({ success: false, message: 'Email invalide' });
+      // L'email du propriétaire de la plateforme confère isPlatformAdmin : il ne doit
+      // jamais pouvoir être revendiqué par un utilisateur via son profil.
+      if (process.env.ADMIN_EMAIL && normalise === process.env.ADMIN_EMAIL.toLowerCase())
+        return res.status(403).json({ success: false, message: 'Cet email ne peut pas être utilisé.' });
+      const existant = await User.findOne({ email: normalise, _id: { $ne: req.user.id } });
+      if (existant)
+        return res.status(400).json({ success: false, message: 'Email déjà utilisé' });
+      update.email = normalise;
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, update, { new: true, runValidators: true });
     res.json({ success: true, data: user });
   } catch (err) { sendError(res, err); }
 };
@@ -109,16 +135,6 @@ exports.onboarding = async (req, res) => {
       { new: true, upsert: true }
     );
     res.json({ success: true, message: 'Entreprise mise à jour', data: company });
-  } catch (err) { sendError(res, err); }
-};
-
-exports.inviteUser = async (req, res) => {
-  try {
-    const { nom, prenom, email, password, role } = req.body;
-    if (await User.findOne({ email }))
-      return res.status(400).json({ success: false, message: 'Email déjà utilisé' });
-    const user = await User.create({ nom, prenom, email, password, role: role || 'employee', company: req.user.company });
-    res.status(201).json({ success: true, message: 'Utilisateur invité', data: { id: user._id, nom, prenom, email, role: user.role } });
   } catch (err) { sendError(res, err); }
 };
 
@@ -138,11 +154,13 @@ exports.forgotPassword = async (req, res) => {
     const baseUrl = process.env.APP_URL || 'http://localhost:5000';
     const resetUrl = `${baseUrl}/login.html?reset=${rawToken}`;
 
-    await sendMail({
+    // Envoi non bloquant : attendre le SMTP rendrait la réponse mesurablement plus
+    // lente quand l'email existe, ce qui permet d'énumérer les comptes.
+    sendMail({
       to: email,
       subject: 'Réinitialisation de votre mot de passe Novexa',
       html: `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px"><h2 style="color:#6366f1">Réinitialisation de mot de passe</h2><p>Vous avez demandé à réinitialiser votre mot de passe Novexa.</p><p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Réinitialiser mon mot de passe</a></p><p style="color:#999;font-size:13px">Ce lien expire dans <strong>1 heure</strong>. Si vous n'avez pas fait cette demande, ignorez cet email.</p><hr style="border-color:#eee;margin:24px 0"/><small style="color:#999">Novexa by Nexulys</small></div>`
-    });
+    }).catch(() => {});
 
     res.json(genericMsg);
   } catch (err) { sendError(res, err); }
@@ -215,7 +233,7 @@ exports.requestAccountDeletion = async (req, res) => {
     await sendMail({
       to: process.env.ADMIN_EMAIL || 'admin@novexa.fr',
       subject: `[RGPD] Demande suppression compte — ${req.user.email}`,
-      html: `<p>L'utilisateur <b>${req.user.email}</b> (company: ${req.user.company}) demande la suppression de son compte.</p><p>Motif : ${motif || 'Non précisé'}</p><p>Traiter sous 30 jours (obligation RGPD).</p>`
+      html: `<p>L'utilisateur <b>${escapeHtml(req.user.email)}</b> (company: ${escapeHtml(req.user.company)}) demande la suppression de son compte.</p><p>Motif : ${escapeHtml(String(motif || 'Non précisé').slice(0, 1000))}</p><p>Traiter sous 30 jours (obligation RGPD).</p>`
     });
 
     res.json({ success: true, message: 'Votre demande de suppression a été enregistrée. Elle sera traitée dans un délai de 30 jours conformément au RGPD.' });

@@ -61,9 +61,13 @@ td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04
 <script>
 const token = new URLSearchParams(location.search).get('token');
 const fmt = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+// Échappement obligatoire : intitulés de dépenses, noms de clients et numéros de
+// facture sont saisis côté entreprise et rendus ici chez l'expert-comptable.
+const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const statusBadge = s => {
   const m = {payee:['badge-green','Payée'],envoyee:['badge-orange','Envoyée'],en_retard:['badge-red','En retard'],brouillon:['badge-gray','Brouillon'],annulee:['badge-gray','Annulée']};
-  const [cls,lbl] = m[s]||['badge-gray',s];
+  const [cls,lbl] = m[s]||['badge-gray',esc(s)];
   return `<span class="badge ${cls}">${lbl}</span>`;
 };
 const catLabels = {fournitures:'Fournitures',transport:'Transport',restauration:'Restauration',logiciel:'Logiciels',marketing:'Marketing',loyer:'Loyer',salaires:'Salaires',autre:'Autres'};
@@ -107,7 +111,7 @@ async function load() {
       <div class="row-item"><span class="lbl">Chiffre d'affaires HT</span><span>${fmt(kpis.caHT)}</span></div>
       <div class="row-total"><span>Total produits</span><span class="val">${fmt(kpis.caHT)}</span></div>
       <div class="section-title" style="color:#f87171;margin-top:20px;">CHARGES</div>
-      ${Object.entries(chargesParCat).map(([cat,m])=>`<div class="row-item"><span class="lbl">${catLabels[cat]||cat}</span><span>${fmt(m)}</span></div>`).join('')}
+      ${Object.entries(chargesParCat).map(([cat,m])=>`<div class="row-item"><span class="lbl">${catLabels[cat]||esc(cat)}</span><span>${fmt(m)}</span></div>`).join('')}
       <div class="row-total"><span>Total charges</span><span class="val">${fmt(kpis.totalCharges)}</span></div>
       <div style="margin-top:16px;padding:14px;background:rgba(99,102,241,.06);border-radius:10px;display:flex;justify-content:space-between;align-items:center;">
         <span style="font-weight:700;">Résultat net</span>
@@ -122,7 +126,7 @@ async function load() {
         const pct = totalChargesAff ? Math.round(m/totalChargesAff*100) : 0;
         return `<div style="margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-            <span style="color:#94a3b8;">${catLabels[cat]||cat}</span>
+            <span style="color:#94a3b8;">${catLabels[cat]||esc(cat)}</span>
             <span>${pct}% — ${fmt(m)}</span>
           </div>
           <div style="background:rgba(255,255,255,.06);border-radius:4px;height:6px;">
@@ -141,8 +145,8 @@ async function load() {
       <thead><tr><th>N°</th><th>Client</th><th>Montant TTC</th><th>Statut</th><th>Date</th></tr></thead>
       <tbody>
         ${(d.recentInvoices||[]).map(i=>`<tr>
-          <td style="font-weight:600;">${i.numero}</td>
-          <td>${i.client?.nom||'—'}</td>
+          <td style="font-weight:600;">${esc(i.numero)}</td>
+          <td>${esc(i.client?.nom||'—')}</td>
           <td style="color:#a5b4fc;font-weight:700;">${fmt(i.montantTTC)}</td>
           <td>${statusBadge(i.statut)}</td>
           <td style="color:#64748b;">${new Date(i.createdAt).toLocaleDateString('fr-FR')}</td>
@@ -161,8 +165,8 @@ async function load() {
         ${(d.recentExpenses||[]).map(e=>{
           const [cls,lbl] = e.statut==='approuvee'?['badge-green','Approuvée']:e.statut==='rejetee'?['badge-red','Rejetée']:['badge-orange','En attente'];
           return `<tr>
-            <td>${e.titre}</td>
-            <td style="color:#94a3b8;">${catLabels[e.categorie]||e.categorie}</td>
+            <td>${esc(e.titre)}</td>
+            <td style="color:#94a3b8;">${catLabels[e.categorie]||esc(e.categorie)}</td>
             <td style="color:#a5b4fc;font-weight:700;">${fmt(e.montant)}</td>
             <td><span class="badge ${cls}">${lbl}</span></td>
             <td style="color:#64748b;">${new Date(e.date).toLocaleDateString('fr-FR')}</td>

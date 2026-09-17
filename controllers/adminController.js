@@ -6,13 +6,16 @@ const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
 const Employee = require('../models/Employee');
 const { sendError } = require('../utils/errorResponse');
+const { secureCompare } = require('../utils/secureCompare');
 
 exports.login = async (req, res) => {
   const { password } = req.body;
   const secret = process.env.ADMIN_SECRET;
   if (!secret)
     return res.status(503).json({ success: false, message: 'Panel admin non configuré (ADMIN_SECRET manquant)' });
-  if (!password || password !== secret)
+  if (secret.length < 16)
+    return res.status(503).json({ success: false, message: 'Panel admin non configuré (ADMIN_SECRET trop faible)' });
+  if (!secureCompare(String(password || ''), secret))
     return res.status(401).json({ success: false, message: 'Mot de passe incorrect' });
   const token = jwt.sign(
     { superAdmin: true, iat: Math.floor(Date.now() / 1000) },

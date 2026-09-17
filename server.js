@@ -22,6 +22,14 @@ initSentry();
 
 const app = express();
 
+// ── Confiance au reverse-proxy ──
+// L'app tourne derrière nginx / Render. Sans ceci, req.ip vaut l'IP du proxy pour
+// TOUTES les requêtes : les quotas de rate limiting deviennent globaux (un seul
+// client épuise le quota de tout le monde) et l'anti-brute-force devient inopérant.
+// Valeur numérique = nombre de proxies de confiance ; ne jamais mettre `true`
+// (X-Forwarded-For devient alors falsifiable par le client).
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
+
 // En test, la connexion est gérée par le harnais (mongodb-memory-server)
 if (process.env.NODE_ENV !== 'test') connectDB();
 
@@ -43,16 +51,29 @@ app.use(helmet({
 }));
 
 // ── CORS ──
+// Allowlist appliquée dans TOUS les environnements. `origin: true` reflète l'origine
+// de l'appelant ; combiné à `credentials: true`, n'importe quel site peut alors lire
+// les réponses authentifiées d'un utilisateur connecté (staging exposé, NODE_ENV mal
+// positionné). On refuse par défaut plutôt que de refléter.
 const corsOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : ['http://localhost:5000', 'http://localhost:3000'];
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? corsOrigins : true,
+  origin: (origin, cb) => {
+    // Pas d'en-tête Origin : appels serveur-à-serveur, curl, webhooks — non concernés
+    // par la politique same-origin du navigateur.
+    if (!origin) return cb(null, true);
+    return cb(null, corsOrigins.includes(origin));
+  },
   credentials: true
 }));
 
 // ── Cookie parser ──
 app.use(cookieParser());
+
+// ── Anti-CSRF (après cookieParser, avant les routes) ──
+const { csrfGuard } = require('./middleware/csrf');
+app.use('/api', csrfGuard(corsOrigins));
 
 // ── Body parsing avec limite stricte (anti payload flood) ──
 // IMPORTANT : le webhook Stripe a besoin du corps brut pour vérifier la signature.

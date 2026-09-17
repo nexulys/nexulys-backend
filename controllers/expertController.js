@@ -9,8 +9,9 @@ const { sendError } = require('../utils/errorResponse');
 exports.createAccess = async (req, res) => {
   try {
     const { label, dureeJours = 90 } = req.body;
+    const jours = Math.min(Math.max(parseInt(dureeJours, 10) || 90, 1), 365);
     const token = crypto.randomBytes(24).toString('hex');
-    const expiresAt = new Date(Date.now() + dureeJours * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + jours * 24 * 60 * 60 * 1000);
     const access = await ExpertAccess.create({
       company: req.user.company, token, label: label || 'Expert-comptable', expiresAt
     });

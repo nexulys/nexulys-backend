@@ -45,6 +45,22 @@ exports.publicLimiter = rateLimit({
   }
 });
 
+// Back-office plateforme : 5 tentatives / heure. Un mot de passe unique (ADMIN_SECRET)
+// ouvre les données de TOUS les clients — le quota global de 100 req/min laisserait
+// largement la place à une attaque par force brute.
+exports.adminLoginLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { success: false, message: 'Trop de tentatives. Réessayez dans une heure.' },
+  handler: (req, res, next, options) => {
+    onLimitReached(req, res, options);
+    res.status(429).json(options.message);
+  }
+});
+
 // Paiement Stripe : 5 tentatives / 10 min — évite l'abus de checkout
 exports.paymentLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
