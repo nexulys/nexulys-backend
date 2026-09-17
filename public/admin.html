@@ -285,6 +285,14 @@
 <div id="toast"></div>
 
 <script>
+  // Échappement HTML de toute donnée injectée via innerHTML (noms de clients,
+  // SIRET, emails… saisis par les utilisateurs et rendus dans le back-office).
+  function esc(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   const API = 'https://nexulys-backend-1.onrender.com/api/admin';
   let adminToken = sessionStorage.getItem('novexa_admin_token');
   let mrrChart = null, donutChart = null;
@@ -404,16 +412,16 @@
       var trialDate = sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString('fr') : '—';
       var createdAt = c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr') : '—';
       return '<tr>'
-        + '<td style="font-weight:700;">' + escH(c.nom) + '</td>'
-        + '<td>' + escH(c.adminNom) + '</td>'
-        + '<td style="color:var(--muted);font-size:12px;">' + escH(c.adminEmail) + '</td>'
-        + '<td style="color:var(--dim);">' + escH(c.secteur) + '</td>'
-        + '<td><span class="badge ' + badgeCls + '">' + badgeLbl + '</span></td>'
+        + '<td style="font-weight:700;">' + esc(escH(c.nom))+ '</td>'
+        + '<td>' + esc(escH(c.adminNom))+ '</td>'
+        + '<td style="color:var(--muted);font-size:12px;">' + esc(escH(c.adminEmail))+ '</td>'
+        + '<td style="color:var(--dim);">' + esc(escH(c.secteur))+ '</td>'
+        + '<td><span class="badge ' + esc(badgeCls)+ '">' + esc(badgeLbl)+ '</span></td>'
         + '<td>' + mrr + '</td>'
-        + '<td style="text-align:center;">' + (c.employes || 0) + '</td>'
-        + '<td style="text-align:center;">' + (c.factures || 0) + '</td>'
-        + '<td style="color:var(--dim);font-size:12px;">' + trialDate + '</td>'
-        + '<td style="color:var(--dim);font-size:12px;">' + createdAt + '</td>'
+        + '<td style="text-align:center;">' + esc((c.employes || 0))+ '</td>'
+        + '<td style="text-align:center;">' + esc((c.factures || 0))+ '</td>'
+        + '<td style="color:var(--dim);font-size:12px;">' + esc(trialDate)+ '</td>'
+        + '<td style="color:var(--dim);font-size:12px;">' + esc(createdAt)+ '</td>'
         + '</tr>';
     }).join('');
 
@@ -437,12 +445,12 @@
       var badgeCls = isSuccess ? 'b-green' : isFailed ? 'b-red' : 'b-gray';
       var badgeLbl = isSuccess ? '✓ Réussi' : isFailed ? '✗ Échoué' : p.statut;
       var date = p.date ? new Date(p.date).toLocaleString('fr') : '—';
-      var stripe = p.stripeCustomerId ? '<span style="font-family:monospace;font-size:11px;color:var(--dim);">' + p.stripeCustomerId + '</span>' : '<span style="color:var(--dim);">—</span>';
+      var stripe = p.stripeCustomerId ? '<span style="font-family:monospace;font-size:11px;color:var(--dim);">' + esc(p.stripeCustomerId)+ '</span>' : '<span style="color:var(--dim);">—</span>';
       return '<tr>'
-        + '<td style="color:var(--muted);font-size:12px;">' + date + '</td>'
-        + '<td style="font-weight:600;">' + escH(p.companyNom) + '</td>'
-        + '<td style="font-weight:700;color:' + (isSuccess ? '#4ade80' : isFailed ? '#f87171' : 'var(--text)') + ';">' + (p.montant || 0).toLocaleString('fr') + ' €</td>'
-        + '<td><span class="badge ' + badgeCls + '">' + badgeLbl + '</span></td>'
+        + '<td style="color:var(--muted);font-size:12px;">' + esc(date)+ '</td>'
+        + '<td style="font-weight:600;">' + esc(escH(p.companyNom))+ '</td>'
+        + '<td style="font-weight:700;color:' + esc((isSuccess ? '#4ade80' : isFailed ? '#f87171' : 'var(--text)'))+ ';">' + (p.montant || 0).toLocaleString('fr') + ' €</td>'
+        + '<td><span class="badge ' + esc(badgeCls)+ '">' + esc(badgeLbl)+ '</span></td>'
         + '<td>' + stripe + '</td>'
         + '</tr>';
     }).join('');
@@ -531,7 +539,7 @@
       { label: 'Suspendus', val: counts.suspendu, color: '#fb923c' },
       { label: 'Annulés', val: counts.annule, color: '#f87171' }
     ].map(function(i) {
-      return '<div class="legend-item"><div class="legend-dot" style="background:' + i.color + '"></div><span class="legend-label">' + i.label + '</span><span class="legend-val" style="color:' + i.color + '">' + i.val + '</span></div>';
+      return '<div class="legend-item"><div class="legend-dot" style="background:' + esc(i.color)+ '"></div><span class="legend-label">' + esc(i.label)+ '</span><span class="legend-val" style="color:' + esc(i.color)+ '">' + esc(i.val)+ '</span></div>';
     }).join('');
   }
 

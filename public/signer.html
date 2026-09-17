@@ -57,6 +57,14 @@ td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04
 </div>
 
 <script>
+  // Échappement HTML : ces pages sont ouvertes par un tiers (client final) et
+  // affichent des données saisies côté entreprise.
+  function esc(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
 const token = new URLSearchParams(location.search).get('token');
 const API = 'https://nexulys-backend-1.onrender.com/api';
 const fmt = n => (n||0).toLocaleString('fr-FR', {minimumFractionDigits:2,maximumFractionDigits:2});
@@ -78,14 +86,14 @@ async function load() {
     document.getElementById('content').innerHTML = `
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-    <span>Devis ${d.numero}</span>
+    <span>Devis ${esc(d.numero)}</span>
     <span class="${exp < new Date() ? 'badge-exp' : 'badge-green'}">${exp < new Date() ? 'Expiré' : 'Valide jusqu\'au ' + exp.toLocaleDateString('fr-FR')}</span>
   </div>
   <div class="card-body">
-    <div class="info-row"><span class="lbl">Client</span><span style="font-weight:600;">${d.client?.nom||'—'}</span></div>
-    <div class="info-row"><span class="lbl">Référence</span><span>${d.numero}</span></div>
+    <div class="info-row"><span class="lbl">Client</span><span style="font-weight:600;">${esc(d.client?.nom||'—')}</span></div>
+    <div class="info-row"><span class="lbl">Référence</span><span>${esc(d.numero)}</span></div>
     <div class="info-row"><span class="lbl">Date</span><span>${new Date(d.createdAt).toLocaleDateString('fr-FR')}</span></div>
-    ${d.notes ? `<div class="info-row"><span class="lbl">Notes</span><span style="color:#94a3b8;">${d.notes}</span></div>` : ''}
+    ${d.notes ? `<div class="info-row"><span class="lbl">Notes</span><span style="color:#94a3b8;">${esc(d.notes)}</span></div>` : ''}
   </div>
 </div>
 
@@ -96,11 +104,11 @@ async function load() {
       <thead><tr><th>Description</th><th>Qté</th><th>PU HT</th><th>TVA</th><th>Total HT</th></tr></thead>
       <tbody>
         ${(d.lignes||[]).map(l => `<tr>
-          <td>${l.description}</td>
-          <td>${l.quantite}</td>
-          <td>${fmt(l.prixUnitaire)} ${symbole}</td>
-          <td>${l.tva||20} %</td>
-          <td style="font-weight:600;">${fmt(l.montantHT)} ${symbole}</td>
+          <td>${esc(l.description)}</td>
+          <td>${esc(l.quantite)}</td>
+          <td>${fmt(l.prixUnitaire)} ${esc(symbole)}</td>
+          <td>${esc(l.tva||20)} %</td>
+          <td style="font-weight:600;">${fmt(l.montantHT)} ${esc(symbole)}</td>
         </tr>`).join('')}
       </tbody>
     </table>
@@ -108,9 +116,9 @@ async function load() {
 </div>
 
 <div class="kpi-grid">
-  <div class="kpi"><div class="kpi-val">${fmt(d.montantHT)} ${symbole}</div><div class="kpi-label">Total HT</div></div>
-  <div class="kpi"><div class="kpi-val">${fmt(d.montantTVA)} ${symbole}</div><div class="kpi-label">TVA</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:#34d399;">${fmt(d.montantTTC)} ${symbole}</div><div class="kpi-label">Total TTC</div></div>
+  <div class="kpi"><div class="kpi-val">${fmt(d.montantHT)} ${esc(symbole)}</div><div class="kpi-label">Total HT</div></div>
+  <div class="kpi"><div class="kpi-val">${fmt(d.montantTVA)} ${esc(symbole)}</div><div class="kpi-label">TVA</div></div>
+  <div class="kpi"><div class="kpi-val" style="color:#34d399;">${fmt(d.montantTTC)} ${esc(symbole)}</div><div class="kpi-label">Total TTC</div></div>
 </div>
 
 ${exp >= new Date() ? `
@@ -122,7 +130,7 @@ ${exp >= new Date() ? `
   </label>
   <label class="checkbox-row">
     <input type="checkbox" id="chk2" onchange="checkSign()"/>
-    <span style="font-size:13px;color:#94a3b8;">Je confirme être habilité(e) à signer ce devis au nom de ${d.client?.nom||'mon organisation'}.</span>
+    <span style="font-size:13px;color:#94a3b8;">Je confirme être habilité(e) à signer ce devis au nom de ${esc(d.client?.nom||'mon organisation')}.</span>
   </label>
   <div id="sign-error" style="color:#f87171;font-size:13px;margin-bottom:12px;display:none;">Veuillez cocher les deux cases pour confirmer votre accord.</div>
   <button class="btn" id="sign-btn" onclick="signer()">✍️ Signer ce devis</button>
