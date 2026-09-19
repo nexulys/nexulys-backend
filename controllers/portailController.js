@@ -3,16 +3,18 @@ const ClientPortal = require('../models/ClientPortal');
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 const { sendError } = require('../utils/errorResponse');
+const { escapeRegex } = require('../utils/escape');
 
 exports.createPortal = async (req, res) => {
   try {
     const { clientNom, clientEmail, dureeJours = 30 } = req.body;
     if (!clientNom) return res.status(400).json({ success: false, message: 'Nom du client requis' });
+    const jours = Math.min(Math.max(parseInt(dureeJours, 10) || 30, 1), 365);
     const token = crypto.randomBytes(24).toString('hex');
-    const expiresAt = new Date(Date.now() + dureeJours * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + jours * 24 * 60 * 60 * 1000);
     const portal = await ClientPortal.create({ company: req.user.company, clientNom, clientEmail, token, expiresAt });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    res.status(201).json({ success: true, data: { ...portal.toObject(), url: `${appUrl}/portail.html?token=${token}` } });
+    res.status(201).json({ success: true, data: { ...portal.toObject(), url: `${appUrl}/portail.html#token=${token}` } });
   } catch (err) { sendError(res, err); }
 };
 
@@ -20,21 +22,25 @@ exports.listPortals = async (req, res) => {
   try {
     const list = await ClientPortal.find({ company: req.user.company }).sort({ createdAt: -1 });
     const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const data = list.map(p => ({ ...p.toObject(), url: `${appUrl}/portail.html?token=${p.token}` }));
+    const data = list.map(p => ({ ...p.toObject(), url: `${appUrl}/portail.html#token=${p.token}` }));
     res.json({ success: true, data });
   } catch (err) { sendError(res, err); }
 };
 
 exports.viewPortal = async (req, res) => {
   try {
-    const portal = await ClientPortal.findOne({ token: req.params.token, actif: true });
+    const portal = await ClientPortal.findOne({ token: req.accessToken, actif: true });
     if (!portal) return res.status(404).json({ success: false, message: 'Lien invalide' });
     if (portal.expiresAt < new Date()) return res.status(403).json({ success: false, message: 'Lien expiré' });
 
     const company = await Company.findById(portal.company);
+    // Le nom du client est échappé et ancré : non échappé, un nom valant `.*` exposerait
+    // les factures de TOUS les clients de l'entreprise, et un nom comme `(a+)+$`
+    // provoquerait un ReDoS bloquant le serveur. Ancré = plus de correspondance partielle
+    // entre clients aux noms proches (« Acme » ne remonte plus « Acme Industries »).
     const invoices = await Invoice.find({
       company: portal.company,
-      'client.nom': { $regex: new RegExp(portal.clientNom, 'i') }
+      'client.nom': { $regex: new RegExp(`^${escapeRegex(portal.clientNom)}$`, 'i') }
     }).sort({ createdAt: -1 });
 
     res.json({
@@ -51,7 +57,7 @@ exports.viewPortal = async (req, res) => {
 
 exports.payerFacture = async (req, res) => {
   try {
-    const portal = await ClientPortal.findOne({ token: req.params.token, actif: true });
+    const portal = await ClientPortal.findOne({ token: req.accessToken, actif: true });
     if (!portal || portal.expiresAt < new Date()) return res.status(403).json({ success: false, message: 'Lien invalide ou expiré' });
 
     const invoice = await Invoice.findOne({ _id: req.params.invoiceId, company: portal.company, statut: { $ne: 'payee' } });
@@ -76,8 +82,8 @@ exports.payerFacture = async (req, res) => {
         },
         quantity: 1
       }],
-      success_url: `${appUrl}/portail.html?token=${req.params.token}&paid=1`,
-      cancel_url: `${appUrl}/portail.html?token=${req.params.token}`,
+      success_url: `${appUrl}/portail.html?paid=1#token=${req.accessToken}`,
+      cancel_url: `${appUrl}/portail.html#token=${req.accessToken}`,
       metadata: { invoiceId: invoice._id.toString(), companyId: portal.company.toString() }
     });
 

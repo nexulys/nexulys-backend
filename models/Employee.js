@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { champChiffre } = require('../utils/chiffrement');
 
 const employeeSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
@@ -13,8 +14,10 @@ const employeeSchema = new mongoose.Schema({
   dateEmbauche: { type: Date, required: true },
   dateNaissance: { type: Date },
   adresse: { type: String },
-  numeroSecu: { type: String },
-  iban: { type: String },
+  // Chiffrés au repos : le NIR relève d'un régime particulier et l'IBAN est une
+  // donnée bancaire. Déchiffrement transparent à la lecture (fiches de paie, virements).
+  numeroSecu: champChiffre(),
+  iban: champChiffre(),
   statut: {
     type: String,
     enum: ['actif', 'inactif', 'conge', 'suspendu'],
@@ -22,6 +25,12 @@ const employeeSchema = new mongoose.Schema({
   },
   manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
   tauxImpot: { type: Number, default: 0 }  // taux PAS prélèvement à la source (0 = taux neutre)
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  // Les getters doivent s'appliquer à la sérialisation, sinon l'API renverrait
+  // le texte chiffré à la place de la valeur.
+  toJSON: { getters: true },
+  toObject: { getters: true }
+});
 
 module.exports = mongoose.model('Employee', employeeSchema);

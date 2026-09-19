@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const c = require('../controllers/rapprochementController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 
 router.use(protect);
 
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 router.route('/').get(c.getRapprochements).post(c.createReleve);
 router.put('/:id/valider', c.validerReleve);
 router.delete('/:id', c.deleteReleve);

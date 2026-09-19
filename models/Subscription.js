@@ -20,7 +20,9 @@ const subscriptionSchema = new mongoose.Schema({
   // Support both French (statut) and English (status) field names
   statut: {
     type: String,
-    enum: ['actif', 'inactif', 'suspendu', 'annule', 'essai', 'active', 'cancelled', 'trial'],
+    // 'en_attente_paiement' : abonnement créé chez Stripe mais pas encore encaissé.
+    // Il n'ouvre aucun droit — seul le webhook de paiement le fait passer à 'actif'.
+    enum: ['actif', 'inactif', 'suspendu', 'annule', 'essai', 'en_attente_paiement', 'active', 'cancelled', 'trial'],
     default: 'essai'
   },
   status: { type: String },

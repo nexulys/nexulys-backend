@@ -1,8 +1,12 @@
 const router = require('express').Router();
 const c = require('../controllers/crmController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 
 router.use(protect);
+
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 router.get('/kpis', c.getKPIs);
 router.get('/', c.getProspects);
 router.post('/', c.createProspect);

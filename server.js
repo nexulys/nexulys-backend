@@ -5,6 +5,12 @@ if (!process.env.JWT_SECRET) {
   console.error('FATAL: JWT_SECRET non défini. Arrêt du serveur.');
   process.exit(1);
 }
+// Les IBAN et numéros de sécurité sociale sont chiffrés au repos. Sans la clé, ils
+// seraient réécrits en clair et les valeurs déjà chiffrées deviendraient illisibles.
+if (process.env.NODE_ENV === 'production' && !process.env.DATA_ENCRYPTION_KEY) {
+  console.error('FATAL: DATA_ENCRYPTION_KEY non définie — les données sensibles (IBAN, NIR) ne peuvent pas être chiffrées. Générez-la avec `npm run generate:key`. Arrêt du serveur.');
+  process.exit(1);
+}
 if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS) {
   console.warn('WARNING: ALLOWED_ORIGINS non défini en production — le CORS bloquera les requêtes frontend.');
 }
@@ -22,6 +28,14 @@ initSentry();
 
 const app = express();
 
+// ── Confiance au reverse-proxy ──
+// L'app tourne derrière nginx / Render. Sans ceci, req.ip vaut l'IP du proxy pour
+// TOUTES les requêtes : les quotas de rate limiting deviennent globaux (un seul
+// client épuise le quota de tout le monde) et l'anti-brute-force devient inopérant.
+// Valeur numérique = nombre de proxies de confiance ; ne jamais mettre `true`
+// (X-Forwarded-For devient alors falsifiable par le client).
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
+
 // En test, la connexion est gérée par le harnais (mongodb-memory-server)
 if (process.env.NODE_ENV !== 'test') connectDB();
 
@@ -30,12 +44,23 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      // Plus de 'unsafe-inline' : tout le JS des pages est servi depuis /js/*.js.
+      // Un attaquant qui parvient à injecter du HTML ne peut donc plus faire
+      // exécuter de <script>, ce qui coupe la voie d'exploitation XSS classique.
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      // Les pages conservent des gestionnaires inline (onclick=…) : cette directive
+      // les autorise sans rouvrir l'exécution de blocs <script> injectés.
+      scriptSrcAttr: ["'unsafe-inline'"],
+      // styleSrc garde 'unsafe-inline' pour les attributs style= des templates :
+      // sans exécution de script, l'impact se limite à de la mise en forme.
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "https://nexulys-backend-1.onrender.com"],
       objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
       upgradeInsecureRequests: [],
     }
   },
@@ -43,16 +68,29 @@ app.use(helmet({
 }));
 
 // ── CORS ──
+// Allowlist appliquée dans TOUS les environnements. `origin: true` reflète l'origine
+// de l'appelant ; combiné à `credentials: true`, n'importe quel site peut alors lire
+// les réponses authentifiées d'un utilisateur connecté (staging exposé, NODE_ENV mal
+// positionné). On refuse par défaut plutôt que de refléter.
 const corsOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : ['http://localhost:5000', 'http://localhost:3000'];
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? corsOrigins : true,
+  origin: (origin, cb) => {
+    // Pas d'en-tête Origin : appels serveur-à-serveur, curl, webhooks — non concernés
+    // par la politique same-origin du navigateur.
+    if (!origin) return cb(null, true);
+    return cb(null, corsOrigins.includes(origin));
+  },
   credentials: true
 }));
 
 // ── Cookie parser ──
 app.use(cookieParser());
+
+// ── Anti-CSRF (après cookieParser, avant les routes) ──
+const { csrfGuard } = require('./middleware/csrf');
+app.use('/api', csrfGuard(corsOrigins));
 
 // ── Body parsing avec limite stricte (anti payload flood) ──
 // IMPORTANT : le webhook Stripe a besoin du corps brut pour vérifier la signature.

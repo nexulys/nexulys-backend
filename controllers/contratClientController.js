@@ -74,7 +74,7 @@ exports.envoyerContratSignature = async (req, res) => {
     await contrat.save();
 
     const appUrl = process.env.APP_URL || 'http://localhost:5000';
-    const url = `${appUrl}/signer-contrat.html?token=${token}`;
+    const url = `${appUrl}/signer-contrat.html#token=${token}`;
     const company = await Company.findById(req.user.company);
 
     if (contrat.client?.email) {
@@ -97,7 +97,7 @@ exports.envoyerContratSignature = async (req, res) => {
 // Consultation publique du contrat via token (page de signature)
 exports.viewContratPublic = async (req, res) => {
   try {
-    const contrat = await ContratClient.findOne({ signatureToken: req.params.token })
+    const contrat = await ContratClient.findOne({ signatureToken: req.accessToken })
       .select('reference titre type client valeur periodicite dateDebut dateFin notes signe signedAt signataire');
     if (!contrat) return res.status(404).json({ success: false, message: 'Contrat introuvable' });
     res.json({ success: true, data: contrat });
@@ -107,7 +107,7 @@ exports.viewContratPublic = async (req, res) => {
 // Signature publique du contrat
 exports.signerContrat = async (req, res) => {
   try {
-    const contrat = await ContratClient.findOne({ signatureToken: req.params.token });
+    const contrat = await ContratClient.findOne({ signatureToken: req.accessToken });
     if (!contrat) return res.status(404).json({ success: false, message: 'Contrat introuvable' });
     if (contrat.signe) return res.status(400).json({ success: false, message: 'Contrat déjà signé' });
     const signataire = (req.body.signataire || contrat.client?.nom || '').toString().trim();

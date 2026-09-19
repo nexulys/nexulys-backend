@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const c = require('../controllers/aiController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 
 router.use(protect);
 
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 router.get('/analyse-depenses', c.analyzeExpenses);
 router.post('/rh-assistant', c.hrAssistant);
 router.get('/prevoir-reapprovisionnement', c.predictReorder);

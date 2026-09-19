@@ -12,7 +12,12 @@
     "seed": "node scripts/seed.js",
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
-    "check-env": "node scripts/check-env.js"
+    "check-env": "node scripts/check-env.js",
+    "admin:mfa": "node scripts/admin-mfa.js",
+    "generate:key": "node scripts/generate-key.js",
+    "migrate:chiffrement": "node scripts/migrate-chiffrement.js",
+    "backup": "bash scripts/backup.sh",
+    "restore": "bash scripts/restore.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
