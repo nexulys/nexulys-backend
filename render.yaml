@@ -2,8 +2,10 @@ services:
   - type: web
     name: novexa-api
     env: node
-    plan: free
-    buildCommand: npm install
+    plan: starter          # le plan free suspend l'instance après inactivité :
+                           # les webhooks Stripe arriveraient sur un service endormi
+    region: frankfurt      # données de paie françaises : rester dans l'UE
+    buildCommand: npm ci
     startCommand: node server.js
     healthCheckPath: /api/health/live
     envVars:
@@ -11,27 +13,58 @@ services:
         value: production
       - key: PORT
         value: 10000
+
+      # ── Socle : sans ces variables le serveur refuse de démarrer ──
       - key: MONGODB_URI
-        sync: false        # à renseigner manuellement dans Render
+        sync: false                # à renseigner dans le tableau de bord Render
       - key: JWT_SECRET
         generateValue: true
-      - key: SEED_SECRET
-        generateValue: true
-      - key: ADMIN_SECRET
-        generateValue: true
-      - key: APP_NAME
-        value: Novexa
-      - key: APP_VERSION
-        value: 1.0.0
+
+      # Chiffrement des IBAN et NIR. generateValue produit une valeur aléatoire
+      # NON hexadécimale, que le serveur rejette : la clé doit être générée par
+      # `npm run generate:key` puis collée ici. Une fois posée, ne jamais la
+      # changer sans rechiffrer les données — elles deviendraient illisibles.
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+
+      # ── Exposition réseau ──
       - key: ALLOWED_ORIGINS
         value: https://novexa.nexulyspro2002.workers.dev
+      - key: APP_URL
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        value: 1                   # Render place un seul proxy devant le service
+
+      # ── Back-office plateforme ──
+      - key: ADMIN_SECRET
+        generateValue: true
+      # Second facteur, requis en production : sans lui /api/admin/login renvoie 503.
+      # Généré et enrôlé via `npm run admin:mfa`.
+      - key: ADMIN_TOTP_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+
+      # ── Facturation ──
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      # Sans ce secret, aucun paiement n'active d'abonnement : les encaissements
+      # aboutissent chez Stripe et l'accès reste fermé.
+      # Événements à souscrire : checkout.session.completed, invoice.payment_succeeded,
+      # invoice.payment_failed, customer.subscription.deleted
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # ── Tâches planifiées (voir la section cron plus bas) ──
+      - key: CRON_SECRET
+        generateValue: true
+      - key: AUDIT_RETENTION_DAYS
+        value: 365
+
+      # ── Services annexes ──
       - key: GROQ_API_KEY
         sync: false
       - key: OPENAI_API_KEY
-        sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: SMTP_HOST
         sync: false
@@ -43,5 +76,87 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+
+      - key: APP_NAME
+        value: Novexa
+      - key: APP_VERSION
+        value: 1.0.0
+
+      # SEED_SECRET est délibérément absent : la route de seed vide dix collections
+      # et est refusée en production, ce secret n'a donc rien à faire ici.
+
+  # ── Tâches planifiées ─────────────────────────────────────────
+  # Chacune appelle une route protégée par CRON_SECRET, transmis en en-tête et
+  # jamais en query string, où il serait journalisé en clair.
+
+  - type: cron
+    name: novexa-relances
+    env: docker
+    region: frankfurt
+    schedule: "0 7 * * 1-5"        # jours ouvrés, 7 h UTC
+    dockerfilePath: ./Dockerfile
+    dockerCommand: >-
+      sh -c "curl -fsS -X POST
+      -H \"x-cron-secret: $CRON_SECRET\"
+      \"$APP_URL/api/cron/relances\""
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: novexa-api
+          type: web
+          envVarKey: CRON_SECRET
       - key: APP_URL
-        sync: false
+        fromService:
+          name: novexa-api
+          type: web
+          envVarKey: APP_URL
+
+  - type: cron
+    name: novexa-rapports
+    env: docker
+    region: frankfurt
+    schedule: "0 6 1 * *"          # le 1er de chaque mois, 6 h UTC
+    dockerfilePath: ./Dockerfile
+    dockerCommand: >-
+      sh -c "curl -fsS -X POST
+      -H \"x-cron-secret: $CRON_SECRET\"
+      \"$APP_URL/api/cron/rapports\""
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: novexa-api
+          type: web
+          envVarKey: CRON_SECRET
+      - key: APP_URL
+        fromService:
+          name: novexa-api
+          type: web
+          envVarKey: APP_URL
+
+  # Sans cet appel quotidien, les demandes d'effacement restent en attente
+  # indéfiniment : le droit à l'effacement redeviendrait une promesse non tenue.
+  - type: cron
+    name: novexa-purge-rgpd
+    env: docker
+    region: frankfurt
+    schedule: "30 3 * * *"         # tous les jours, 3 h 30 UTC
+    dockerfilePath: ./Dockerfile
+    dockerCommand: >-
+      sh -c "curl -fsS -X POST
+      -H \"x-cron-secret: $CRON_SECRET\"
+      \"$APP_URL/api/cron/purge-rgpd\""
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: novexa-api
+          type: web
+          envVarKey: CRON_SECRET
+      - key: APP_URL
+        fromService:
+          name: novexa-api
+          type: web
+          envVarKey: APP_URL
+
+# Les sauvegardes ne figurent pas ici volontairement : `npm run backup` a besoin
+# de mongodump et d'un stockage distant, et une sauvegarde hébergée au même
+# endroit que la base ne protège de rien. Voir docs/SAUVEGARDES.md.

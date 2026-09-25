@@ -17,7 +17,10 @@
     "generate:key": "node scripts/generate-key.js",
     "migrate:chiffrement": "node scripts/migrate-chiffrement.js",
     "backup": "bash scripts/backup.sh",
-    "restore": "bash scripts/restore.sh"
+    "restore": "bash scripts/restore.sh",
+    "audit:parc": "node scripts/audit-parc.js",
+    "preflight": "bash scripts/preflight.sh",
+    "smoke": "bash scripts/smoke-test.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
