@@ -85,6 +85,18 @@ sur `https://votre-domaine/api/stripe/webhook` et souscrivez :
 
 Reportez le secret de signature dans `STRIPE_WEBHOOK_SECRET`.
 
+**Origine du frontend.** Les pages et l'API sont hébergées sur deux domaines distincts.
+`ALLOWED_ORIGINS` doit contenir l'origine exacte depuis laquelle les pages sont servies,
+protocole compris et sans barre oblique finale :
+
+```
+ALLOWED_ORIGINS=https://novexa.nexulyspro2002.workers.dev
+```
+
+Tant que cette valeur ne correspond pas, le navigateur bloque toutes les réponses de
+l'API : la connexion échoue sans qu'aucune trace n'apparaisse côté serveur. C'est l'oubli
+de configuration le plus coûteux de cette procédure — voir `docs/CONNEXION.md`.
+
 ---
 
 ## Phase 3 — Sauvegarder, puis chiffrer les données existantes
@@ -135,8 +147,11 @@ contre une vraie base et le démarrage de l'image Docker.
 ## Phase 6 — Vérifier
 
 ```bash
-npm run smoke -- https://votre-domaine
+FRONTEND_ORIGIN=https://novexa.nexulyspro2002.workers.dev npm run smoke -- https://votre-domaine
 ```
+
+`FRONTEND_ORIGIN` fait vérifier que l'origine réellement servie aux clients est bien
+autorisée par l'API. Sans cette variable, le contrôle est annoncé comme non effectué.
 
 Contrôle ce qui ne se constate qu'en production : en-têtes de sécurité, CSP, routes
 protégées, neutralisation de la route de seed, second facteur actif, rejet des
@@ -152,6 +167,34 @@ Puis, manuellement :
 - [ ] affichage d'une fiche salarié portant un IBAN : la valeur doit s'afficher en
       clair, ce qui prouve que le déchiffrement fonctionne ;
 - [ ] connexion au back-office avec mot de passe **et** code à usage unique.
+
+---
+
+## Phase 6 bis — Déployer les pages
+
+Les pages ne sont pas servies par `server.js` en production : elles sont hébergées à part,
+depuis `public/`. `wrangler.jsonc` décrit ce déploiement.
+
+```bash
+npx wrangler deploy
+```
+
+Deux points sur lesquels ce déploiement se casse silencieusement :
+
+- **`public/js/` doit partir avec les pages.** Depuis le durcissement de la CSP, le
+  JavaScript vit dans des fichiers séparés. Une page déployée sans ses scripts se soumet
+  en GET : rechargement, champs vidés, aucun message. `assets.directory: "public"` couvre
+  le répertoire entier — ne le restreignez pas.
+- **`public/_headers` porte les en-têtes de sécurité des pages.** helmet ne protège que
+  les réponses de l'API ; sans ce fichier, les pages arrivent sans
+  `Content-Security-Policy` et l'échappement perd son second rempart.
+
+Vérification après déploiement :
+
+```bash
+curl -sI https://votre-site/login.html | grep -i content-security-policy
+curl -s -o /dev/null -w '%{http_code}\n' https://votre-site/js/login.js   # doit valoir 200
+```
 
 ---
 
@@ -221,6 +264,9 @@ exécutés. Dans ces cas, la restauration d'une sauvegarde est la seule voie.
 | Tout le monde est limité en même temps | `TRUST_PROXY_HOPS` incorrect : les quotas sont devenus collectifs |
 | Le back-office renvoie 503 | `ADMIN_TOTP_SECRET` absent en production |
 | Un client dit avoir perdu l'accès | Bascule en lecture seule : vérifiez son abonnement (phase 0) |
+| « Je clique sur Se connecter et rien ne se passe » | Cinq causes possibles, séparées par `/diagnostic.html` — voir `docs/CONNEXION.md` |
+| Connexion impossible depuis le site, mais l'API répond au curl | Origine du frontend absente de `ALLOWED_ORIGINS` (phase 2) |
+| Les formulaires ne réagissent pas, console : `… is not defined` | `public/js/` non déployé avec les pages (phase 6 bis) |
 
 ---
 
@@ -235,6 +281,7 @@ exécutés. Dans ces cas, la restauration d'une sauvegarde est la seule voie.
 | `npm run audit:parc` | Liste les comptes qui basculeront en lecture seule |
 | `npm run preflight` | Contrôles avant déploiement |
 | `npm run smoke -- <url>` | Vérification après déploiement |
+| `npx wrangler deploy` | Déploiement des pages (`public/`) |
 | `npm run backup` | Sauvegarde chiffrée |
 | `npm run restore -- <archive>` | Restauration |
 | `bash scripts/rollback.sh` | Retour arrière |

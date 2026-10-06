@@ -134,12 +134,41 @@ if [ "$CODE" = "401" ]; then ok "format de jeton validé avant toute requête en
 # ── CORS ──
 printf "\nCORS\n"
 ORIGINE_HOSTILE="https://exemple-attaquant.invalid"
-H_CORS=$(curl -sI -m 15 -H "Origin: $ORIGINE_HOSTILE" "$BASE/api/health/live")
+
+# Sur un point soumis à l'allowlist : aucune origine arbitraire ne doit être reflétée.
+H_CORS=$(curl -sI -m 15 -H "Origin: $ORIGINE_HOSTILE" "$BASE/api/health")
 if echo "$H_CORS" | grep -qi "access-control-allow-origin: $ORIGINE_HOSTILE"; then
   echec "CORS reflète une origine arbitraire"
   detail "n'importe quel site pourrait lire les réponses authentifiées"
 else
   ok "origine non autorisée rejetée"
+fi
+
+# La sonde de vie, elle, doit rester lisible partout : c'est ce qui permet à
+# /diagnostic.html de distinguer « service arrêté » de « origine non autorisée ».
+# Si elle se refermait, le diagnostic accuserait le serveur d'être arrêté alors
+# qu'il tourne.
+H_LIVE=$(curl -sI -m 15 -H "Origin: $ORIGINE_HOSTILE" "$BASE/api/health/live")
+if echo "$H_LIVE" | grep -qi "access-control-allow-origin: \*"; then
+  ok "sonde de vie lisible depuis toute origine (diagnostic client opérant)"
+else
+  echec "la sonde de vie n'est plus lisible hors origine autorisée"
+  detail "/diagnostic.html ne pourra plus distinguer service arrêté et CORS mal réglé"
+fi
+
+# L'origine réellement servie aux clients doit figurer dans l'allowlist : c'est
+# l'oubli de configuration qui rend la connexion impossible sans rien afficher.
+if [ -n "${FRONTEND_ORIGIN:-}" ]; then
+  H_FRONT=$(curl -sI -m 15 -H "Origin: $FRONTEND_ORIGIN" "$BASE/api/health")
+  if echo "$H_FRONT" | grep -qi "access-control-allow-origin: $FRONTEND_ORIGIN"; then
+    ok "origine du frontend autorisée ($FRONTEND_ORIGIN)"
+  else
+    echec "l'origine du frontend n'est pas autorisée : $FRONTEND_ORIGIN"
+    detail "ajoutez-la à ALLOWED_ORIGINS, sinon aucune connexion n'est possible"
+  fi
+else
+  alerte "FRONTEND_ORIGIN non fourni — autorisation du frontend non vérifiée"
+  detail "FRONTEND_ORIGIN=https://votre-site npm run smoke -- $BASE"
 fi
 
 # ── Limitation de débit ──

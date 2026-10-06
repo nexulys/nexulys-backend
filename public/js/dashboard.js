@@ -33,17 +33,43 @@
       'Authorization': 'Bearer ' + (localStorage.getItem('novexa_token') || '')
     });
 
+    // L'instance backend est mise en veille après inactivité : la première requête la
+    // réveille et peut approcher la minute. Sans délai maximum, l'interface reste figée
+    // sans rien afficher ; avec, on dit ce qui se passe.
+    const DELAI_MAX_MS = 45000;
+
     async function apiFetch(path) {
+      const controleur = new AbortController();
+      const minuterie = setTimeout(function() { controleur.abort(); }, DELAI_MAX_MS);
+      let res;
       try {
-        const res = await fetch(API + path, { headers: apiHeaders(), credentials: 'include' });
-        if (res.status === 401) {
-          localStorage.clear();
-          window.location.href = '/login.html';
-          return null;
-        }
-        return res.json();
+        res = await fetch(API + path, {
+          headers: apiHeaders(), credentials: 'include', signal: controleur.signal
+        });
       } catch (err) {
-        showToast('Erreur réseau : ' + path);
+        clearTimeout(minuterie);
+        if (err && err.name === 'AbortError') {
+          showToast('Le serveur n\u2019a pas répondu (sortie de veille). Rechargez la page.');
+        } else {
+          showToast('Serveur injoignable. Vérifiez votre connexion, puis rechargez.');
+        }
+        return null;
+      }
+      clearTimeout(minuterie);
+
+      if (res.status === 401) {
+        // Le marqueur ?expire=1 fait afficher « votre session a expiré » sur la page de
+        // connexion : sans lui, le retour silencieux passe pour un bouton inopérant.
+        localStorage.clear();
+        window.location.href = '/login.html?expire=1';
+        return null;
+      }
+      // Un intermédiaire en panne répond en HTML : res.json() lèverait une SyntaxError.
+      const brut = await res.text().catch(function() { return ''; });
+      try {
+        return JSON.parse(brut);
+      } catch (_) {
+        showToast('Réponse inattendue du serveur (HTTP ' + res.status + ')');
         return null;
       }
     }

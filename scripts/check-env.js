@@ -88,8 +88,13 @@ console.log('\nExposition réseau');
 verifier({
   cle: 'ALLOWED_ORIGINS',
   requis: PROD,
+  // Une origine se compose du protocole et de l'hôte, sans chemin ni barre oblique
+  // finale : « https://site.fr/ » ne correspondra jamais à l'origine « https://site.fr »
+  // envoyée par le navigateur, et toutes les requêtes seront refusées sans trace
+  // côté serveur. L'erreur est invisible à la lecture ; ce format la rejette.
+  format: /^https?:\/\/[^/\s,]+(\s*,\s*https?:\/\/[^/\s,]+)*$/,
   role: 'origines autorisées (CORS et anti-CSRF)',
-  remede: 'liste séparée par des virgules, ex. https://app.novexa.fr',
+  remede: 'liste séparée par des virgules, sans barre oblique finale, ex. https://app.novexa.fr,https://novexa.pages.dev',
   degrade: 'repli sur localhost — le frontend sera bloqué',
 });
 verifier({
@@ -213,6 +218,19 @@ if (Number(process.env.TRUST_PROXY_HOPS) > 3) {
   incoherences.push(
     `TRUST_PROXY_HOPS vaut ${process.env.TRUST_PROXY_HOPS}. Une valeur supérieure au nombre réel de ` +
     'proxies rend X-Forwarded-For falsifiable, donc le rate limiting contournable.',
+  );
+}
+if (PROD && process.env.ALLOWED_ORIGINS?.split(',').some((o) => o.trim().startsWith('http://'))) {
+  incoherences.push(
+    'ALLOWED_ORIGINS contient une origine en http:// en production. Le cookie de session est ' +
+    'émis avec l\'attribut Secure : il ne sera jamais transmis depuis une page non chiffrée, ' +
+    'et la connexion échouera sans message explicite.',
+  );
+}
+if (PROD && process.env.ALLOWED_ORIGINS?.includes('localhost')) {
+  incoherences.push(
+    'ALLOWED_ORIGINS autorise localhost en production : sans intérêt pour vos clients, ' +
+    'et toute page servie localement pourrait lire les réponses authentifiées de l\'API.',
   );
 }
 if (process.env.DATA_ENCRYPTION_KEY && process.env.DATA_ENCRYPTION_KEY === process.env.JWT_SECRET) {
