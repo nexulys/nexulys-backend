@@ -2873,22 +2873,31 @@
       if (!text) { showToast('Collez le texte de la facture d\'abord', 'error'); return; }
       showToast('Analyse en cours...', 'success');
       try {
-        var res = await fetch(API + '/ai/analyse', { method:'POST', headers:apiHeaders(), body:JSON.stringify({
-          type: 'ocr_depense',
-          prompt: 'Analyse ce texte de facture fournisseur et extrait : le montant total TTC, la catégorie (loyer/logiciel/materiel/restauration/transport/marketing/autre), et le nom du fournisseur. Réponds en JSON strict : {"titre":"...","montant":0,"categorie":"..."}',
-          content: text
-        }) });
+        // L'ancien appel visait /ai/analyse, une route qui n'a jamais existé : la
+        // lecture automatique renvoyait un 404 et l'écran ne montrait rien.
+        var res = await fetch(API + '/ai/analyser-facture', {
+          method: 'POST', headers: apiHeaders(), body: JSON.stringify({ texte: text })
+        });
         var data = await res.json();
-        var txt = (data && (data.response || data.content || data.result || ''));
-        var jsonMatch = txt.match(/\{[\s\S]*?\}/);
-        if (jsonMatch) {
-          var parsed = JSON.parse(jsonMatch[0]);
-          if (parsed.titre) document.getElementById('d-titre').value = parsed.titre;
-          if (parsed.montant) document.getElementById('d-montant').value = parsed.montant;
-          if (parsed.categorie) document.getElementById('d-categorie').value = parsed.categorie;
+        var parsed = data && data.success && data.data ? data.data : null;
+        if (parsed && (parsed.fournisseur || parsed.montantTTC || parsed.categorie)) {
+          if (parsed.fournisseur) document.getElementById('d-titre').value = parsed.fournisseur;
+          else if (parsed.description) document.getElementById('d-titre').value = parsed.description;
+          var montant = parsed.montantTTC || parsed.montantHT || 0;
+          if (montant) document.getElementById('d-montant').value = montant;
+          if (parsed.categorie) {
+            // Le contrôleur renvoie « fournitures » là où le formulaire attend « materiel ».
+            var cat = parsed.categorie === 'fournitures' ? 'materiel' : parsed.categorie;
+            var champ = document.getElementById('d-categorie');
+            if ([].some.call(champ.options, function(o) { return o.value === cat; })) champ.value = cat;
+          }
           document.getElementById('d-ocr-area').style.display = 'none';
-          showToast('Données extraites', 'success');
-        } else { showToast('IA n\'a pas pu extraire les données', 'error'); }
+          var alerte = (parsed.anomalies && parsed.anomalies.length)
+            ? ' — à vérifier : ' + parsed.anomalies.join(', ') : '';
+          showToast('Données extraites' + alerte, alerte ? 'error' : 'success');
+        } else {
+          showToast((data && data.message) || 'L\'IA n\'a pas pu extraire les données', 'error');
+        }
       } catch(e) { showToast('Erreur OCR', 'error'); }
     }
 
@@ -3355,7 +3364,9 @@
       document.getElementById('rapprochement-detail').style.display = '';
     }
     async function rapprochierTransaction(releveId, idx) {
-      var res = await fetch(API + '/rapprochement/' + releveId + '/rapprocher/' + idx, { method:'PUT', headers:apiHeaders() });
+      // La route expose /:releveId/transactions/:idx/rapprocher ; l'ancienne URL,
+      // d'une autre forme, ne correspondait à aucune route et renvoyait un 404.
+      var res = await fetch(API + '/rapprochement/' + releveId + '/transactions/' + idx + '/rapprocher', { method:'PUT', headers:apiHeaders() });
       var data = await res.json();
       if (data.success) { showToast('Transaction rapprochée', 'success'); openReleve(releveId); }
       else showToast(data.message || 'Erreur', 'error');

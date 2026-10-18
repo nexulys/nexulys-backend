@@ -8,6 +8,7 @@ router.use(protect);
 // Écritures réservées aux abonnements actifs (lecture toujours autorisée).
 router.use(verifierAbonnement);
 router.route('/').get(c.getRapprochements).post(c.createReleve);
+router.get('/:id', c.getReleve);
 router.put('/:id/valider', c.validerReleve);
 router.delete('/:id', c.deleteReleve);
 router.put('/:releveId/transactions/:idx/rapprocher', c.rapprochierTransaction);
