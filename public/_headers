@@ -1,0 +1,25 @@
+# En-têtes servis par l'hébergeur des pages (Cloudflare Workers / Pages).
+#
+# Les pages HTML ne sont pas servies par Express : le durcissement appliqué par helmet
+# dans server.js ne les couvre donc pas. Sans ce fichier, les pages du site arrivent au
+# navigateur sans Content-Security-Policy, et tout le travail d'échappement perd son
+# second rempart. Les directives ci-dessous reproduisent celles de server.js.
+#
+# Format supporté par Cloudflare (Workers Static Assets et Pages).
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://nexulys-backend-1.onrender.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Les pages applicatives ne doivent jamais être servies depuis un cache intermédiaire :
+# une version périmée de login.html pointerait vers des scripts qui n'existent plus.
+/*.html
+  Cache-Control: no-cache, must-revalidate
+
+/js/*
+  Cache-Control: no-cache, must-revalidate

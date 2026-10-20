@@ -69,7 +69,7 @@ exports.envoyerDevis = async (req, res) => {
     devis.statut = 'envoye';
     await devis.save();
     const appUrl = process.env.APP_URL || 'http://localhost:5000';
-    const url = `${appUrl}/signer.html?token=${token}`;
+    const url = `${appUrl}/signer.html#token=${token}`;
     const symbole = DEVISES[devis.devise] || '€';
     await sendMail({
       to: devis.client.email,
@@ -110,7 +110,7 @@ exports.convertirEnFacture = async (req, res) => {
 // ── Routes publiques ──
 exports.viewDevis = async (req, res) => {
   try {
-    const devis = await Devis.findOne({ signatureToken: req.params.token });
+    const devis = await Devis.findOne({ signatureToken: req.accessToken });
     if (!devis) return res.status(404).json({ success: false, message: 'Devis introuvable ou expiré' });
     if (devis.dateValidite && new Date(devis.dateValidite) < new Date()) {
       devis.statut = 'expire'; await devis.save();
@@ -122,7 +122,7 @@ exports.viewDevis = async (req, res) => {
 
 exports.signerDevis = async (req, res) => {
   try {
-    const devis = await Devis.findOne({ signatureToken: req.params.token });
+    const devis = await Devis.findOne({ signatureToken: req.accessToken });
     if (!devis || devis.signedAt) return res.status(400).json({ success: false, message: 'Devis invalide ou déjà signé' });
     if (devis.dateValidite && new Date(devis.dateValidite) < new Date()) return res.status(410).json({ success: false, message: 'Devis expiré' });
     devis.signedAt = new Date();

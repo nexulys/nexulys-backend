@@ -1,0 +1,644 @@
+// Novexa — schéma de données cible
+// Éditeur : Nexulys SAS
+//
+// Décision d'architecture : PostgreSQL 16 plutôt que MongoDB.
+// Un produit comptable exige des transactions ACID multi-tables (une écriture au
+// journal et sa contrepartie ne peuvent jamais être commitées séparément), des
+// contraintes d'intégrité référentielle, et des agrégats exacts sur des montants.
+// Les montants sont stockés en Decimal(14,2) : jamais en Float, dont l'arrondi
+// binaire fausse les totaux comptables.
+//
+// Isolation multitenant : chaque table métier porte companyId, indexé en tête de
+// chaque index composite. Le cloisonnement est doublé par Row Level Security côté
+// PostgreSQL (voir prisma/rls.sql), de sorte qu'une requête applicative ayant omis
+// le filtre ne puisse pas traverser les frontières d'un client.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Tenants et identités
+// ─────────────────────────────────────────────────────────────
+
+model Company {
+  id                String   @id @default(uuid()) @db.Uuid
+  nom               String
+  siret             String?  @db.VarChar(14)
+  siren             String?  @db.VarChar(9)
+  codeApe           String?  @db.VarChar(5)
+  tvaIntracom       String?  @db.VarChar(15)
+  adresse           String?
+  codePostal        String?  @db.VarChar(10)
+  ville             String?
+  pays              String   @default("France")
+  telephone         String?
+  email             String?
+  conventionCollective String?
+  urssafNumero      String?
+
+  // Chiffré applicativement (AES-256-GCM) avant insertion : donnée bancaire.
+  ibanChiffre       String?
+
+  regimeTva         RegimeTva @default(REEL_NORMAL)
+  dateClotureExercice DateTime? @db.Date
+
+  actif             Boolean  @default(true)
+
+  // Effacement RGPD (art. 17)
+  suppressionDemandeeLe DateTime?
+  suppressionPrevueLe   DateTime?
+  supprimeeLe           DateTime?
+  anonymisee            Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  users             User[]
+  subscription      Subscription?
+  employees         Employee[]
+  payslips          Payslip[]
+  accounts          LedgerAccount[]
+  journalEntries    JournalEntry[]
+  invoices          Invoice[]
+  documents         SourceDocument[]
+  aiJobs            AiJob[]
+  auditLogs         AuditLog[]
+  apiKeys           ApiKey[]
+  usageCounters     UsageCounter[]
+
+  @@index([siret])
+  @@index([supprimeeLe])
+  @@map("companies")
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  email         String   @unique
+  motDePasseHash String  // bcrypt, 12 tours
+  prenom        String
+  nom           String
+  role          Role     @default(COLLABORATEUR)
+
+  // Incrémenté à chaque changement de mot de passe : invalide les JWT déjà émis.
+  tokenVersion  Int      @default(0)
+  actif         Boolean  @default(true)
+
+  totpSecretChiffre String?
+  mfaActive     Boolean  @default(false)
+
+  derniereConnexion DateTime?
+  resetToken    String?  @unique
+  resetExpire   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  journalEntries JournalEntry[]
+  auditLogs     AuditLog[]
+  aiJobs        AiJob[]
+  documents     SourceDocument[]
+
+  @@index([companyId, actif])
+  @@map("users")
+}
+
+enum Role {
+  PROPRIETAIRE   // titulaire du compte, seul habilité à demander l'effacement
+  DAF            // direction administrative et financière
+  DRH            // direction des ressources humaines
+  COMPTABLE
+  COLLABORATEUR
+  LECTURE_SEULE  // expert-comptable externe
+}
+
+enum RegimeTva {
+  FRANCHISE_EN_BASE
+  REEL_SIMPLIFIE
+  REEL_NORMAL
+}
+
+// ─────────────────────────────────────────────────────────────
+// Abonnements (Stripe)
+// ─────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                   String   @id @default(uuid()) @db.Uuid
+  companyId            String   @unique @db.Uuid
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  plan                 Plan     @default(ESSENTIEL)
+  statut               StatutAbonnement @default(ESSAI)
+
+  // Aucun droit n'est ouvert tant que le paiement n'est pas encaissé : le statut
+  // ne passe à ACTIF que sur réception du webhook checkout.session.completed.
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+
+  prixMensuelHT        Decimal  @default(149.00) @db.Decimal(10, 2)
+  devise               String   @default("EUR") @db.VarChar(3)
+
+  essaiFinLe           DateTime?
+  periodeDebut         DateTime?
+  periodeFin           DateTime?
+  annuleLe             DateTime?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  invoicesFacturation  BillingInvoice[]
+
+  @@index([statut, periodeFin])
+  @@map("subscriptions")
+}
+
+enum Plan {
+  ESSENTIEL
+  PILOTAGE
+  INTEGRAL
+}
+
+enum StatutAbonnement {
+  ESSAI
+  EN_ATTENTE_PAIEMENT
+  ACTIF
+  IMPAYE
+  SUSPENDU
+  ANNULE
+}
+
+model BillingInvoice {
+  id                String   @id @default(uuid()) @db.Uuid
+  subscriptionId    String   @db.Uuid
+  subscription      Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // Identifiant Stripe : garantit l'idempotence du webhook. Stripe réémet ses
+  // événements jusqu'à recevoir un 2xx ; sans cette contrainte unique, l'historique
+  // de facturation se dupliquerait à chaque reprise.
+  stripeInvoiceId   String   @unique
+  montantHT         Decimal  @db.Decimal(10, 2)
+  montantTTC        Decimal  @db.Decimal(10, 2)
+  statut            String
+  payeeLe           DateTime?
+  pdfUrl            String?
+
+  createdAt         DateTime @default(now())
+
+  @@index([subscriptionId, createdAt])
+  @@map("billing_invoices")
+}
+
+// Compteurs d'usage : appliquent les limites de plan et alimentent la facturation
+// à l'usage des dépassements.
+model UsageCounter {
+  id          String   @id @default(uuid()) @db.Uuid
+  companyId   String   @db.Uuid
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  periode     String   @db.VarChar(7) // AAAA-MM
+  metrique    Metrique
+  valeur      Int      @default(0)
+
+  @@unique([companyId, periode, metrique])
+  @@map("usage_counters")
+}
+
+enum Metrique {
+  ECRITURES_COMPTABLES
+  DOCUMENTS_ANALYSES
+  BULLETINS_EMIS
+  APPELS_IA
+}
+
+// ─────────────────────────────────────────────────────────────
+// Comptabilité
+// ─────────────────────────────────────────────────────────────
+
+model LedgerAccount {
+  id          String   @id @default(uuid()) @db.Uuid
+  companyId   String   @db.Uuid
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  numero      String   @db.VarChar(10) // plan comptable général français
+  libelle     String
+  classe      Int      @db.SmallInt    // 1 à 7
+  lettrable   Boolean  @default(false)
+
+  lignes      JournalLine[]
+
+  @@unique([companyId, numero])
+  @@index([companyId, classe])
+  @@map("ledger_accounts")
+}
+
+model JournalEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  journalCode   String   @db.VarChar(6) // AC, VE, BQ, OD...
+  numeroPiece   String
+  dateEcriture  DateTime @db.Date
+  libelle       String
+
+  // Une écriture validée devient immuable : l'article 420-5 du PCG interdit de
+  // modifier une écriture après validation. Toute correction passe par une
+  // contrepassation, jamais par une mise à jour.
+  validee       Boolean  @default(false)
+  valideeLe     DateTime?
+
+  origine       OrigineEcriture @default(MANUELLE)
+  sourceDocumentId String? @db.Uuid
+  sourceDocument SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
+
+  creeParId     String?  @db.Uuid
+  creePar       User?    @relation(fields: [creeParId], references: [id])
+
+  createdAt     DateTime @default(now())
+
+  lignes        JournalLine[]
+
+  @@unique([companyId, journalCode, numeroPiece])
+  @@index([companyId, dateEcriture])
+  @@index([companyId, validee])
+  @@map("journal_entries")
+}
+
+enum OrigineEcriture {
+  MANUELLE
+  IMPORT_BANCAIRE
+  EXTRACTION_IA
+  RECURRENTE
+  PAIE
+}
+
+model JournalLine {
+  id          String   @id @default(uuid()) @db.Uuid
+  entryId     String   @db.Uuid
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  accountId   String   @db.Uuid
+  account     LedgerAccount @relation(fields: [accountId], references: [id])
+
+  debit       Decimal  @default(0) @db.Decimal(14, 2)
+  credit      Decimal  @default(0) @db.Decimal(14, 2)
+  libelle     String?
+  lettrage    String?  @db.VarChar(10)
+
+  tauxTva     Decimal? @db.Decimal(5, 2)
+
+  // L'équilibre débit/crédit de l'écriture est vérifié par un trigger PostgreSQL
+  // (prisma/constraints.sql) : une contrainte applicative seule serait contournable
+  // par un import ou une requête directe.
+  @@index([entryId])
+  @@index([accountId, lettrage])
+  @@map("journal_lines")
+}
+
+model Invoice {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  sens          SensFacture
+  numero        String
+  clientNom     String
+  clientSiret   String?  @db.VarChar(14)
+  clientEmail   String?
+
+  dateEmission  DateTime @db.Date
+  dateEcheance  DateTime? @db.Date
+
+  montantHT     Decimal  @db.Decimal(14, 2)
+  montantTva    Decimal  @db.Decimal(14, 2)
+  montantTTC    Decimal  @db.Decimal(14, 2)
+  montantRegle  Decimal  @default(0) @db.Decimal(14, 2)
+
+  statut        StatutFacture @default(BROUILLON)
+
+  // Facturation électronique : identifiant retourné par la plateforme agréée.
+  pdpIdentifiant String?
+  pdpStatut      String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([companyId, sens, numero])
+  @@index([companyId, statut, dateEcheance])
+  @@map("invoices")
+}
+
+enum SensFacture {
+  VENTE
+  ACHAT
+}
+
+enum StatutFacture {
+  BROUILLON
+  EMISE
+  PARTIELLEMENT_REGLEE
+  REGLEE
+  EN_RETARD
+  ANNULEE
+}
+
+// ─────────────────────────────────────────────────────────────
+// Ingestion documentaire et IA
+// ─────────────────────────────────────────────────────────────
+
+model SourceDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  companyId    String   @db.Uuid
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  nomFichier   String
+  mimeType     String
+  tailleOctets Int
+  // Empreinte du contenu : bloque le doublon d'ingestion, source classique de
+  // double comptabilisation d'une même facture fournisseur.
+  sha256       String   @db.VarChar(64)
+  stockageCle  String
+
+  type         TypeDocument @default(INCONNU)
+  statut       StatutIngestion @default(RECU)
+
+  deposeParId  String?  @db.Uuid
+  deposePar    User?    @relation(fields: [deposeParId], references: [id])
+
+  createdAt    DateTime @default(now())
+
+  aiJobs       AiJob[]
+  ecritures    JournalEntry[]
+
+  @@unique([companyId, sha256])
+  @@index([companyId, statut])
+  @@map("source_documents")
+}
+
+enum TypeDocument {
+  FACTURE_ACHAT
+  FACTURE_VENTE
+  RELEVE_BANCAIRE
+  NOTE_DE_FRAIS
+  CONTRAT_TRAVAIL
+  BULLETIN_PAIE
+  INCONNU
+}
+
+enum StatutIngestion {
+  RECU
+  EN_ANALYSE
+  EXTRAIT
+  A_VALIDER
+  VALIDE
+  ECHEC
+}
+
+model AiJob {
+  id             String   @id @default(uuid()) @db.Uuid
+  companyId      String   @db.Uuid
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  documentId     String?  @db.Uuid
+  document       SourceDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  demandeParId   String?  @db.Uuid
+  demandePar     User?    @relation(fields: [demandeParId], references: [id])
+
+  tache          TacheIa
+  modele         String   @default("claude-opus-5")
+  statut         StatutJob @default(EN_ATTENTE)
+
+  // Sortie structurée validée contre un schéma avant écriture en base : une
+  // extraction non conforme est rejetée plutôt qu'insérée partiellement.
+  resultat       Json?
+  // Score rendu par le modèle. En dessous du seuil, la pièce part en revue
+  // humaine : aucune écriture comptable n'est créée sans validation.
+  confiance      Decimal? @db.Decimal(4, 3)
+  erreur         String?
+
+  tokensEntree   Int?
+  tokensSortie   Int?
+  coutMicroEuros Int?     // coût en micro-euros, entier : pas d'arrondi flottant
+
+  demarreLe      DateTime?
+  termineLe      DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([companyId, statut, createdAt])
+  @@index([documentId])
+  @@map("ai_jobs")
+}
+
+enum TacheIa {
+  EXTRACTION_FACTURE
+  CATEGORISATION_DEPENSE
+  RAPPROCHEMENT_BANCAIRE
+  CONTROLE_BULLETIN
+  DETECTION_ANOMALIE
+  SYNTHESE_TRESORERIE
+  REPONSE_QUESTION_RH
+}
+
+enum StatutJob {
+  EN_ATTENTE
+  EN_COURS
+  REUSSI
+  REVUE_HUMAINE
+  ECHEC
+}
+
+// ─────────────────────────────────────────────────────────────
+// Ressources humaines et paie
+// ─────────────────────────────────────────────────────────────
+
+model Employee {
+  id             String   @id @default(uuid()) @db.Uuid
+  companyId      String   @db.Uuid
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  matricule      String
+  prenom         String
+  nom            String
+  emailPro       String?
+  dateNaissance  DateTime? @db.Date
+
+  // Chiffrés applicativement (AES-256-GCM). Le NIR relève en droit français d'un
+  // encadrement propre : son usage est restreint à la production des bulletins.
+  nirChiffre     String?
+  ibanChiffre    String?
+
+  poste          String
+  departement    String?
+  typeContrat    TypeContrat @default(CDI)
+  dateEmbauche   DateTime @db.Date
+  dateSortie     DateTime? @db.Date
+  motifSortie    String?
+
+  salaireBrutMensuel Decimal @db.Decimal(10, 2)
+  tauxPasPersonnalise Decimal? @db.Decimal(5, 2)
+  tempsTravailHeures Decimal @default(151.67) @db.Decimal(6, 2)
+
+  statut         StatutSalarie @default(ACTIF)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  payslips       Payslip[]
+  absences       Absence[]
+
+  @@unique([companyId, matricule])
+  @@index([companyId, statut])
+  @@map("employees")
+}
+
+enum TypeContrat {
+  CDI
+  CDD
+  ALTERNANCE
+  STAGE
+  INTERIM
+  MANDAT_SOCIAL
+}
+
+enum StatutSalarie {
+  ACTIF
+  SUSPENDU
+  SORTI
+}
+
+model Payslip {
+  id             String   @id @default(uuid()) @db.Uuid
+  companyId      String   @db.Uuid
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  employeeId     String   @db.Uuid
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  periodeAnnee   Int      @db.SmallInt
+  periodeMois    Int      @db.SmallInt
+
+  brut           Decimal  @db.Decimal(10, 2)
+  cotisationsSalariales Decimal @db.Decimal(10, 2)
+  cotisationsPatronales Decimal @db.Decimal(10, 2)
+  netImposable   Decimal  @db.Decimal(10, 2)
+  prelevementSource Decimal @db.Decimal(10, 2)
+  netAPayer      Decimal  @db.Decimal(10, 2)
+
+  // Détail des lignes de cotisation, figé au moment de l'émission : les taux
+  // évoluent, un bulletin réémis plus tard doit rester identique à l'original.
+  lignes         Json
+
+  statut         StatutBulletin @default(BROUILLON)
+  emisLe         DateTime?
+  pdfCle         String?
+
+  // Contrôle IA avant émission : anomalies détectées, non bloquantes mais tracées.
+  anomaliesIa    Json?
+
+  createdAt      DateTime @default(now())
+
+  @@unique([employeeId, periodeAnnee, periodeMois])
+  @@index([companyId, periodeAnnee, periodeMois])
+  @@map("payslips")
+}
+
+enum StatutBulletin {
+  BROUILLON
+  CONTROLE
+  EMIS
+  ANNULE
+}
+
+model Absence {
+  id          String   @id @default(uuid()) @db.Uuid
+  employeeId  String   @db.Uuid
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  type        TypeAbsence
+  dateDebut   DateTime @db.Date
+  dateFin     DateTime @db.Date
+  joursOuvres Decimal  @db.Decimal(5, 2)
+  statut      StatutAbsence @default(DEMANDEE)
+  motif       String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId, dateDebut])
+  @@map("absences")
+}
+
+enum TypeAbsence {
+  CONGES_PAYES
+  RTT
+  MALADIE
+  MATERNITE
+  PATERNITE
+  SANS_SOLDE
+  FORMATION
+}
+
+enum StatutAbsence {
+  DEMANDEE
+  APPROUVEE
+  REFUSEE
+  ANNULEE
+}
+
+// ─────────────────────────────────────────────────────────────
+// Traçabilité et accès machine
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  companyId   String   @db.Uuid
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId      String?  @db.Uuid
+  user        User?    @relation(fields: [userId], references: [id])
+
+  action      String
+  entite      String
+  entiteId    String?
+  details     Json?
+
+  // Données personnelles : purgées par la tâche de rétention (365 jours).
+  ip          String?  @db.Inet
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([createdAt]) // support de la purge de rétention
+  @@map("audit_logs")
+}
+
+model ApiKey {
+  id          String   @id @default(uuid()) @db.Uuid
+  companyId   String   @db.Uuid
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  libelle     String
+  // Seul le condensat est stocké : une clé perdue est régénérée, jamais relue.
+  cleHash     String   @unique
+  prefixe     String   @db.VarChar(12)
+  portee      String[] @default([])
+
+  derniereUtilisation DateTime?
+  expireLe    DateTime?
+  revoqueeLe  DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, revoqueeLe])
+  @@map("api_keys")
+}

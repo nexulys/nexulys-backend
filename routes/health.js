@@ -41,7 +41,24 @@ router.get('/', async (req, res) => {
 });
 
 // Liveness probe (k8s compatible)
-router.get('/live', (req, res) => res.json({ alive: true }));
+//
+// Volontairement lisible depuis n'importe quelle origine. La réponse ne contient qu'un
+// booléen, et cette ouverture a une utilité précise : depuis un navigateur, « service
+// arrêté » et « origine non autorisée par le CORS » produisent la même erreur
+// indifférenciée. Une sonde toujours lisible permet de les distinguer — c'est ce qui
+// rend /diagnostic.html capable de nommer la panne au lieu de la deviner.
+//
+// L'en-tête n'est posé que si la politique CORS n'a rien décidé : remplacer une origine
+// explicite par « * » invaliderait les requêtes porteuses d'identifiants.
+router.get('/live', (req, res) => {
+  if (!res.getHeader('Access-Control-Allow-Origin')) {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Vary', 'Origin');
+  }
+  // Sans cela, l'en-tête Cross-Origin-Resource-Policy d'helmet bloquerait la lecture.
+  res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.json({ alive: true });
+});
 
 // Readiness probe
 router.get('/ready', async (req, res) => {

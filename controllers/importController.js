@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Employee = require('../models/Employee');
 const logger = require('../utils/logger');
 const { sendError } = require('../utils/errorResponse');
+const { escapeCsvCell } = require('../utils/escape');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
@@ -127,7 +128,7 @@ exports.exportCSV = async (req, res) => {
     }
 
     const csvHeader = headers.join(',');
-    const csvRows = data.map(item => headers.map(h => `"${(item[h] || '').toString().replace(/"/g, '""')}"`).join(','));
+    const csvRows = data.map(item => headers.map(h => escapeCsvCell(item[h] ?? '')).join(','));
     const csv = [csvHeader, ...csvRows].join('\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');

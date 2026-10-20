@@ -13,27 +13,34 @@ const AI_UNAVAILABLE =
   "(clé API restreinte, quota épuisé ou compte suspendu). Vérifiez votre clé API dans les variables " +
   "d'environnement, ou réessayez plus tard.";
 
-// Construit la liste des fournisseurs disponibles, par ordre de priorité (Groq puis OpenAI)
+// Erreur levée quand aucun fournisseur d'IA n'est configuré. Elle porte son statut et
+// son message pour que l'interface dise la vérité plutôt que d'afficher une valeur
+// fabriquée : sur un produit comptable, une donnée inventée est pire qu'une panne
+// annoncée.
+const IA_NON_CONFIGUREE = () => Object.assign(
+  new Error("L'assistant IA n'est pas configuré sur cette installation. "
+    + "Renseignez OPENAI_API_KEY pour l'activer."),
+  { status: 503, code: 'IA_NON_CONFIGUREE', exposeMessage: true }
+);
+
+// Un seul fournisseur, et c'est celui que la politique de confidentialité déclare comme
+// sous-traitant. Tant que les deux ne coïncident pas, des données personnelles — texte
+// de facture, CV de candidats, comptes rendus d'entretien — partent chez un destinataire
+// non déclaré. L'ancienne bascule vers Groq a été retirée pour cette raison : son offre
+// gratuite ne garantit pas contractuellement le non-entraînement que promet notre DPA.
+// Changer de fournisseur impose de mettre à jour public/confidentialite.html,
+// docs/RGPD-REGISTRE.md et docs/RGPD-DPA.md — un test verrouille cette cohérence.
+const FOURNISSEUR_IA = 'OpenAI';
+
 const buildProviders = async () => {
+  if (!process.env.OPENAI_API_KEY) return [];
   const { default: OpenAI } = await import('openai');
-  const providers = [];
-  if (process.env.GROQ_API_KEY) {
-    providers.push({
-      name: 'Groq',
-      client: new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' }),
-      model: 'llama-3.1-8b-instant',
-      visionModel: 'meta-llama/llama-4-scout-17b-16e-instruct'
-    });
-  }
-  if (process.env.OPENAI_API_KEY) {
-    providers.push({
-      name: 'OpenAI',
-      client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-      model: 'gpt-4o-mini',
-      visionModel: 'gpt-4o'
-    });
-  }
-  return providers;
+  return [{
+    name: FOURNISSEUR_IA,
+    client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+    model: 'gpt-4o-mini',
+    visionModel: 'gpt-4o'
+  }];
 };
 
 // Compat : renvoie le premier fournisseur disponible (utilisé par la vision/OCR)
@@ -65,9 +72,7 @@ const GUARDRAIL =
 const aiChat = async (systemPrompt, userMessage, maxTokens = 900) => {
   const safeMessage = sanitizeAIInput(userMessage);
   const providers = await buildProviders();
-  if (!providers.length) {
-    return `[Mode démo — configurez GROQ_API_KEY (gratuit) ou OPENAI_API_KEY pour activer l'IA]\n\nSimulation basée sur: ${safeMessage.substring(0, 100)}...`;
-  }
+  if (!providers.length) throw IA_NON_CONFIGUREE();
   let lastErr;
   for (const p of providers) {
     try {
@@ -337,9 +342,9 @@ exports.ocrJustificatif = async (req, res) => {
     const { imageBase64, mimeType } = req.body;
     if (!imageBase64) return res.status(400).json({ success: false, message: 'Image base64 requise' });
     const ai = await getAIClient();
-    if (!ai) {
-      return res.json({ success: true, data: { titre: 'Achat simulé', montant: 42.50, categorie: 'autre', date: new Date().toISOString().slice(0, 10), fiabilite: 0, note: 'Mode démo — configurez GROQ_API_KEY (gratuit) ou OPENAI_API_KEY' } });
-    }
+    // Renvoyait « Achat simulé, 42,50 € » avec success: true. L'interface remplissait
+    // le formulaire de dépense avec ce montant inventé.
+    if (!ai) throw IA_NON_CONFIGUREE();
     const resp = await ai.client.chat.completions.create({
       model: ai.visionModel,
       messages: [{
@@ -356,7 +361,14 @@ exports.ocrJustificatif = async (req, res) => {
     res.json({ success: true, data: parsed });
   } catch (err) {
     logger.warn('OCR justificatif — fournisseur IA en échec', { error: err.message });
-    res.json({ success: true, data: { titre: '', montant: 0, categorie: 'autre', date: new Date().toISOString().slice(0, 10), fiabilite: 0, note: "Lecture automatique indisponible (fournisseur d'IA restreint). Saisissez les informations manuellement." } });
+    if (err.code === 'IA_NON_CONFIGUREE') return sendError(res, err);
+    // Échec du fournisseur : on le dit, sans proposer de valeurs à zéro qu'un
+    // utilisateur pressé enregistrerait telles quelles.
+    return sendError(res, Object.assign(
+      new Error("Lecture automatique indisponible : le fournisseur d'IA n'a pas répondu. "
+        + 'Saisissez les informations manuellement.'),
+      { status: 503, code: 'IA_INDISPONIBLE', exposeMessage: true }
+    ));
   }
 };
 

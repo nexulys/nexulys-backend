@@ -35,44 +35,76 @@ const nextBillingOn5thAfter = (unixTimestamp) => {
 };
 exports.nextBillingOn5thAfter = nextBillingOn5thAfter;
 
+/**
+ * Erreur de facturation — distingue une panne Stripe d'un bug applicatif, pour que
+ * l'appelant réponde 503 plutôt que d'inventer un abonnement.
+ */
+class StripeIndisponibleError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'StripeIndisponibleError';
+    this.status = 503;
+  }
+}
+exports.StripeIndisponibleError = StripeIndisponibleError;
+
+// Le repli « mock » ne doit jamais servir en production : il faisait passer une panne
+// Stripe pour un abonnement actif, donc un accès payant accordé sans encaissement.
+const modeDemoAutorise = () => process.env.NODE_ENV !== 'production';
+
 exports.createCustomer = async ({ email, nom, companyName }) => {
   const stripe = getStripe();
-  if (!stripe) return { mock: true, id: `cus_mock_${Date.now()}` };
+  if (!stripe) {
+    if (!modeDemoAutorise()) throw new StripeIndisponibleError('Facturation non configurée (STRIPE_SECRET_KEY manquante).');
+    return { mock: true, id: `cus_mock_${Date.now()}` };
+  }
   try {
     return await stripe.customers.create({ email, name: `${nom} — ${companyName}`, metadata: { companyName } });
   } catch (err) {
-    logger.warn('Stripe injoignable — mode mock activé', { error: err.message });
+    logger.error('Stripe : création client échouée', { error: err.message });
+    if (!modeDemoAutorise()) throw new StripeIndisponibleError('Service de paiement momentanément indisponible.');
     return { mock: true, id: `cus_mock_${Date.now()}` };
   }
 };
 
-exports.createSubscription = async (customerId, plan) => {
+
+/**
+ * Session Stripe Checkout en mode abonnement.
+ * Stripe héberge la page de paiement : l'authentification forte (DSP2/SCA) et les
+ * moyens de paiement sont gérés chez lui, aucune donnée de carte ne transite ici.
+ * L'abonnement local n'est activé qu'au retour du webhook.
+ */
+exports.createCheckoutSession = async ({ customerId, plan, companyId, appUrl, email }) => {
   const stripe = getStripe();
-  if (!stripe || (customerId && customerId.startsWith('cus_mock'))) {
-    return { mock: true, id: `sub_mock_${Date.now()}`, status: 'active' };
+  if (!stripe) {
+    if (!modeDemoAutorise()) throw new StripeIndisponibleError('Facturation non configurée (STRIPE_SECRET_KEY manquante).');
+    return { mock: true, url: null };
   }
   try {
-    const nom = plan?.nom ? `Novexa ${plan.nom}` : NOVEXA_PRO_PRICE.product_name;
-    const montant = plan?.prix != null ? Math.round(plan.prix * 100) : NOVEXA_PRO_PRICE.amount;
-    const product = await stripe.products.create({ name: nom });
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: montant,
-      currency: 'eur',
-      recurring: { interval: 'month' }
-    });
-    const billingAnchor = Math.floor(nextBillingOn5th().getTime() / 1000);
-    return await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: price.id }],
-      billing_cycle_anchor: billingAnchor,
-      proration_behavior: 'none',
-      payment_behavior: 'default_incomplete',
-      expand: ['latest_invoice.payment_intent']
+    return await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId || undefined,
+      customer_email: customerId ? undefined : email,
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          unit_amount: Math.round((plan?.prix ?? 0) * 100),
+          recurring: { interval: 'month' },
+          product_data: { name: `Novexa ${plan?.nom || ''}`.trim() }
+        },
+        quantity: 1
+      }],
+      // Rattache la session à l'entreprise : le webhook s'en sert pour activer le
+      // bon abonnement, sans se fier à un identifiant fourni par le client.
+      metadata: { companyId: String(companyId), planId: String(plan?.id || '') },
+      subscription_data: { metadata: { companyId: String(companyId), planId: String(plan?.id || '') } },
+      success_url: `${appUrl}/dashboard.html?abonnement=succes`,
+      cancel_url: `${appUrl}/dashboard.html?abonnement=annule`
     });
   } catch (err) {
-    logger.warn('Stripe injoignable — mode mock activé', { error: err.message });
-    return { mock: true, id: `sub_mock_${Date.now()}`, status: 'active' };
+    logger.error('Stripe : création session Checkout échouée', { error: err.message });
+    if (!modeDemoAutorise()) throw new StripeIndisponibleError('Service de paiement momentanément indisponible.');
+    return { mock: true, url: null };
   }
 };
 

@@ -20,6 +20,14 @@ const sendError = (res, err) => {
     const champ = Object.keys(err.keyPattern || err.keyValue || {})[0] || 'valeur';
     return res.status(409).json({ success: false, message: `Cette ${champ} existe déjà.` });
   }
+  // Erreur métier portant son propre statut et son propre message : la masquer
+  // derrière un 500 « Erreur interne » priverait l'interface de l'information utile
+  // (service non configuré, vente fermée…). `exposeMessage` rend ce choix explicite.
+  if (err && err.status && err.exposeMessage) {
+    return res.status(err.status).json({
+      success: false, message: err.message, code: err.code || undefined
+    });
+  }
   logger.error('Erreur contrôleur', { error: err && err.message });
   return res.status(500).json({
     success: false,

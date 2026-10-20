@@ -8,11 +8,13 @@ const { genererFichePaie } = require('../utils/payslipGenerator');
 const { notifyLeaveRequest, notifyAdvanceRequested } = require('../utils/notifications');
 const { logAction } = require('../utils/auditLogger');
 const { sendError } = require('../utils/errorResponse');
+const { refuserSiQuotaAtteint } = require('../utils/quotas');
 
 const MOIS_LABELS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
 exports.createEmployee = async (req, res) => {
   try {
+    if (await refuserSiQuotaAtteint(req, res, 'employes')) return;
     const employee = await Employee.create({ ...req.body, company: req.user.company });
     logAction(req, { action: 'CREATE_EMPLOYEE', entity: 'Employee', entityId: employee._id, details: employee.nom });
     res.status(201).json({ success: true, data: employee });

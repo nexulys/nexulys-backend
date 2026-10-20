@@ -1,0 +1,20 @@
+{
+  // Hébergement des pages du produit (tout le contenu de public/) sur Cloudflare.
+  // L'API reste servie par server.js sur son propre hébergement : les deux domaines
+  // diffèrent, d'où l'obligation de déclarer l'origine de ce Worker dans la variable
+  // ALLOWED_ORIGINS du backend. Sans cette déclaration, le navigateur bloque toutes les
+  // réponses de l'API et la page de connexion paraît inerte.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "novexa",
+  "compatibility_date": "2026-07-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    // Inclut public/js/ : depuis le durcissement de la CSP, le JavaScript des pages y
+    // vit dans des fichiers séparés. Déployer les pages sans ce répertoire rendrait
+    // tous les formulaires inopérants, sans aucun message d'erreur visible.
+    "directory": "public"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

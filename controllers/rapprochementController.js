@@ -14,6 +14,20 @@ exports.getRapprochements = async (req, res) => {
   } catch (err) { sendError(res, err); }
 };
 
+// Détail d'un relevé, transactions comprises. Le tableau de bord l'appelait déjà
+// pour ouvrir un relevé, mais aucune route ne répondait : l'écran de détail restait
+// vide sans message.
+exports.getReleve = async (req, res) => {
+  try {
+    const releve = await RapprochementBancaire.findOne({
+      _id: req.params.id,
+      company: req.user.company,
+    });
+    if (!releve) return res.status(404).json({ success: false, message: 'Relevé introuvable' });
+    res.json({ success: true, data: releve });
+  } catch (err) { sendError(res, err); }
+};
+
 exports.createReleve = async (req, res) => {
   try {
     const { banque, compte, periode, soldeOuverture, soldeCloture, transactions } = req.body;

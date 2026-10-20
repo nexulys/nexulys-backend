@@ -10,3 +10,8 @@ build/
 coverage/
 .nyc_output/
 logs/
+# Sauvegardes : données clients, même chiffrées — jamais dans le dépôt.
+backups/
+*.archive
+*.archive.enc
+*.archive.enc.sha256

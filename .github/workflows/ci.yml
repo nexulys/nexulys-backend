@@ -60,6 +60,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
 
+    # /api/health renvoie 503 tant que la base n'est pas jointe : sans ce service,
+    # le test de démarrage échouerait alors même que l'image est saine.
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -68,12 +81,21 @@ jobs:
 
       - name: Test Docker image starts
         run: |
-          docker run -d --name novexa-test \
-            -e MONGODB_URI=mongodb://host.docker.internal:27017/novexa \
+          # L'image tourne en NODE_ENV=production : elle exige donc la configuration
+          # minimale de production, sans laquelle le serveur refuse de démarrer
+          # (JWT_SECRET, et DATA_ENCRYPTION_KEY pour le chiffrement des IBAN et NIR).
+          # Valeurs de test uniquement, jamais utilisées en déploiement réel.
+          # --network host : sur un runner Linux, host.docker.internal n'existe pas ;
+          # c'est ainsi que le conteneur atteint le service MongoDB publié sur 27017.
+          docker run -d --name novexa-test --network host \
+            -e MONGODB_URI=mongodb://localhost:27017/novexa \
             -e JWT_SECRET=test_secret \
+            -e DATA_ENCRYPTION_KEY=00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff \
+            -e ALLOWED_ORIGINS=http://localhost:5000 \
             -e PORT=5000 \
-            -p 5000:5000 \
             novexa-backend:${{ github.sha }}
-          sleep 5
-          curl -f http://localhost:5000/api/health || exit 1
+          sleep 8
+          # Diagnostic utile si le conteneur s'est arrêté au démarrage.
+          docker ps -a --filter name=novexa-test
+          curl -f http://localhost:5000/api/health || { docker logs novexa-test; exit 1; }
           docker stop novexa-test

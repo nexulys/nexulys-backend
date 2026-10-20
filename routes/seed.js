@@ -2,9 +2,18 @@ const router = require('express').Router();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const { secureCompare } = require('../utils/secureCompare');
+
 router.post('/', async (req, res) => {
-  const secret = req.query.secret || req.headers['x-seed-secret'];
-  if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET)
+  // Cette route vide 10 collections (deleteMany). En production, aucune valeur de
+  // SEED_SECRET ne doit pouvoir déclencher la destruction des données clients.
+  if (process.env.NODE_ENV === 'production')
+    return res.status(404).json({ success: false, message: 'Route not found' });
+
+  // Secret accepté par en-tête uniquement : en query string il finit en clair dans
+  // les logs d'accès nginx, les logs morgan et l'historique du navigateur.
+  const secret = req.headers['x-seed-secret'];
+  if (!process.env.SEED_SECRET || !secureCompare(String(secret || ''), process.env.SEED_SECRET))
     return res.status(401).json({ success: false, message: 'Secret invalide' });
 
   try {

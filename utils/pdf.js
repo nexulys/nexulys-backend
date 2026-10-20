@@ -197,8 +197,13 @@ const generatePayslipPDF = (payslip, employee, company) => {
     eLine(`Convention collective : ${company?.conventionCollective || '—'}`);
 
     // Titre + période (haut droite)
+    //
+    // « SIMULATION » et non « BULLETIN DE SALAIRE » : le moteur n'applique ni la
+    // réduction générale de cotisations patronales, ni la tranche 2 Agirc-Arrco, ni le
+    // montant net social obligatoire depuis juillet 2023, et ses taux sont ceux de 2024.
+    // Un document intitulé « bulletin de salaire » engagerait l'employeur qui le remet.
     doc.fontSize(15).font('Helvetica-Bold').fillColor(C.black)
-       .text('BULLETIN DE SALAIRE', L + 265, y, { width: R - (L + 265), align: 'right' });
+       .text('SIMULATION DE PAIE', L + 265, y, { width: R - (L + 265), align: 'right' });
     const per = `${String(payslip.mois || '').padStart(2, '0')}/${payslip.annee || ''}`;
     doc.fontSize(8.5).font('Helvetica').fillColor(C.gray)
        .text(`Période : ${per}`, L + 265, y + 22, { width: R - (L + 265), align: 'right' });
@@ -372,11 +377,18 @@ const generatePayslipPDF = (payslip, employee, company) => {
     // ── Pied de page légal ──
     const pageH = doc.page.height;
     doc.moveTo(L, pageH - 46).lineTo(R, pageH - 46).strokeColor(C.grid).lineWidth(0.5).stroke();
+    // Mention sans ambiguïté : ce document ne doit pas être remis à un salarié comme
+    // un bulletin de paie. L'ancien pied de page citait l'article L3243-4 et parlait de
+    // solde de tout compte, ce qui lui donnait toutes les apparences d'un document légal.
+    doc.fontSize(6.8).fillColor(C.black).font('Helvetica-Bold').text(
+      "SIMULATION — ne constitue pas un bulletin de paie au sens de l'article R3243-1 du code du travail.",
+      L, pageH - 42, { width: W, align: 'center' }
+    );
     doc.fontSize(6.3).fillColor(C.light).font('Helvetica').text(
-      'Bulletin de paie à conserver sans limitation de durée (Art. L3243-4 du Code du travail). ' +
-      'En cas de rupture du contrat, ce bulletin est remis avec le solde de tout compte. ' +
+      'Estimation de coût salarial, établie sur les taux 2024. Elle n\'applique ni la réduction ' +
+      'générale de cotisations patronales, ni la tranche 2 Agirc-Arrco, ni le montant net social. ' +
       `Document généré le ${new Date().toLocaleDateString('fr-FR')} — ${company?.nom || 'Novexa by Nexulys'}.`,
-      L, pageH - 40, { width: W, align: 'center' }
+      L, pageH - 32, { width: W, align: 'center' }
     );
 
     doc.end();

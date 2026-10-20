@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { champChiffre } = require('../utils/chiffrement');
 
 const companySchema = new mongoose.Schema({
   nom: { type: String, required: true, trim: true },
@@ -19,7 +20,16 @@ const companySchema = new mongoose.Schema({
   codeApe: { type: String, trim: true },              // code NAF/APE
   urssaf: { type: String, trim: true },               // numéro URSSAF
   conventionCollective: { type: String, trim: true }, // convention collective applicable
-  iban: { type: String, trim: true }                  // IBAN entreprise pour virements sortants
-}, { timestamps: true });
+  // Chiffré au repos : donnée bancaire de l'entreprise cliente.
+  iban: champChiffre(),                               // IBAN entreprise pour virements sortants
+
+  // ── Effacement RGPD (art. 17) ──
+  suppressionDemandeeLe: { type: Date },
+  suppressionPrevueLe: { type: Date },                // fin du délai de rétractation
+  suppressionDemandeePar: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  suppressionMotif: { type: String },
+  supprimeeLe: { type: Date },                        // purge effectivement exécutée
+  anonymisee: { type: Boolean, default: false }
+}, { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } });
 
 module.exports = mongoose.model('Company', companySchema);

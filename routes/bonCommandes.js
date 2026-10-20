@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const c = require('../controllers/bonCommandeController');
 const protect = require('../middleware/auth');
+const { verifierAbonnement } = require('../middleware/subscription');
 
 router.use(protect);
 
+// Écritures réservées aux abonnements actifs (lecture toujours autorisée).
+router.use(verifierAbonnement);
 router.route('/').get(c.getBonsCommande).post(c.createBonCommande);
 router.route('/:id').put(c.updateBonCommande).delete(c.deleteBonCommande);
 router.put('/:id/recevoir', c.recevoirCommande);
