@@ -619,7 +619,7 @@
           + '<td style="color:var(--text-dim);">' + esc(tva)+ '</td>'
           + '<td><span class="badge ' + esc(cls)+ '">' + esc(label)+ '</span>' + esc(pdpBadge)+ '</td>'
           + '<td style="color:var(--text-dim);">' + esc(date)+ '</td>'
-          + '<td>' + paidBtn + relanceBtn + '<button class="btn-sm" onclick="downloadFacturePDF(\'' + inv._id + '\')" style="margin-right:4px;" title="Télécharger PDF">📥 PDF</button><button class="btn-sm" onclick="downloadFacturX(\'' + inv._id + '\')" style="margin-right:4px;" title="Facture électronique (Factur-X)">🇪🇺 XML</button><button class="btn-sm" onclick="transmettrePDP(\'' + inv._id + '\')" style="margin-right:4px;" title="Transmettre via une PDP (facturation électronique)">🏛️ PDP</button><button class="btn-sm" onclick="genererLienPaiement(\'' + inv._id + '\')" style="margin-right:4px;" title="Lien de paiement en ligne">💳</button><button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
+          + '<td>' + paidBtn + relanceBtn + '<button class="btn-sm" onclick="downloadFacturePDF(\'' + inv._id + '\')" style="margin-right:4px;" title="Télécharger PDF">📥 PDF</button><button class="btn-sm" onclick="downloadFacturX(\'' + inv._id + '\')" style="margin-right:4px;" title="Export XML facture électronique (EN 16931)">🇪🇺 XML</button><button class="btn-sm" onclick="transmettrePDP(\'' + inv._id + '\')" style="margin-right:4px;" title="Transmettre via une PDP (facturation électronique)">🏛️ PDP</button><button class="btn-sm" onclick="genererLienPaiement(\'' + inv._id + '\')" style="margin-right:4px;" title="Lien de paiement en ligne">💳</button><button class="btn-sm" onclick="printFacture(\'' + inv._id + '\')" style="margin-right:4px;">🖨</button><button class="btn-sm btn-del-sm" onclick="deleteFacture(\'' + inv._id + '\')">🗑</button></td>'
           + '</tr>';
       }).join('');
       if (pagDiv) {
@@ -1538,10 +1538,19 @@
 
     var NOVEXA_PLANS = [];
     var selectedPlanId = 'business';
+    // `venteActive` vient de la même source que la règle appliquée par l'API : tant
+    // qu'il vaut false, proposer un bouton « souscrire » reviendrait à promettre un
+    // parcours que l'API refuse, et à contredire les mentions légales.
+    var NOVEXA_VENTE_ACTIVE = true;
+    var NOVEXA_MESSAGE_VENTE = '';
     async function ensurePlans() {
       if (NOVEXA_PLANS.length) return;
       var r = await apiFetch('/abonnement/plans');
       NOVEXA_PLANS = (r && r.data && r.data.plans) ? r.data.plans : [];
+      if (r && r.data) {
+        NOVEXA_VENTE_ACTIVE = r.data.venteActive !== false;
+        NOVEXA_MESSAGE_VENTE = r.data.messageVenteFermee || '';
+      }
     }
     function planById(id) { return NOVEXA_PLANS.find(function(p){ return p.id === id; }) || NOVEXA_PLANS[1] || NOVEXA_PLANS[0]; }
 
@@ -1557,9 +1566,21 @@
       // Choix de plan (bloc inactif) — toujours (re)construit
       var choiceEl = document.getElementById('sub-plan-choice');
       if (choiceEl) {
-        choiceEl.innerHTML = NOVEXA_PLANS.map(function(p) {
-          return '<button class="btn-outline" onclick="choisirPlan(\'' + esc(p.id)+ '\')" id="planbtn-' + esc(p.id)+ '" style="flex:1;min-width:120px;">' + esc(p.nom)+ ' — ' + esc(p.prix)+ ' €' + (p.populaire ? ' ★' : '') + '</button>';
-        }).join('');
+        if (!NOVEXA_VENTE_ACTIVE) {
+          // Les offres restent visibles, à titre d'information, sans parcours d'achat.
+          choiceEl.innerHTML =
+            '<div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);'
+            + 'color:#a5b4fc;border-radius:10px;padding:14px;font-size:13px;width:100%;">'
+            + '<strong>Souscriptions non ouvertes.</strong> ' + esc(NOVEXA_MESSAGE_VENTE) + '</div>'
+            + NOVEXA_PLANS.map(function(p) {
+                return '<div class="btn-outline" style="flex:1;min-width:120px;opacity:.55;cursor:default;">'
+                  + esc(p.nom) + ' — ' + esc(p.prix) + ' €</div>';
+              }).join('');
+        } else {
+          choiceEl.innerHTML = NOVEXA_PLANS.map(function(p) {
+            return '<button class="btn-outline" onclick="choisirPlan(\'' + esc(p.id)+ '\')" id="planbtn-' + esc(p.id)+ '" style="flex:1;min-width:120px;">' + esc(p.nom)+ ' — ' + esc(p.prix)+ ' €' + (p.populaire ? ' ★' : '') + '</button>';
+          }).join('');
+        }
       }
 
       if (!res || !res.success || !res.data) {
@@ -1630,6 +1651,10 @@
     async function activerAbonnement() {
       var email = document.getElementById('sub-email')?.value.trim();
       var errEl = document.getElementById('sub-error');
+      if (!NOVEXA_VENTE_ACTIVE) {
+        if (errEl) errEl.textContent = NOVEXA_MESSAGE_VENTE;
+        return;
+      }
       var btn = document.getElementById('sub-activate-btn');
       if (errEl) errEl.textContent = '';
       if (!email) { if (errEl) errEl.textContent = 'Renseignez un email de facturation.'; return; }
@@ -1961,9 +1986,13 @@
       } catch(e) { showToast('Erreur téléchargement PDF', 'error'); }
     }
 
-    // ── Facture électronique (Factur-X XML) ──
+    // ── Export XML de facture électronique ──
+    // Ce que produit utils/facturx.js est le XML CII au profil EN 16931, pas un
+    // Factur-X complet : celui-ci est un PDF/A-3 avec le XML embarqué, et
+    // l'embarquement n'est pas réalisé. Le libellé dit donc « export XML », pour ne
+    // pas laisser croire qu'un fichier déposable chez un partenaire est produit.
     async function downloadFacturX(id) {
-      showToast('Génération Factur-X...', 'info');
+      showToast('Génération de l\'export XML…', 'info');
       try {
         var response = await fetch(API + '/pdf/facture/' + id + '/factur-x', { headers: apiHeaders() });
         if (!response.ok) { var d = await response.json(); showToast(d.message || 'Erreur Factur-X', 'error'); return; }
@@ -2165,7 +2194,7 @@
       else showToast(data.message || 'Erreur');
     }
 
-    // ── Fiches de paie ──
+    // ── Simulations de coût salarial ──
     async function loadPayslipsAll() {
       var employeeId = document.getElementById('paie-filter-employe') ? document.getElementById('paie-filter-employe').value : '';
       var url = employeeId ? '/rh/paie/' + employeeId : '/rh/paie/all';
@@ -2173,7 +2202,7 @@
       var tbody = document.getElementById('payslips-body');
       if (!tbody) return;
       if (!res || !res.data || !res.data.length) {
-        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">💰</div><div class="empty-state-text">Aucune fiche de paie générée</div></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">💰</div><div class="empty-state-text">Aucune simulation enregistrée</div></div></td></tr>';
         return;
       }
       var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -2219,7 +2248,7 @@
       _virReadyData = (res && res.data) ? res.data : [];
       var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
       if (!_virReadyData.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune fiche validée pour cette période.<br><small style="color:#475569;">Générez et validez des fiches de paie depuis l\'onglet Fiches de paie.</small></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim);">Aucune fiche validée pour cette période.<br><small style="color:#475569;">Lancez une simulation depuis l\'onglet Simulations de paie.</small></td></tr>';
         document.getElementById('vir-summary').style.display = 'none';
         return;
       }
@@ -2356,7 +2385,7 @@
           document.getElementById('p-elements').innerHTML = '';
           document.getElementById('p-heures').value = '0';
           document.getElementById('p-primes').value = '0';
-          showToast('Fiche de paie générée — Net: ' + (data.data.salaireNet || 0).toLocaleString('fr') + ' €', 'success');
+          showToast('Simulation enregistrée — Net estimé : ' + (data.data.salaireNet || 0).toLocaleString('fr') + ' €', 'success');
           loadPayslipsAll();
         } else modalError('p', data.message || 'Erreur.');
       } catch(e) { modalError('p', 'Erreur réseau.'); }
@@ -2794,22 +2823,24 @@
       } else showToast(data.message || 'Erreur', 'error');
     }
 
-    // ── Export CSV fiches de paie ──
+    // ── Export CSV des simulations ──
     function exportCSVPayslips() {
       exportCSVTable('payslips-body', ['Employé','Période','Salaire brut','Salaire net','Statut'], 'fiches-paie');
     }
 
-    // ── Export DSN simplifié ──
+    // ── Export récapitulatif de paie (CSV) ──
+    // Ce fichier n'est pas une DSN : une DSN est une déclaration au format NEODeS
+    // déposée sur net-entreprises.fr. Il ne peut donc pas être télédéclaré.
     async function exportDSN() {
       var now = new Date();
       var mois = now.getMonth() + 1;
       var annee = now.getFullYear();
       var res = await apiFetch('/comptabilite/dsn?mois=' + mois + '&annee=' + annee);
-      if (!res || !res.data) { showToast('Erreur chargement DSN', 'error'); return; }
+      if (!res || !res.data) { showToast('Erreur de chargement du récapitulatif', 'error'); return; }
       var d = res.data;
       var moisLabels = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
       var lines = [
-        'DSN MENSUELLE SIMPLIFIÉE — ' + (moisLabels[mois]||mois) + ' ' + annee,
+        'RÉCAPITULATIF DE PAIE (estimation) — ' + (moisLabels[mois]||mois) + ' ' + annee,
         '',
         'MASSE SALARIALE BRUTE;' + (d.massesSalarialeBrute||0).toFixed(2) + ' €',
         'NB SALARIÉS;' + (d.nbEmployes||0),
@@ -2827,7 +2858,7 @@
       var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'DSN_' + (moisLabels[mois]||mois) + '_' + annee + '.csv';
+      a.download = 'Recapitulatif_paie_' + (moisLabels[mois]||mois) + '_' + annee + '.csv';
       a.click();
       showToast('DSN exporté', 'success');
     }

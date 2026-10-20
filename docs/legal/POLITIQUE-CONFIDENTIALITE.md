@@ -1,11 +1,15 @@
 # Politique de confidentialité — Novexa
 
-**Responsable de traitement** : Nexulys SAS, 12 rue des Arts, 59000 Lille, France —
-RCS Lille Métropole 934 512 786.
-**Contact protection des données** : dpo@novexa.fr
-**Délégué à la protection des données** : Camille Ferrand, désignée auprès de la CNIL.
+**Responsable de traitement** : Nexulys — activité en cours de création, non encore
+immatriculée. Siège : Saint-Étienne, France. Forme sociale, adresse complète et
+numéro RCS : À COMPLÉTER À L'IMMATRICULATION.
+**Contact protection des données** : nexulyspro2002@gmail.com
+**Délégué à la protection des données** : aucun DPO désigné à ce jour. La désignation
+d'un DPO n'est pas obligatoire pour une structure de cette taille (RGPD art. 37), mais
+le traitement de données de paie et de candidatures justifie de l'envisager avant
+l'ouverture commerciale.
 
-**Version 1.0 — en vigueur au 1er octobre 2026.**
+**Version 1.1 — projet, non applicable avant immatriculation.**
 
 > **Document à faire valider par un avocat avant mise en ligne.** Les identités et
 > coordonnées ci-dessus sont fictives et doivent être remplacées par les vôtres. La
@@ -63,10 +67,16 @@ obligation de confidentialité, et aux sous-traitants suivants :
 
 | Sous-traitant | Rôle | Localisation des données |
 |---|---|---|
-| Scaleway SAS | hébergement applicatif et base de données | France (région PAR) |
+| Render Services, Inc. | hébergement de l'application et de la base de données | États-Unis |
+| Cloudflare, Inc. | hébergement de l'interface web, sécurité réseau | États-Unis |
+| MongoDB, Inc. (Atlas) | base de données managée, le cas échéant | selon la région retenue |
 | Stripe Payments Europe Ltd | encaissement des abonnements | Irlande |
-| Anthropic Ireland Limited | traitements d'intelligence artificielle | Union européenne |
-| Brevo SAS | acheminement des courriers électroniques | France |
+| OpenAI | traitements d'intelligence artificielle | États-Unis |
+| Resend, ou le prestataire SMTP retenu | acheminement des courriers électroniques | selon le prestataire |
+
+Cette table doit refléter la pile réellement déployée : un sous-traitant omis, et des
+données personnelles partent chez un destinataire non déclaré. L'entité contractante
+exacte d'OpenAI et les clauses applicables sont à confirmer à la signature du DPA.
 
 Chacun est lié par un accord conforme à l'article 28 du RGPD.
 
@@ -109,7 +119,7 @@ Vous disposez des droits d'accès, de rectification, d'effacement, de limitation
 d'opposition et de portabilité, ainsi que du droit de définir des directives relatives
 au sort de vos données après votre décès.
 
-**Comment les exercer** : écrivez à dpo@novexa.fr. Nous répondons dans un délai d'un
+**Comment les exercer** : écrivez à nexulyspro2002@gmail.com. Nous répondons dans un délai d'un
 mois, prolongeable de deux mois en cas de demande complexe. Une pièce d'identité peut
 vous être demandée en cas de doute raisonnable sur votre identité.
 
@@ -130,7 +140,7 @@ prospection repose sur notre intérêt légitime, conformément à la position d
 matière de prospection B2B.
 
 Chaque message comporte un moyen de désinscription immédiat et gratuit. Vous pouvez
-également vous opposer à tout moment en écrivant à dpo@novexa.fr : votre adresse est
+également vous opposer à tout moment en écrivant à nexulyspro2002@gmail.com : votre adresse est
 alors inscrite sur notre liste d'opposition, conservée à cette seule fin.
 
 ## 10. Cookies et traceurs
@@ -154,4 +164,4 @@ du présent document.
 
 ---
 
-*Nexulys SAS — Version 1.0 du 1er octobre 2026 — dpo@novexa.fr*
+*Nexulys — activité en cours de création — Version 1.1, projet non applicable avant immatriculation — nexulyspro2002@gmail.com*

@@ -1,4 +1,5 @@
 const Subscription = require('../models/Subscription');
+const { venteActive } = require('../config/vente');
 
 /**
  * Contrôle de l'état d'abonnement.
@@ -54,6 +55,10 @@ const verifierAbonnement = async (req, res, next) => {
   try {
     if (METHODES_LECTURE.has(req.method)) return next();
     if (!req.user?.company) return next();
+    // Avant immatriculation, aucune souscription n'est possible : restreindre un compte
+    // pour défaut de paiement reviendrait à exiger un règlement qu'on n'a pas le droit
+    // d'encaisser. Le garde ne reprend son office qu'avec l'ouverture de la vente.
+    if (!venteActive()) return next();
 
     const sub = await Subscription.findOne({ company: req.user.company });
     if (donneAccesEcriture(sub)) {

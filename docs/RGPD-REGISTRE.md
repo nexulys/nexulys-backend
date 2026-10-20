@@ -8,8 +8,8 @@
 > Tenez-le à jour : toute nouvelle finalité, tout nouveau sous-traitant ou toute
 > nouvelle catégorie de données doit y figurer.
 
-**Responsable du registre** : `<NOM, FONCTION>` — `<EMAIL>`
-**Dernière mise à jour** : `<DATE>`
+**Responsable du registre** : Ethane Mendy, responsable de la publication — nexulyspro2002@gmail.com
+**Dernière mise à jour** : 20 octobre 2026
 
 ---
 
@@ -17,11 +17,11 @@
 
 | | |
 |---|---|
-| Raison sociale | `<RAISON SOCIALE NEXULYS>` |
-| SIRET | `<SIRET>` |
-| Adresse | `<ADRESSE>` |
+| Raison sociale | Nexulys — activité en cours de création, non immatriculée (à compléter à l'immatriculation) |
+| SIRET | à compléter à l'immatriculation |
+| Adresse | Saint-Étienne, France — adresse complète à compléter à l'immatriculation |
 | Représentant | `<NOM, QUALITÉ>` |
-| Référent protection des données | `<NOM / EMAIL>` |
+| Référent protection des données | Ethane Mendy — nexulyspro2002@gmail.com (aucun DPO désigné à ce jour) |
 | DPO désigné | `<OUI / NON — si oui, coordonnées>` |
 
 ## Catégories de traitements réalisés pour le compte des clients
@@ -58,7 +58,7 @@
 ### T5 — Assistance par intelligence artificielle
 - **Personnes concernées** : indirectement, les personnes figurant dans les données analysées
 - **Données** : agrégats de gestion, intitulés de dépenses, textes soumis par l'utilisateur
-- **Destinataire** : `<FOURNISSEUR IA>` — `<PAYS>`
+- **Destinataire** : OpenAI — États-Unis
 - **Point de vigilance** : vérifier contractuellement la non-réutilisation des données
   aux fins d'entraînement, et documenter le transfert si le fournisseur est hors UE
 - **Conservation** : `<À COMPLÉTER — politique du fournisseur>`
@@ -97,9 +97,10 @@ mention `<À DÉFINIR>`.
 
 | Destinataire | Pays | Mécanisme | Statut |
 |---|---|---|---|
-| `<HÉBERGEUR>` | `<PAYS>` | `<CCT / décision d'adéquation>` | `<À VÉRIFIER>` |
-| Stripe | `<PAYS>` | `<CCT>` | `<À VÉRIFIER>` |
-| `<FOURNISSEUR IA>` | `<PAYS>` | `<CCT>` | `<À VÉRIFIER>` |
+| Render Services, Inc. | États-Unis | Clauses contractuelles types | Hébergement de l'application et de la base |
+| Cloudflare, Inc. | États-Unis | Clauses contractuelles types | Hébergement de l'interface web |
+| Stripe Payments Europe Ltd | Irlande | Union européenne — pas de transfert hors UE pour l'entité contractante | Encaissement des abonnements |
+| OpenAI | États-Unis | Clauses contractuelles types | Engagement de non-entraînement sur les données transmises par l'API |
 
 ## Mesures de sécurité
 

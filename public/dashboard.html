@@ -1376,7 +1376,7 @@
               <button class="btn-primary" onclick="openModal('conge')">+ Demander un congé</button>
             </div>
             <div id="rh-actions-paie" style="display:none;">
-              <button class="btn-primary" onclick="openModal('paie')">+ Générer une fiche de paie</button>
+              <button class="btn-primary" onclick="openModal('paie')">+ Nouvelle simulation</button>
             </div>
           </div>
         </div>
@@ -1385,7 +1385,7 @@
         <div class="rh-tabs">
           <button class="rh-tab active" id="rh-tab-employes" onclick="switchRHTab('employes')">👥 Équipe</button>
           <button class="rh-tab" id="rh-tab-conges" onclick="switchRHTab('conges')">🏖 Congés</button>
-          <button class="rh-tab" id="rh-tab-paie" onclick="switchRHTab('paie')">💰 Fiches de paie</button>
+          <button class="rh-tab" id="rh-tab-paie" onclick="switchRHTab('paie')">💰 Simulations de paie</button>
           <button class="rh-tab" id="rh-tab-virements" onclick="switchRHTab('virements')">💸 Virements</button>
           <button class="rh-tab" id="rh-tab-avances" onclick="switchRHTab('avances')">💵 Avances</button>
           <button class="rh-tab" id="rh-tab-notes" onclick="switchRHTab('notes')">💳 Notes de frais</button>
@@ -1421,19 +1421,20 @@
           </div>
         </div>
 
-        <!-- Fiches de paie tab -->
+        <!-- Simulations de coût salarial -->
         <div id="rh-panel-paie" style="display:none;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
             <label style="font-size:13px;color:var(--text-muted);white-space:nowrap;">Employé :</label>
             <select id="paie-filter-employe" class="modal-select" style="width:220px;padding:8px 12px;" onchange="loadPayslipsAll()">
               <option value="">Tous les employés</option>
             </select>
-            <button class="btn-outline" onclick="exportDSN()" style="padding:7px 14px;font-size:12px;margin-left:auto;">📋 Export DSN</button>
+            <button class="btn-outline" onclick="exportDSN()" style="padding:7px 14px;font-size:12px;margin-left:auto;">📋 Export récapitulatif (CSV)</button>
             <button class="btn-outline" onclick="exportCSVPayslips()" style="padding:7px 14px;font-size:12px;">📥 Export CSV</button>
           </div>
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Fiches de paie</div>
+              <div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fbbf24;border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:14px;"><strong>Estimation, non un bulletin de paie.</strong> Il n'applique ni la réduction générale de cotisations patronales, ni la tranche 2 Agirc-Arrco, ni le montant net social, et ses taux sont ceux de 2024 : il ne produit pas un bulletin de paie au sens de l'article R3243-1 du code du travail.</div>
+              <div class="card-title">Simulations de coût salarial</div>
             </div>
             <div class="card-body" style="padding:0;">
               <div style="overflow-x:auto;">
@@ -2265,7 +2266,7 @@
         <div class="card" style="margin-top:20px;">
           <div class="card-header">
             <div class="card-title">🏢 Identité de l'entreprise</div>
-            <div style="font-size:12px;color:var(--text-dim);">Ces informations apparaissent sur vos factures et bulletins de paie</div>
+            <div style="font-size:12px;color:var(--text-dim);">Ces informations apparaissent sur vos factures et vos simulations de paie</div>
           </div>
           <div class="card-body">
             <div class="settings-field">
@@ -2720,7 +2721,7 @@
   <div class="modal-overlay" id="modal-paie" onclick="closeModalOnOverlay(event,'modal-paie')">
     <div class="modal">
       <button class="modal-close" onclick="closeModal('modal-paie')">✕</button>
-      <div class="modal-title">💰 Générer une fiche de paie</div>
+      <div class="modal-title">💰 Simuler un coût salarial</div>
       <div class="modal-field"><label class="modal-label">Employé</label><select class="modal-select" id="p-employe"></select></div>
       <div class="modal-row">
         <div class="modal-field"><label class="modal-label">Mois</label>

@@ -6,6 +6,11 @@
  */
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'secret_de_test';
 process.env.NODE_ENV = 'test';
+// Le contrôle d'abonnement ne s'applique que lorsque la souscription est ouverte :
+// avant immatriculation on ne peut pas exiger un règlement qu'on n'a pas le droit
+// d'encaisser (voir config/vente.js). Les scénarios ci-dessous se placent donc après
+// l'ouverture commerciale ; le cas inverse est vérifié en fin de fichier.
+process.env.VENTE_ACTIVE = 'true';
 
 const jwt = require('jsonwebtoken');
 
@@ -107,5 +112,38 @@ describe('Gating d\'abonnement — écritures bloquées, lectures préservées',
   it('un utilisateur non authentifié reste en 401, pas en 402', async () => {
     const res = await request(app).post('/api/rh/employes').send({});
     expect(res.status).toBe(401);
+  });
+});
+
+describe('avant ouverture commerciale — aucun compte restreint', () => {
+  // Tant que VENTE_ACTIVE vaut false, les mentions légales interdisent la vente :
+  // bloquer un compte pour défaut de paiement contredirait le document juridique et
+  // laisserait le client sans aucun moyen de régulariser.
+  const SANS_VENTE = { ...process.env };
+
+  beforeAll(() => { process.env.VENTE_ACTIVE = 'false'; });
+  afterAll(() => { process.env.VENTE_ACTIVE = SANS_VENTE.VENTE_ACTIVE; });
+
+  beforeEach(() => {
+    global.__USER__ = { ...USER };
+    global.__SUB__ = { statut: 'essai', trialEndsAt: new Date(Date.now() - 86400000), plan: 'starter' };
+  });
+
+  test("un essai expiré n'est pas bloqué en 402", async () => {
+    const res = await auth(request(app).post('/api/comptabilite/factures')).send({});
+    expect(res.status).not.toBe(402);
+  });
+
+  test('la souscription est refusée en 503, pas proposée', async () => {
+    const res = await auth(request(app).post('/api/abonnement/activer')).send({ planId: 'business' });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('VENTE_FERMEE');
+  });
+
+  test('la liste des offres annonce que la vente est fermée', async () => {
+    const res = await request(app).get('/api/abonnement/plans');
+    expect(res.status).toBe(200);
+    expect(res.body.data.venteActive).toBe(false);
+    expect(res.body.data.messageVenteFermee).toMatch(/immatriculation/i);
   });
 });

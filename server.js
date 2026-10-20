@@ -23,8 +23,6 @@ const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const { apiLimiter, authLimiter, publicLimiter, paymentLimiter, aiLimiter, aiSlowDown } = require('./middleware/rateLimiter');
 const logger = require('./utils/logger');
-const { initSentry, requestHandler: sentryRequest, errorHandler: sentryError } = require('./middleware/sentry');
-initSentry();
 
 const app = express();
 
@@ -118,7 +116,6 @@ app.use(express.static('public'));
 
 // ── Rate limiting global ──
 app.use('/api', apiLimiter);
-app.use(sentryRequest);
 
 // ── Routes avec limiters spécifiques ──
 app.use('/api/auth', authLimiter, require('./routes/auth'));
@@ -169,7 +166,6 @@ app.use((req, res) => {
 
 // Error handler — filet de sécurité pour toute erreur non capturée par un contrôleur
 const { sendError } = require('./utils/errorResponse');
-app.use(sentryError);
 app.use((err, req, res, next) => {
   logger.error(err.message, { stack: err.stack });
   // Erreurs avec statut explicite (ex. payload trop volumineux) : on le respecte

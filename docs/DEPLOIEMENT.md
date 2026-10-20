@@ -85,6 +85,13 @@ sur `https://votre-domaine/api/stripe/webhook` et souscrivez :
 
 Reportez le secret de signature dans `STRIPE_WEBHOOK_SECRET`.
 
+**Commercialisation.** `VENTE_ACTIVE` vaut `false` par défaut. Dans cet état, aucune
+souscription n'est possible et **aucun compte n'est restreint pour défaut de paiement** —
+on ne peut pas exiger un règlement qu'on n'a pas le droit d'encaisser. Passez-le à `true`
+le jour de l'immatriculation, **en même temps** que la mise à jour des mentions légales et
+l'activation de Stripe en production. `npm run check-env` refuse l'incohérence d'une vente
+ouverte sans clé Stripe ni secret de webhook.
+
 **Origine du frontend.** Les pages et l'API sont hébergées sur deux domaines distincts.
 `ALLOWED_ORIGINS` doit contenir l'origine exacte depuis laquelle les pages sont servies,
 protocole compris et sans barre oblique finale :
@@ -133,6 +140,12 @@ bloquant échoue.
 ---
 
 ## Phase 5 — Déployer
+
+> **Ordre impératif.** La phase 2 doit être terminée avant toute fusion vers la branche
+> déployée. `server.js` s'arrête au démarrage si `DATA_ENCRYPTION_KEY` manque en
+> production : fusionner avant d'avoir renseigné les variables met le service à l'arrêt,
+> pas en dégradé.
+
 
 ```bash
 git push origin main        # ou la procédure de votre hébergeur

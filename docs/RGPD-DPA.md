@@ -74,8 +74,8 @@ objections.
 |---|---|---|---|
 | `<HÉBERGEUR>` | hébergement applicatif et base de données | `<PAYS / RÉGION>` | garanties de transfert |
 | Stripe | encaissement des abonnements | `<RÉGION>` | clauses contractuelles types |
-| `<FOURNISSEUR SMTP>` | acheminement des courriels | `<PAYS>` | |
-| `<FOURNISSEUR IA>` | assistant et analyses | `<PAYS>` | sous-traitance, non-entraînement |
+| Resend, ou le prestataire SMTP retenu | acheminement des courriels | selon le prestataire | à confirmer à la signature |
+| OpenAI | assistant et analyses | États-Unis | sous-traitance, non-entraînement |
 | `<PDP>` | facturation électronique | France | agrément DGFiP |
 
 > **Point de vigilance.** Si l'hébergement ou un sous-traitant se situe hors de l'Union

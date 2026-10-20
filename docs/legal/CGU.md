@@ -1,15 +1,25 @@
 # Conditions générales d'utilisation et de service — Novexa
 
-**Éditeur** : Nexulys SAS, société par actions simplifiée au capital de 25 000 €,
-immatriculée au RCS de Lille Métropole sous le numéro 934 512 786, siège social
-12 rue des Arts, 59000 Lille, France.
-**Numéro de TVA intracommunautaire** : FR 42 934512786
-**Directeur de la publication** : Yanis Maréchal, président
-**Contact** : contact@novexa.fr — support@novexa.fr
-**Hébergeur** : Scaleway SAS, 8 rue de la Ville l'Évêque, 75008 Paris, France.
-Données hébergées dans la région PAR (Paris, France).
+> **Projet en cours de création — document non applicable en l'état.**
+> L'entreprise n'est pas immatriculée. Les articles relatifs à la vente, à la
+> facturation et aux abonnements (articles 5 à 7) n'entreront en vigueur qu'à
+> l'immatriculation et à l'ouverture commerciale du Service, en même temps que le
+> passage de `VENTE_ACTIVE` à `true` (voir `config/vente.js`). Les champs marqués
+> « À COMPLÉTER À L'IMMATRICULATION » doivent être renseignés avant toute mise en
+> ligne de ce document, et l'ensemble relu par un avocat.
 
-**Version 1.0 — en vigueur au 1er octobre 2026.**
+**Éditeur** : Nexulys — activité en cours de création, non encore immatriculée.
+Forme sociale, capital, numéro RCS et numéro de TVA intracommunautaire :
+À COMPLÉTER À L'IMMATRICULATION.
+**Siège** : Saint-Étienne, France. Adresse complète : À COMPLÉTER À L'IMMATRICULATION.
+**Directeur de la publication** : Ethane Mendy.
+**Contact** : nexulyspro2002@gmail.com
+**Hébergeurs** : Render Services, Inc. (application et base de données),
+525 Brannan Street, Suite 300, San Francisco, CA 94107, États-Unis — et
+Cloudflare, Inc. (interface web), 101 Townsend Street, San Francisco, CA 94107,
+États-Unis.
+
+**Version 1.1 — projet, non applicable avant immatriculation.**
 
 > **Document à faire valider par un avocat avant mise en ligne.** Il a été rédigé
 > d'après le fonctionnement réel du service, mais il vous engage contractuellement
@@ -22,7 +32,7 @@ Données hébergées dans la région PAR (Paris, France).
 
 Les présentes conditions régissent l'accès et l'utilisation de la plateforme Novexa,
 solution logicielle en ligne (SaaS) d'automatisation comptable et de gestion des
-ressources humaines assistée par intelligence artificielle, éditée par Nexulys SAS.
+ressources humaines assistée par intelligence artificielle, éditée par Nexulys.
 
 Toute souscription emporte acceptation sans réserve des présentes. Elles prévalent sur
 tout document contraire émanant du Client, y compris ses conditions générales d'achat.
@@ -59,24 +69,29 @@ souscrire, résilier et demander l'effacement des données.
 communication de moyen de paiement.
 
 4.2. À l'issue de l'essai, à défaut de souscription, l'accès en écriture est suspendu.
+Cette suspension ne s'applique pas pendant la phase de pré-lancement : tant que la
+souscription n'est pas ouverte, aucun compte n'est restreint pour défaut de paiement.
 Les Contenus Client demeurent consultables et exportables pendant trente (30) jours,
 puis sont supprimés.
 
 ## Article 5 — Offres et tarifs
 
 5.1. Le Service est proposé selon trois offres, aux tarifs mensuels hors taxes
-suivants :
+suivants. Cette table reproduit `config/plans.js`, source unique des tarifs appliqués
+par le Service et par le prestataire de paiement ; un test automatisé en vérifie la
+concordance.
 
-| Offre | Tarif | Utilisateurs | Salariés | Écritures / mois | Documents IA / mois |
-|---|---|---|---|---|---|
-| Essentiel | 149 € | 3 | 20 | 500 | 200 |
-| Pilotage | 349 € | 10 | 100 | 2 500 | 1 500 |
-| Intégral | 890 € | illimité | illimité | illimité | illimité |
+| Offre | Tarif | Utilisateurs | Salariés |
+|---|---|---|---|
+| Starter | 39 € | 1 | 0 |
+| Business | 89 € | 10 | 25 |
+| Pro | 199 € | illimité | illimité |
 
-5.2. Les dépassements de quota sont facturés 0,08 € HT par document supplémentaire. Le
-Service n'est pas interrompu en cours de période du fait d'un dépassement.
+5.2. Les limites portent sur le nombre d'utilisateurs et de salariés enregistrés. Le
+Service ne décompte ni les écritures comptables, ni les documents traités par
+intelligence artificielle, et ne facture aucun dépassement à l'unité.
 
-5.3. Le paiement annuel donne droit à deux mois offerts.
+5.3. La facturation est mensuelle. Aucun engagement de durée n'est exigé.
 
 5.4. Nexulys peut modifier ses tarifs moyennant un préavis de deux (2) mois notifié par
 courrier électronique. Le Client qui refuse peut résilier sans frais avant l'entrée en
@@ -116,7 +131,7 @@ Contenus. Au-delà, ils sont supprimés dans les conditions de l'article 12.
 ## Article 8 — Disponibilité et maintenance
 
 8.1. Nexulys s'engage à un taux de disponibilité mensuel de 99,5 % pour les offres
-Essentiel et Pilotage, et de 99,9 % pour l'offre Intégral, hors maintenances planifiées.
+Starter et Business, et de 99,9 % pour l'offre Pro, hors maintenances planifiées.
 
 8.2. Les maintenances planifiées sont annoncées au moins quarante-huit (48) heures à
 l'avance et programmées en dehors des heures ouvrées françaises.
@@ -255,9 +270,9 @@ refuse peut résilier sans frais avant l'entrée en vigueur.
 
 18.2. En cas de litige, les parties s'efforcent de trouver une solution amiable. À
 défaut d'accord dans un délai de trente (30) jours, **le litige est porté devant le
-tribunal de commerce de Lille Métropole**, y compris en cas de pluralité de défendeurs
+tribunal de commerce du ressort du siège social (À COMPLÉTER À L'IMMATRICULATION)**, y compris en cas de pluralité de défendeurs
 ou d'appel en garantie.
 
 ---
 
-*Nexulys SAS — RCS Lille Métropole 934 512 786 — Version 1.0 du 1er octobre 2026.*
+*Nexulys — activité en cours de création — Version 1.1, projet non applicable avant immatriculation.*

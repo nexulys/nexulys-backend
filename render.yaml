@@ -28,9 +28,27 @@ services:
         sync: false
 
       # ── Exposition réseau ──
+      # Commercialisation. À passer à « true » le jour de l'immatriculation, en même
+      # temps que la mise à jour des mentions légales — voir config/vente.js.
+      - key: VENTE_ACTIVE
+        value: "false"
       - key: ALLOWED_ORIGINS
         value: https://novexa.nexulyspro2002.workers.dev
       - key: APP_URL
+        sync: false
+      # Plateforme de dématérialisation partenaire (facture électronique). Sans ces
+      # variables, l'émission via PDP reste inactive : seul l'export XML fonctionne.
+      - key: PDP_PROVIDER
+        sync: false
+      - key: PDP_BASE_URL
+        sync: false
+      - key: PDP_CLIENT_ID
+        sync: false
+      - key: PDP_CLIENT_SECRET
+        sync: false
+      - key: PDP_API_KEY
+        sync: false
+      - key: PDP_ENV
         sync: false
       - key: TRUST_PROXY_HOPS
         value: 1                   # Render place un seul proxy devant le service
@@ -66,6 +84,14 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      # Envoi des e-mails : utils/mailer.js essaie Resend en premier, puis SMTP.
+      # Les deux chemins sont déclarés ici pour que la configuration reflète le code ;
+      # renseigner l'un des deux suffit. Sans aucun : ni mot de passe oublié, ni
+      # relance de paiement, ni message de bienvenue.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -73,8 +99,6 @@ services:
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
-        sync: false
-      - key: SENTRY_DSN
         sync: false
 
       - key: APP_NAME

@@ -1,6 +1,7 @@
 const Subscription = require('../models/Subscription');
 const { sendError } = require('../utils/errorResponse');
 const { PLANS, ESSAI_GRATUIT, getPlan } = require('../config/plans');
+const { venteActive, MESSAGE_VENTE_FERMEE } = require('../config/vente');
 const {
   createCustomer,
   createCheckoutSession,
@@ -8,9 +9,17 @@ const {
 } = require('../services/stripeService');
 
 exports.getPlans = async (req, res) => {
+  // `venteActive` est renvoyé au frontend pour qu'il n'affiche jamais un bouton de
+  // souscription que l'API refuserait : l'interface et la règle lisent la même source.
   res.json({
     success: true,
-    data: { plateforme: 'Novexa by Nexulys', essaiGratuit: ESSAI_GRATUIT, plans: PLANS }
+    data: {
+      plateforme: 'Novexa by Nexulys',
+      essaiGratuit: ESSAI_GRATUIT,
+      plans: PLANS,
+      venteActive: venteActive(),
+      messageVenteFermee: venteActive() ? null : MESSAGE_VENTE_FERMEE
+    }
   });
 };
 
@@ -24,6 +33,13 @@ exports.getSubscription = async (req, res) => {
 
 exports.activateSubscription = async (req, res) => {
   try {
+    if (!venteActive()) {
+      // 503 et non 403 : ce n'est pas un refus de droit, c'est un service pas encore
+      // ouvert. Le message est celui qu'affichent aussi les pages publiques.
+      return res.status(503).json({
+        success: false, code: 'VENTE_FERMEE', message: MESSAGE_VENTE_FERMEE
+      });
+    }
     const { methodePaiement, emailFacturation, planId } = req.body;
     const plan = getPlan(planId);
 

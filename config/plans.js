@@ -30,7 +30,7 @@ const PLANS = [
     cible: 'PME en croissance',
     fonctionnalites: [
       'Tout Starter, plus :',
-      'RH & fiches de paie françaises',
+      'RH & simulation de coût salarial',
       'Gestion des stocks & fournisseurs',
       'CRM & pipeline commercial',
       'Projets, tâches & notes de frais',

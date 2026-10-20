@@ -1,6 +1,6 @@
 # Séquence de prospection — DAF et DRH
 
-Trois messages, dix jours. Expéditeur : Yanis Maréchal, président de Nexulys.
+Trois messages, dix jours. Expéditeur : Ethane Mendy, président de Nexulys.
 Envoi depuis une adresse nominative, jamais depuis `contact@`.
 
 **Principe retenu** : un DAF reçoit quinze sollicitations par semaine, toutes
@@ -30,7 +30,7 @@ une question à laquelle on peut répondre en une ligne.
 > Est-ce que la saisie est effectivement ce qui vous coûte le plus de temps chez
 > {{entreprise}}, ou est-ce ailleurs ?
 >
-> Yanis Maréchal — Nexulys
+> Ethane Mendy — Nexulys
 > Se désinscrire : {{lien_desinscription}}
 
 ---
@@ -56,7 +56,7 @@ une question à laquelle on peut répondre en une ligne.
 > Voulez-vous que je vous montre ce que ça donne sur vos propres pièces ? Vingt minutes
 > suffisent.
 >
-> Yanis Maréchal — Nexulys
+> Ethane Mendy — Nexulys
 > Se désinscrire : {{lien_desinscription}}
 
 ---
@@ -79,7 +79,7 @@ une question à laquelle on peut répondre en une ligne.
 >
 > Bonne continuation,
 >
-> Yanis Maréchal — Nexulys
+> Ethane Mendy — Nexulys
 > Se désinscrire : {{lien_desinscription}}
 
 ---
@@ -103,7 +103,7 @@ une question à laquelle on peut répondre en une ligne.
 >
 > Est-ce un sujet chez vous, ou votre processus de contrôle est-il déjà verrouillé ?
 >
-> Yanis Maréchal — Nexulys
+> Ethane Mendy — Nexulys
 > Se désinscrire : {{lien_desinscription}}
 
 ---
@@ -128,7 +128,7 @@ une question à laquelle on peut répondre en une ligne.
 >
 > Vingt minutes pour vous montrer ? Je m'adapte à votre agenda.
 >
-> Yanis Maréchal — Nexulys
+> Ethane Mendy — Nexulys
 > Se désinscrire : {{lien_desinscription}}
 
 ---
@@ -147,7 +147,7 @@ une question à laquelle on peut répondre en une ligne.
 >
 > Bonne continuation,
 >
-> Yanis Maréchal — Nexulys
+> Ethane Mendy — Nexulys
 > Se désinscrire : {{lien_desinscription}}
 
 ---

@@ -86,6 +86,14 @@ verifier({
 // ── Exposition réseau ──
 console.log('\nExposition réseau');
 verifier({
+  cle: 'VENTE_ACTIVE',
+  requis: false,
+  format: /^(true|false)$/,
+  role: 'ouverture de la commercialisation',
+  remede: "« true » seulement après immatriculation, en même temps que la mise à jour des mentions légales",
+  degrade: 'souscriptions fermées — aucun compte restreint pour défaut de paiement',
+});
+verifier({
   cle: 'ALLOWED_ORIGINS',
   requis: PROD,
   // Une origine se compose du protocole et de l'hôte, sans chemin ni barre oblique
@@ -190,7 +198,6 @@ for (const regle of [
   { cle: 'GROQ_API_KEY', role: 'fournisseur IA principal', degrade: 'IA en mode démo' },
   { cle: 'OPENAI_API_KEY', role: 'fournisseur IA de repli', degrade: 'pas de repli IA' },
   { cle: 'SMTP_HOST', role: 'envoi des e-mails', degrade: 'e-mails désactivés (relances, réinitialisation)' },
-  { cle: 'SENTRY_DSN', role: 'supervision des erreurs', degrade: 'aucune remontée d\'erreur' },
   { cle: 'PDP_PROVIDER', role: 'facturation électronique', degrade: 'transmission PDP indisponible' },
 ]) {
   verifier({ ...regle, requis: false });
@@ -218,6 +225,18 @@ if (Number(process.env.TRUST_PROXY_HOPS) > 3) {
   incoherences.push(
     `TRUST_PROXY_HOPS vaut ${process.env.TRUST_PROXY_HOPS}. Une valeur supérieure au nombre réel de ` +
     'proxies rend X-Forwarded-For falsifiable, donc le rate limiting contournable.',
+  );
+}
+if (process.env.VENTE_ACTIVE === 'true' && !process.env.STRIPE_SECRET_KEY) {
+  incoherences.push(
+    'VENTE_ACTIVE vaut true sans STRIPE_SECRET_KEY : le parcours de souscription est ouvert ' +
+    'mais aucun paiement ne peut aboutir.',
+  );
+}
+if (process.env.VENTE_ACTIVE === 'true' && !process.env.STRIPE_WEBHOOK_SECRET) {
+  incoherences.push(
+    'VENTE_ACTIVE vaut true sans STRIPE_WEBHOOK_SECRET : les paiements aboutiraient sans ' +
+    "jamais activer d'abonnement.",
   );
 }
 if (PROD && process.env.ALLOWED_ORIGINS?.split(',').some((o) => o.trim().startsWith('http://'))) {

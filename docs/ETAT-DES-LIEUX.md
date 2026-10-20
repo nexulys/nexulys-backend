@@ -227,6 +227,33 @@ Contrôle négatif vérifié : remettre l'ancienne URL fait échouer la suite.
 
 ---
 
+## 6 bis. Les désaccords levés le 20 octobre
+
+Neuf contradictions entre ce que le produit annonce et ce qu'il fait ont été corrigées.
+Chacune est désormais tenue par un test.
+
+| Désaccord | Levé par |
+|---|---|
+| Les mentions légales interdisaient la vente que le parcours Stripe proposait | `config/vente.js` : un drapeau `VENTE_ACTIVE` unique, lu par le contrôle d'abonnement, la route de souscription et l'interface. À `false`, aucun compte n'est restreint pour défaut de paiement |
+| Les CGU annonçaient Essentiel/Pilotage/Intégral à 149/349/890 € quand le code facturait Starter/Business/Pro à 39/89/199 € | Les CGU reproduisent `config/plans.js`, et un test compare les trois sources |
+| Les CGU promettaient des quotas d'écritures et de documents IA, et un dépassement facturé 0,08 € — rien de tout cela n'existe | Retirés des CGU ; un test interdit leur retour |
+| CGU et politique de confidentialité portaient une identité inventée : Nexulys SAS, capital 25 000 €, RCS Lille 934 512 786, TVA, un dirigeant et un DPO fictifs | Identité réelle rétablie ; les champs dépendant de l'immatriculation sont marqués comme tels ; un test interdit les anciennes valeurs |
+| La politique de confidentialité ne déclarait pas le fournisseur d'IA, alors que CV et comptes rendus d'entretien lui sont transmis | OpenAI déclaré dans les quatre documents RGPD ; un test vérifie que le fournisseur nommé dans le code y figure |
+| Le code basculait vers Groq, absent de tout document | Bascule retirée : un seul fournisseur, celui qui est déclaré |
+| L'IA renvoyait « Achat simulé, 42,50 € » avec `success: true` sans clé configurée | 503 explicite ; plus aucune valeur fabriquée |
+| « Fiches de paie françaises » annoncées pour un moteur non conforme | Repositionné en simulation de coût salarial : libellés, PDF intitulé « SIMULATION DE PAIE » avec mention de l'article R3243-1, « Export DSN » renommé en récapitulatif CSV, offre et CGU alignées |
+| `SENTRY_DSN` exposé sans que le paquet soit installé | Sentry retiré du code et de la configuration |
+| Factur-X annoncé pour un XML seul | Libellé « Export XML (EN 16931) » ; variables `PDP_*` ajoutées à `render.yaml` |
+| Le code préférait Resend, absent de `render.yaml` | Les deux chemins déclarés, priorité documentée |
+
+220 tests au vert (194 auparavant).
+
+**Ce qui reste strictement à vous** : le niveau de prix (39/89/199 ou autre), le moment
+de l'immatriculation, et la confirmation de l'entité contractante OpenAI à la signature
+du DPA.
+
+---
+
 ## 7. Plan d'action, dans l'ordre
 
 **Pour mettre le site en ligne et utilisable par vous-même** (quelques heures)
